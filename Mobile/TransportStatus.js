@@ -3,22 +3,26 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Aler
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TransportForm = ({ navigation }) => {
   // Initial state to track form type choice
   const [formType, setFormType] = useState(null); // null, 'cmr', or 'status'
-  
+  // Add this to your initial state declarations
+const [transportId, setTransportId] = useState(null);
   // Modal states
   const [showCountryModal, setShowCountryModal] = useState(false);
-  const [showCalendar, setShowCalendar] = useState(false);
+  //const [showCalendar, setShowCalendar] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [modalOptions, setModalOptions] = useState([]);
   const [showProblemsInput, setShowProblemsInput] = useState(false);
   const [showDelayInput, setShowDelayInput] = useState(false);
-  
+  const [driverId, setDriverId] = useState(null);
+const [authToken, setAuthToken] = useState(null);
   // Reference for capturing images
   const [capturedImage, setCapturedImage] = useState(null);
+  
   
   // Current date for calendar default
   const today = new Date();
@@ -35,7 +39,102 @@ const TransportForm = ({ navigation }) => {
     'Slovacia', 'Slovenia', 'Spania', 'Suedia', 'Turcia', 'Ucraina', 'Ungaria', 
     'Vatican'
   ];
-
+  React.useEffect(() => {
+    
+      const loadAuthToken = async () => {
+        try {
+          console.log('Attempting to load auth token from AsyncStorage');
+          const token = await AsyncStorage.getItem('authToken');
+          console.log('Token from AsyncStorage:', token ? 'Token exists' : 'No token found');
+          
+          if (token) {
+            setAuthToken(token);
+            console.log('Auth token loaded and set in state');
+            // Once we have the token, fetch the profile to get driverId
+            fetchDriverProfile(token);
+          } else {
+            console.error("No auth token found in AsyncStorage");
+            Alert.alert('Eroare', 'Sesiune expirată. Vă rugăm să vă autentificați din nou.');
+          }
+        } catch (error) {
+          console.error("Error loading auth token:", error);
+          Alert.alert('Eroare', 'Nu s-a putut încărca token-ul de autentificare.');
+        }
+      };
+      
+    
+    loadAuthToken();
+  }, []);
+  const fetchDriverProfile = async (token) => {
+    try {
+      const response = await fetch(
+        "https://atrux-717ecf8763ea.herokuapp.com/get_profile/",
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Token ${token}`
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const profileData = await response.json();
+        setDriverId(profileData.id); // Assuming the API returns an id field
+        console.log("Driver ID set:", profileData.id);
+      } else {
+        console.error("Failed to fetch driver profile");
+        Alert.alert('Eroare', 'Nu s-a putut obține profilul șoferului.');
+      }
+    } catch (error) {
+      console.error("Error fetching driver profile:", error);
+      Alert.alert('Eroare', 'Verificați conexiunea la internet.');
+    }
+  };
+  const fetchLatestTransport = async (token, driverId) => {
+    console.log("fetchLatestTransport called");
+    console.log("Driver ID:", driverId);
+    console.log("Token:", token);
+  
+    try {
+      const url = `https://atrux-717ecf8763ea.herokuapp.com/latest_n_transports/1/${driverId}/`;
+      console.log("Fetching URL:", url);
+  
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Authorization": `Token ${token}`
+        }
+      });
+  
+      console.log("Fetch response status:", response.status);
+  
+      if (response.ok) {
+        const transportData = await response.json();
+        console.log("Raw transport data:", transportData);
+  
+        if (Array.isArray(transportData) && transportData.length > 0) {
+          const latestTransport = transportData[0];
+          console.log("Latest transport found:", latestTransport);
+  
+          if (latestTransport.id) {
+            console.log("Setting transport ID:", latestTransport.id);
+            setTransportId(latestTransport.id);
+          } else {
+            console.warn("No transport ID found in the latest transport data.");
+          }
+        } else {
+          console.warn("Transport data is empty or not an array.");
+        }
+      } else {
+        console.error("Fetch failed with status:", response.status);
+        const errorText = await response.text();
+        console.error("Error response text:", errorText);
+      }
+    } catch (error) {
+      console.error("Transport fetch error:", error);
+    }
+  };
+  
   // CMR form data
   const [cmrFormData, setCmrFormData] = useState({
     expeditor_nume: '',
@@ -46,7 +145,7 @@ const TransportForm = ({ navigation }) => {
     destinatar_tara: '',
     loc_livrare: '',
     loc_incarcare: '',
-    data_incarcare: formattedToday,
+    //data_incarcare: formattedToday,
     marci_numere: '',
     numar_colete: '',
     mod_ambalare: '',
@@ -57,7 +156,7 @@ const TransportForm = ({ navigation }) => {
     instructiuni_expeditor: '',
     conventii_speciale: '',
   });
-
+  
   // Status form data
   const [statusFormData, setStatusFormData] = useState({
     status_truck: "",
@@ -74,9 +173,10 @@ const TransportForm = ({ navigation }) => {
     status_transport: "",
     delay_estimation: ""
   });
-
+  
   // Define CMR fields
   const cmrFields = [
+    
     { key: 'expeditor_nume', label: 'Nume Expeditor', placeholder: 'Introduceți numele expeditorului', type: 'text' },
     { key: 'expeditor_adresa', label: 'Adresa Expeditor', placeholder: 'Introduceți adresa completă', type: 'text' },
     { key: 'expeditor_tara', label: 'Țara Expeditor', placeholder: 'Selectați țara expeditorului', type: 'country' },
@@ -85,14 +185,13 @@ const TransportForm = ({ navigation }) => {
     { key: 'destinatar_tara', label: 'Țara Destinatar', placeholder: 'Selectați țara destinatarului', type: 'country' },
     { key: 'loc_livrare', label: 'Locul Livrării Mărfii', placeholder: 'Introduceți locația de livrare', type: 'text' },
     { key: 'loc_incarcare', label: 'Locul Încărcării', placeholder: 'Introduceți locația de încărcare', type: 'text' },
-    { key: 'data_incarcare', label: 'Data Încărcării', placeholder: 'DD/MM/YYYY', type: 'date' },
-    { key: 'marci_numere', label: 'Mărci/Numere', placeholder: 'Introduceți mărci și numere', type: 'text' },
-    { key: 'numar_colete', label: 'Număr de Colete', placeholder: 'Introduceți numărul', type: 'text' },
+    { key: 'marci_numere', label: 'Mărci/Numere', placeholder: 'Introduceți mărci și numere', type: 'number' },
+    { key: 'numar_colete', label: 'Număr de Colete', placeholder: 'Introduceți numărul', type: 'number' },
     { key: 'mod_ambalare', label: 'Mod de Ambalare', placeholder: 'Descrieți modul de ambalare', type: 'text' },
     { key: 'natura_marfii', label: 'Natura Mărfii', placeholder: 'Descrieți natura mărfii', type: 'text' },
-    { key: 'nr_static', label: 'Nr Static', placeholder: 'Introduceți numărul static', type: 'text' },
-    { key: 'greutate_bruta', label: 'Greutate Brută (kg)', placeholder: 'Introduceți greutatea', type: 'text' },
-    { key: 'cubaj', label: 'Cubaj (m³)', placeholder: 'Introduceți cubajul', type: 'text' },
+    { key: 'nr_static', label: 'Nr Static', placeholder: 'Introduceți numărul static', type: 'number' },
+    { key: 'greutate_bruta', label: 'Greutate Brută (kg)', placeholder: 'Introduceți greutatea', type: 'number' },
+    { key: 'cubaj', label: 'Cubaj (m³)', placeholder: 'Introduceți cubajul', type: 'number' },
     { key: 'instructiuni_expeditor', label: 'Instrucțiuni Expeditor', placeholder: 'Introduceți instrucțiuni', type: 'text' },
     { key: 'conventii_speciale', label: 'Convenții Speciale', placeholder: 'Introduceți convenții speciale', type: 'text' },
   ];
@@ -200,7 +299,7 @@ const TransportForm = ({ navigation }) => {
   ];
 
   // Track current index in the field list (showing 2 at a time)
-  const [currentIndex, setCurrentIndex] = useState(0);
+const [currentIndex, setCurrentIndex] = useState(0);
 
   // Get current fields and form data based on form type
   const getCurrentFields = () => {
@@ -230,16 +329,31 @@ const TransportForm = ({ navigation }) => {
 
   // Update form data
   const setFormData = (key, value) => {
+    // List of fields that should be stored as numbers
+    const numericFields = ['marci_numere', 'numar_colete', 'nr_static', 'greutate_bruta', 'cubaj'];
+    
     if (formType === 'cmr') {
-      setCmrFormData({
-        ...cmrFormData,
-        [key]: value
-      });
+      // If the field should be numeric, parse it as a number
+      if (numericFields.includes(key)) {
+        // Only convert to number if the value isn't empty
+        const numericValue = value === '' ? '' : parseFloat(value);
+        setCmrFormData({
+          ...cmrFormData,
+          [key]: numericValue
+        });
+      } else {
+        // For non-numeric fields, store as string
+        setCmrFormData({
+          ...cmrFormData,
+          [key]: value
+        });
+      }
     } else if (formType === 'status') {
       setStatusFormData({
         ...statusFormData,
         [key]: value
       });
+  
       
       // Find the field definition
       const field = statusFields.find(f => f.key === key);
@@ -325,21 +439,21 @@ const TransportForm = ({ navigation }) => {
   };
 
   // Handle date selection
-  const handleDateSelect = (date) => {
-    const selectedDate = new Date(date.dateString);
-    const formattedDate = `${selectedDate.getDate().toString().padStart(2, '0')}/${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}/${selectedDate.getFullYear()}`;
+  // const handleDateSelect = (date) => {
+  //   const selectedDate = new Date(date.dateString);
+  //   const formattedDate = `${selectedDate.getDate().toString().padStart(2, '0')}/${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}/${selectedDate.getFullYear()}`;
     
-    setFormData('data_incarcare', formattedDate);
-    setShowCalendar(false);
-  };
+  //   setFormData('data_incarcare', formattedDate);
+  //   setShowCalendar(false);
+  // };
 
   // Handle field touch
   const handleFieldTouch = (field) => {
     if (field.type === 'country') {
       setActiveField(field.key);
       setShowCountryModal(true);
-    } else if (field.type === 'date') {
-      setShowCalendar(true);
+    // } else if (field.type === 'date') {
+    //   setShowCalendar(true);
     } else if (field.type === 'options') {
       setActiveField(field.key);
       setModalOptions(field.options);
@@ -416,17 +530,111 @@ const TransportForm = ({ navigation }) => {
       setCurrentIndex(0);
     }
   };
+  React.useEffect(() => {
+    if (formType === 'cmr' && authToken && driverId) {
+      fetchLatestTransport(authToken, driverId);
+    }
+  }, [formType, authToken, driverId]);
+  
 
   // Handle form submission
-  const handleSubmit = () => {
-    const dataToSubmit = formType === 'cmr' ? cmrFormData : statusFormData;
-    console.log(`${formType.toUpperCase()} Form submitted:`, dataToSubmit);
-    Alert.alert(
-      'Transport Salvat',
-      `Datele ${formType.toUpperCase()} au fost salvate cu succes!`,
-      [{ text: 'OK', onPress: () => navigation.goBack() }]
-    );
+  const handleSubmit = async () => {
+    
+    if (formType === 'cmr') {
+      try {
+        // Create a copy of the CMR form data
+        const cmrDataToSubmit = { ...cmrFormData };
+          
+        // Ensure numeric fields are numbers, not strings
+        ['marci_numere', 'numar_colete', 'nr_static', 'greutate_bruta', 'cubaj'].forEach(field => {
+          if (cmrDataToSubmit[field] === '') {
+            cmrDataToSubmit[field] = null; // Or 0, depending on your backend requirements
+          } else if (typeof cmrDataToSubmit[field] === 'string') {
+            cmrDataToSubmit[field] = parseFloat(cmrDataToSubmit[field]);
+          }
+        });
+        console.log('CMR Form data to submit:', cmrDataToSubmit);
+        
+        // Add the transport_id to the data
+        console.log(transportId);
+        if (transportId) {
+          console.log(transportId);
+          cmrDataToSubmit.transport_id = transportId;
+          cmrDataToSubmit.driver_id= driverId
+        } else {
+          // Handle case where transport_id is not available
+          Alert.alert(
+            'Eroare',
+            'ID Transport lipsă. Vă rugăm să încercați din nou.',
+            [{ text: 'OK' }]
+          );
+          return;
+        }
+        
+        
+        console.log('CMR Form data to submit:', cmrDataToSubmit);
+        
+        // Send data to the server
+        const response = await fetch(
+          "https://atrux-717ecf8763ea.herokuapp.com/add_cmr/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              // Add Authorization header if needed
+              "Authorization": `Token ${authToken}`
+            },
+            body: JSON.stringify(cmrDataToSubmit)
+            
+          }
+        );
+        
+        if (response.ok) {
+          const responseData = await response.json();
+          console.log('CMR submission successful:', responseData);
+          setFormType(null);
+         
+              setCurrentIndex(0);
+              // Reset form data
+             
+          Alert.alert(
+            'Transport Salvat',
+            'Datele CMR au fost salvate cu succes!',
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+        } else {
+          
+          const errorData = await response.json();
+          console.error('CMR submission failed:', errorData);
+          
+          Alert.alert(
+            'Eroare',
+            'Salvarea datelor CMR a eșuat. Vă rugăm să încercați din nou.',
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error) {
+        console.error('Error submitting CMR:', error);
+        
+        Alert.alert(
+          'Eroare',
+          'A apărut o eroare la trimiterea datelor. Verificați conexiunea la internet.',
+          [{ text: 'OK' }]
+        );
+      }
+    } else if (formType === 'status') {
+      // Keep your existing status form handling logic
+      const dataToSubmit = statusFormData;
+      
+      console.log('STATUS Form submitted:', dataToSubmit);
+      Alert.alert(
+        'Transport Salvat',
+        'Datele STATUS au fost salvate cu succes!',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    }
   };
+
 
   // Get progress percentage
   const getProgressPercentage = () => {
@@ -434,18 +642,19 @@ const TransportForm = ({ navigation }) => {
   };
 
   // Format calendar date for marking selected date
-  const getMarkedDates = () => {
-    if (formType === 'cmr' && cmrFormData.data_incarcare) {
-      const parts = cmrFormData.data_incarcare.split('/');
-      if (parts.length === 3) {
-        const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        return {
-          [formattedDate]: { selected: true, selectedColor: '#3B82F6' }
-        };
-      }
-    }
-    return {};
-  };
+  // const getMarkedDates = () => {
+  //   if (formType === 'cmr' && cmrFormData.data_incarcare) {
+  //     const parts = cmrFormData.data_incarcare.split('/');
+  //     if (parts.length === 3) {
+  //       const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+  //       return {
+  //         [formattedDate]: { selected: true, selectedColor: '#3B82F6' }
+  //       };
+  //     }
+  //   }
+   
+  //   return {};
+  // };
 
   // Render country selection modal
   const renderCountryModal = () => (
@@ -516,36 +725,36 @@ const TransportForm = ({ navigation }) => {
   );
 
   // Render calendar modal
-  const renderCalendarModal = () => (
-    <Modal
-      visible={showCalendar}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setShowCalendar(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Selectați Data</Text>
-            <TouchableOpacity onPress={() => setShowCalendar(false)}>
-              <Ionicons name="close" size={24} color="#333" />
-            </TouchableOpacity>
-          </View>
+  // const renderCalendarModal = () => (
+  //   <Modal
+  //     visible={showCalendar}
+  //     animationType="slide"
+  //     transparent={true}
+  //     onRequestClose={() => setShowCalendar(false)}
+  //   >
+  //     <View style={styles.modalOverlay}>
+  //       <View style={styles.modalContent}>
+  //         <View style={styles.modalHeader}>
+  //           <Text style={styles.modalTitle}>Selectați Data</Text>
+  //           <TouchableOpacity onPress={() => setShowCalendar(false)}>
+  //             <Ionicons name="close" size={24} color="#333" />
+  //           </TouchableOpacity>
+  //         </View>
           
-          <Calendar
-            onDayPress={handleDateSelect}
-            markedDates={getMarkedDates()}
-            theme={{
-              todayTextColor: '#3B82F6',
-              selectedDayBackgroundColor: '#3B82F6',
-              selectedDayTextColor: '#ffffff',
-              arrowColor: '#3B82F6',
-            }}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
+  //         <Calendar
+  //           onDayPress={handleDateSelect}
+  //           markedDates={getMarkedDates()}
+  //           theme={{
+  //             todayTextColor: '#3B82F6',
+  //             selectedDayBackgroundColor: '#3B82F6',
+  //             selectedDayTextColor: '#ffffff',
+  //             arrowColor: '#3B82F6',
+  //           }}
+  //         />
+  //       </View>
+  //     </View>
+  //   </Modal>
+  // );
 
   // Render form type selection
   if (formType === null) {
@@ -604,18 +813,18 @@ const TransportForm = ({ navigation }) => {
           <Ionicons name="chevron-down" size={20} color="#6B7280" />
         </TouchableOpacity>
       );
-    } else if (field.type === 'date') {
-      return (
-        <TouchableOpacity
-          style={styles.selectInput}
-          onPress={() => handleFieldTouch(field)}
-        >
-          <Text style={styles.selectInputText}>
-            {formData[field.key]}
-          </Text>
-          <Ionicons name="calendar" size={20} color="#6B7280" />
-        </TouchableOpacity>
-      );
+    // } else if (field.type === 'date') {
+    //   return (
+    //     <TouchableOpacity
+    //       style={styles.selectInput}
+    //       onPress={() => handleFieldTouch(field)}
+    //     >
+    //       <Text style={styles.selectInputText}>
+    //         {formData[field.key]}
+    //       </Text>
+    //       <Ionicons name="calendar" size={20} color="#6B7280" />
+    //     </TouchableOpacity>
+    //   );
     } else if (field.type === 'options') {
       return (
         <TouchableOpacity
@@ -651,10 +860,15 @@ const TransportForm = ({ navigation }) => {
       return (
         <TextInput
           style={styles.input}
-          value={formData[field.key]}
+          value={String(formData[field.key])} // Convert to string for display
           onChangeText={(text) => setFormData(field.key, text)}
           placeholder={field.placeholder}
           placeholderTextColor="#9CA3AF"
+          keyboardType={
+            ['marci_numere', 'numar_colete', 'nr_static', 'greutate_bruta', 'cubaj'].includes(field.key)
+              ? 'numeric'
+              : 'default'
+          }
         />
       );
     }
@@ -733,7 +947,7 @@ const TransportForm = ({ navigation }) => {
       </KeyboardAvoidingView>
 
       {renderCountryModal()}
-      {renderCalendarModal()}
+     
       {renderOptionsModal()}
     </SafeAreaView>
   );

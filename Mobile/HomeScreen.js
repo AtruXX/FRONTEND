@@ -14,7 +14,7 @@ const HomeScreen = () => {
       <View style={styles.header}>
         <View>
           <Text style={styles.welcomeText}>Buna ziua,</Text>
-          <Text style={styles.nameText}>Andrei</Text>
+        
         </View>
         <View style={styles.profileContainer}>
          
@@ -53,7 +53,7 @@ const HomeScreen = () => {
         
         <TouchableOpacity 
           style={[styles.gridItem, { backgroundColor: "#EF4444" }]}
-          onPress={() => navigation.navigate('Transporturi')}
+          onPress={() => navigation.navigate('Transports')}
         >
           <Ionicons name="calendar-outline" size={32} color="white" />
           <Text style={styles.gridText}>Transporturi</Text>
@@ -68,12 +68,12 @@ const HomeScreen = () => {
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.gridItem, { backgroundColor: "#F59E0B" }]} 
-          onPress={() => navigation.navigate('TransportActual')}
-        >
-          <Ionicons name="navigate-outline" size={32} color="white" />
-          <Text style={styles.gridText}>Transport Actual</Text>
-        </TouchableOpacity>
+  style={[styles.gridItem, { backgroundColor: "#F59E0B" }]}
+  onPress={() => navigation.navigate('Transports', { screen: 'TransportStatus' })}
+>
+  <Ionicons name="navigate-outline" size={32} color="white" />
+  <Text style={styles.gridText}>Transport Actual</Text>
+</TouchableOpacity>
         
         <TouchableOpacity 
           style={[styles.gridItem, { backgroundColor: "#10B981" }]}

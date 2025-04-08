@@ -2,17 +2,69 @@ import React, { useState } from "react";
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
 import { TextInput, Button, Card, Title } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
-
+  const fetchUserProfile = async (token) => {
+    try {
+      console.log('Fetching user profile with token');
+      const response = await fetch(
+        "https://atrux-717ecf8763ea.herokuapp.com/get_profile/",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Token ${token}`
+          }
+          
+        }
+      );
+      console.log("Authorization: ",token);
+      
+      if (response.ok) {
+        const profileData = await response.json();
+        console.log('Profile data received:', profileData);
+        
+        // Store driver id
+        if (profileData.id) {
+          await AsyncStorage.setItem('driverId', profileData.id.toString());
+          console.log('Driver ID stored:', profileData.id);
+        }
+        
+        // You might want to store other useful info
+        if (profileData.name) {
+          await AsyncStorage.setItem('userName', profileData.name);
+        }
+        
+        if (profileData.company) {
+          await AsyncStorage.setItem('userCompany', profileData.company);
+        }
+        
+        // Store user type (driver/dispatcher)
+        await AsyncStorage.setItem('isDriver', profileData.is_driver.toString());
+        await AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString());
+        
+      } else {
+        const errorText = await response.text();
+        console.error(`Failed to fetch user profile, status: ${response.status}, details:`, errorText);
+        Alert.alert('Error', `Profile fetch failed: ${response.status}`);
+        console.error("Failed to fetch user profile, status:", response.status);
+       
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      // We'll continue with navigation even if profile fetch fails
+      console.log('Continuing to Home despite profile fetch error');
+    }
+  };
   const handleLogin = async () => {
     const loginData = { email, password };
-
     try {
+      console.log('Attempting login with:', email);
       const response = await fetch(
         "https://atrux-717ecf8763ea.herokuapp.com/auth/token/login/",
         {
@@ -21,16 +73,30 @@ const LoginScreen = () => {
           body: JSON.stringify(loginData),
         }
       );
-
-      const data = await response.json();
+      
       if (response.ok) {
-        Alert.alert("Success", "Login successful!");
-        navigation.navigate('Main'); // Navigate to HomeScreen
+        const data = await response.json();
+        const token = data.auth_token;
+        console.log('Login successful, token received');
+        
+        // Store token in secure storage
+        try {
+          await AsyncStorage.setItem('authToken', token);
+          console.log('Token stored successfully in AsyncStorage');
+        } catch (storageError) {
+          console.error('Error storing token:', storageError);
+        }
+        
+        // Fetch user profile to get driver_id
+        await fetchUserProfile(token);
+        navigation.navigate('Main');
       } else {
-        Alert.alert("Error", data.detail || "Login failed");
+        console.error('Login response not OK:', response.status);
+        Alert.alert('Error', 'Login failed. Please check your credentials.');
       }
     } catch (error) {
-      Alert.alert("Error", "Something went wrong");
+      console.error('Login error:', error);
+      Alert.alert('Error', 'An error occurred during login');
     }
   };
 
