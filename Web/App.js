@@ -5,7 +5,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Text, View } from 'react-native';
 import LoginScreen from './Login.js';
 import MainScreen from './Main.js';
-
+import TransportsScreen from './Transports.js'; // Import TransportsScreen
+import Drivers from './Drivers.js'
+import Trucks from './Trucks.js'
 // Initialize react-native-screens (add this at the top of your file)
 import { enableScreens } from 'react-native-screens';
 enableScreens();
@@ -43,12 +45,31 @@ function App() {
           fallback={<Text>Loading...</Text>}
         >
           <Stack.Navigator>
-            <Stack.Screen 
-              name="Login" 
+            <Stack.Screen
+              name="Login"
               component={LoginScreen}
               options={{ headerShown: false }}
             />
-            <Stack.Screen name="Main" component={MainScreen} options={{ headerShown: false }}/>
+            <Stack.Screen 
+              name="Main" 
+              component={MainScreen} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Transports" 
+              component={TransportsScreen} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Drivers" 
+              component={Drivers} 
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Trucks" 
+              component={Trucks} 
+              options={{ headerShown: false }}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

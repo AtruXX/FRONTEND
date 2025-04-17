@@ -2,15 +2,17 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
-
+  
   const handleLogin = async () => {
     if (!email || !password) {
+      alert('Please enter both email and password');
       return;
     }
     
@@ -28,11 +30,19 @@ function LoginScreen() {
       
       if (response.ok) {
         const data = await response.json();
-        navigation.navigate('Main');
+        // Store the auth token
+        if (data.auth_token) {
+          await AsyncStorage.setItem('auth_token', data.auth_token);
+          console.log('Token stored successfully');
+          navigation.navigate('Main');
+        } else {
+          alert('Invalid response from server. Missing token.');
+        }
       } else {
         alert('Login failed. Please check your credentials.');
       }
     } catch (error) {
+      console.error('Login error:', error);
       alert('Network error. Please try again later.');
     } finally {
       setIsLoading(false);
