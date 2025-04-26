@@ -4,12 +4,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+const COLORS = {
+  background: '#f5f5f5',
+  card: '#ffffff',
+  primary: '#3B82F6',
+  accent: '#64748B',
+  lightAccent: '#6B7280',
+  border: '#D1D5DB',
+  text: {
+    dark: '#333333',
+    light: '#6B7280',
+  },
+};
+
 
 const TransportForm = ({ navigation }) => {
   // Initial state to track form type choice
   const [formType, setFormType] = useState(null); // null, 'cmr', or 'status'
   // Add this to your initial state declarations
-const [transportId, setTransportId] = useState(null);
+  const [transportId, setTransportId] = useState(null);
   // Modal states
   const [showCountryModal, setShowCountryModal] = useState(false);
   //const [showCalendar, setShowCalendar] = useState(false);
@@ -19,7 +32,7 @@ const [transportId, setTransportId] = useState(null);
   const [showProblemsInput, setShowProblemsInput] = useState(false);
   const [showDelayInput, setShowDelayInput] = useState(false);
   const [driverId, setDriverId] = useState(null);
-const [authToken, setAuthToken] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
   // Reference for capturing images
   const [capturedImage, setCapturedImage] = useState(null);
   
@@ -41,26 +54,26 @@ const [authToken, setAuthToken] = useState(null);
   ];
   React.useEffect(() => {
     
-      const loadAuthToken = async () => {
-        try {
-          console.log('Attempting to load auth token from AsyncStorage');
-          const token = await AsyncStorage.getItem('authToken');
-          console.log('Token from AsyncStorage:', token ? 'Token exists' : 'No token found');
-          
-          if (token) {
-            setAuthToken(token);
-            console.log('Auth token loaded and set in state');
-            // Once we have the token, fetch the profile to get driverId
-            fetchDriverProfile(token);
-          } else {
-            console.error("No auth token found in AsyncStorage");
-            Alert.alert('Eroare', 'Sesiune expirată. Vă rugăm să vă autentificați din nou.');
-          }
-        } catch (error) {
-          console.error("Error loading auth token:", error);
-          Alert.alert('Eroare', 'Nu s-a putut încărca token-ul de autentificare.');
+    const loadAuthToken = async () => {
+      try {
+        console.log('Attempting to load auth token from AsyncStorage');
+        const token = await AsyncStorage.getItem('authToken');
+        console.log('Token from AsyncStorage:', token ? 'Token exists' : 'No token found');
+        
+        if (token) {
+          setAuthToken(token);
+          console.log('Auth token loaded and set in state');
+          // Once we have the token, fetch the profile to get driverId
+          fetchDriverProfile(token);
+        } else {
+          console.error("No auth token found in AsyncStorage");
+          Alert.alert('Eroare', 'Sesiune expirată. Vă rugăm să vă autentificați din nou.');
         }
-      };
+      } catch (error) {
+        console.error("Error loading auth token:", error);
+        Alert.alert('Eroare', 'Nu s-a putut încărca token-ul de autentificare.');
+      }
+    };
       
     
     loadAuthToken();
@@ -196,6 +209,7 @@ const [authToken, setAuthToken] = useState(null);
     { key: 'conventii_speciale', label: 'Convenții Speciale', placeholder: 'Introduceți convenții speciale', type: 'text' },
   ];
 
+
   // Define Status fields with the new options structure
   const statusFields = [
     { 
@@ -298,8 +312,10 @@ const [authToken, setAuthToken] = useState(null);
     }
   ];
 
+
   // Track current index in the field list (showing 2 at a time)
-const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
 
   // Get current fields and form data based on form type
   const getCurrentFields = () => {
@@ -322,10 +338,12 @@ const [currentIndex, setCurrentIndex] = useState(0);
     return [];
   };
 
+
   // Get current form data based on form type
   const getFormData = () => {
     return formType === 'cmr' ? cmrFormData : statusFormData;
   };
+
 
   // Update form data
   const setFormData = (key, value) => {
@@ -369,6 +387,7 @@ const [currentIndex, setCurrentIndex] = useState(0);
     }
   };
 
+
   // Calculate total pages (showing 2 fields per page)
   const getTotalPages = () => {
     if (formType === 'cmr') {
@@ -396,8 +415,10 @@ const [currentIndex, setCurrentIndex] = useState(0);
     return 0;
   };
 
+
   const currentPage = Math.floor(currentIndex / 2) + 1;
   const totalPages = getTotalPages();
+
 
   // Handle country selection
   const handleCountrySelect = (country) => {
@@ -408,6 +429,7 @@ const [currentIndex, setCurrentIndex] = useState(0);
     }
   };
 
+
   // Handle options selection
   const handleOptionSelect = (option) => {
     if (activeField) {
@@ -416,6 +438,7 @@ const [currentIndex, setCurrentIndex] = useState(0);
       setActiveField(null);
     }
   };
+
 
   // Handle camera
   const handleCameraCapture = async () => {
@@ -438,22 +461,12 @@ const [currentIndex, setCurrentIndex] = useState(0);
     }
   };
 
-  // Handle date selection
-  // const handleDateSelect = (date) => {
-  //   const selectedDate = new Date(date.dateString);
-  //   const formattedDate = `${selectedDate.getDate().toString().padStart(2, '0')}/${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}/${selectedDate.getFullYear()}`;
-    
-  //   setFormData('data_incarcare', formattedDate);
-  //   setShowCalendar(false);
-  // };
 
   // Handle field touch
   const handleFieldTouch = (field) => {
     if (field.type === 'country') {
       setActiveField(field.key);
       setShowCountryModal(true);
-    // } else if (field.type === 'date') {
-    //   setShowCalendar(true);
     } else if (field.type === 'options') {
       setActiveField(field.key);
       setModalOptions(field.options);
@@ -462,6 +475,7 @@ const [currentIndex, setCurrentIndex] = useState(0);
       handleCameraCapture();
     }
   };
+
 
   // Check if current fields are valid
   const areCurrentFieldsValid = () => {
@@ -477,12 +491,14 @@ const [currentIndex, setCurrentIndex] = useState(0);
     });
   };
 
+
   // Handle next fields/page
   const handleNext = () => {
     if (!areCurrentFieldsValid()) {
       Alert.alert('Câmpuri obligatorii', 'Vă rugăm să completați toate câmpurile pentru a continua.');
       return;
     }
+
 
     // For status form, we need to check if we need to skip any conditional fields
     if (formType === 'status') {
@@ -520,6 +536,7 @@ const [currentIndex, setCurrentIndex] = useState(0);
     }
   };
 
+
   // Handle previous fields/page
   const handlePrevious = () => {
     if (currentIndex >= 2) {
@@ -530,39 +547,76 @@ const [currentIndex, setCurrentIndex] = useState(0);
       setCurrentIndex(0);
     }
   };
+
+
   React.useEffect(() => {
     if (formType === 'cmr' && authToken && driverId) {
       fetchLatestTransport(authToken, driverId);
     }
   }, [formType, authToken, driverId]);
   
+  // NEW: Prepare data with missing fields set to null for submission
+  const prepareFormDataForSubmission = () => {
+    if (formType === 'cmr') {
+      // Create a copy of the form data
+      const preparedData = { ...cmrFormData };
+      
+      // Loop through all fields defined for the form
+      cmrFields.forEach(field => {
+        // If field is empty or undefined, set it to null
+        if (preparedData[field.key] === '' || preparedData[field.key] === undefined) {
+          preparedData[field.key] = null;
+        } else if (['marci_numere', 'numar_colete', 'nr_static', 'greutate_bruta', 'cubaj'].includes(field.key)) {
+          // Ensure numeric fields are numbers
+          preparedData[field.key] = preparedData[field.key] === '' ? null : parseFloat(preparedData[field.key]);
+        }
+      });
+      
+      // Add transport_id and driver_id
+      if (transportId) {
+        preparedData.transport_id = transportId;
+      }
+      
+      if (driverId) {
+        preparedData.driver_id = driverId;
+      }
+      
+      return preparedData;
+    } else if (formType === 'status') {
+      // Create a copy of the form data
+      const preparedData = { ...statusFormData };
+      
+      // Loop through all fields defined for the form
+      statusFields.forEach(field => {
+        // If field is empty or undefined, set it to null
+        if (preparedData[field.key] === '' || preparedData[field.key] === undefined) {
+          preparedData[field.key] = null;
+        }
+      });
+      
+      return preparedData;
+    }
+    
+    return null;
+  };
+
 
   // Handle form submission
   const handleSubmit = async () => {
-    
     if (formType === 'cmr') {
       try {
-        // Create a copy of the CMR form data
-        const cmrDataToSubmit = { ...cmrFormData };
-          
-        // Ensure numeric fields are numbers, not strings
-        ['marci_numere', 'numar_colete', 'nr_static', 'greutate_bruta', 'cubaj'].forEach(field => {
-          if (cmrDataToSubmit[field] === '') {
-            cmrDataToSubmit[field] = null; // Or 0, depending on your backend requirements
-          } else if (typeof cmrDataToSubmit[field] === 'string') {
-            cmrDataToSubmit[field] = parseFloat(cmrDataToSubmit[field]);
-          }
-        });
+        // Prepare data with empty fields set to null
+        const cmrDataToSubmit = prepareFormDataForSubmission();
+        
+        if (!cmrDataToSubmit) {
+          Alert.alert('Eroare', 'Nu s-au putut pregăti datele pentru trimitere.');
+          return;
+        }
+        
         console.log('CMR Form data to submit:', cmrDataToSubmit);
         
-        // Add the transport_id to the data
-        console.log(transportId);
-        if (transportId) {
-          console.log(transportId);
-          cmrDataToSubmit.transport_id = transportId;
-          cmrDataToSubmit.driver_id= driverId
-        } else {
-          // Handle case where transport_id is not available
+        // Check for transport_id
+        if (!cmrDataToSubmit.transport_id) {
           Alert.alert(
             'Eroare',
             'ID Transport lipsă. Vă rugăm să încercați din nou.',
@@ -571,9 +625,6 @@ const [currentIndex, setCurrentIndex] = useState(0);
           return;
         }
         
-        
-        console.log('CMR Form data to submit:', cmrDataToSubmit);
-        
         // Send data to the server
         const response = await fetch(
           "https://atrux-717ecf8763ea.herokuapp.com/add_cmr/",
@@ -581,11 +632,9 @@ const [currentIndex, setCurrentIndex] = useState(0);
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              // Add Authorization header if needed
               "Authorization": `Token ${authToken}`
             },
             body: JSON.stringify(cmrDataToSubmit)
-            
           }
         );
         
@@ -593,17 +642,14 @@ const [currentIndex, setCurrentIndex] = useState(0);
           const responseData = await response.json();
           console.log('CMR submission successful:', responseData);
           setFormType(null);
-         
-              setCurrentIndex(0);
-              // Reset form data
-             
+          setCurrentIndex(0);
+          
           Alert.alert(
             'Transport Salvat',
             'Datele CMR au fost salvate cu succes!',
             [{ text: 'OK', onPress: () => navigation.goBack() }]
           );
         } else {
-          
           const errorData = await response.json();
           console.error('CMR submission failed:', errorData);
           
@@ -623,10 +669,11 @@ const [currentIndex, setCurrentIndex] = useState(0);
         );
       }
     } else if (formType === 'status') {
-      // Keep your existing status form handling logic
-      const dataToSubmit = statusFormData;
+      // Prepare status form data
+      const dataToSubmit = prepareFormDataForSubmission();
       
       console.log('STATUS Form submitted:', dataToSubmit);
+      // Add your API call for status form here
       Alert.alert(
         'Transport Salvat',
         'Datele STATUS au fost salvate cu succes!',
@@ -636,10 +683,112 @@ const [currentIndex, setCurrentIndex] = useState(0);
   };
 
 
+  // NEW: Handle submit now (bypass validation)
+  const handleSubmitNow = async () => {
+    // Show confirmation to the user
+    Alert.alert(
+      'Trimiteți formularul?',
+      'Câmpurile necompletate vor fi salvate ca goale. Doriți să continuați?',
+      [
+        {
+          text: 'Anulează',
+          style: 'cancel'
+        },
+        {
+          text: 'Trimite',
+          onPress: async () => {
+            // Directly call submission with preparation that sets empty fields to null
+            if (formType === 'cmr') {
+              try {
+                // Prepare data with empty fields set to null
+                const cmrDataToSubmit = prepareFormDataForSubmission();
+                
+                if (!cmrDataToSubmit) {
+                  Alert.alert('Eroare', 'Nu s-au putut pregăti datele pentru trimitere.');
+                  return;
+                }
+                
+                // Check for transport_id
+                if (!cmrDataToSubmit.transport_id) {
+                  Alert.alert(
+                    'Eroare',
+                    'ID Transport lipsă. Vă rugăm să încercați din nou.',
+                    [{ text: 'OK' }]
+                  );
+                  return;
+                }
+                
+                // Send data to the server
+                const response = await fetch(
+                  "https://atrux-717ecf8763ea.herokuapp.com/add_cmr/",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "Authorization": `Token ${authToken}`
+                    },
+                    body: JSON.stringify(cmrDataToSubmit)
+                  }
+                );
+                
+                if (response.ok) {
+                  const responseData = await response.json();
+                  console.log('CMR submission successful:', responseData);
+                  setFormType(null);
+                  setCurrentIndex(0);
+                  
+                  Alert.alert(
+                    'Transport Salvat',
+                    'Datele CMR au fost salvate cu succes!',
+                    [{ text: 'OK', onPress: () => navigation.goBack() }]
+                  );
+                } else {
+                  const errorData = await response.json();
+                  console.error('CMR submission failed:', errorData);
+                  
+                  Alert.alert(
+                    'Eroare',
+                    'Salvarea datelor CMR a eșuat. Vă rugăm să încercați din nou.',
+                    [{ text: 'OK' }]
+                  );
+                }
+              } catch (error) {
+                console.error('Error submitting CMR:', error);
+                
+                Alert.alert(
+                  'Eroare',
+                  'A apărut o eroare la trimiterea datelor. Verificați conexiunea la internet.',
+                  [{ text: 'OK' }]
+                );
+              }
+            } else if (formType === 'status') {
+              const dataToSubmit = prepareFormDataForSubmission();
+              console.log('STATUS Form submitted:', dataToSubmit);
+              // Add your API call for status form here
+              Alert.alert(
+                'Transport Salvat',
+                'Datele STATUS au fost salvate cu succes!',
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+              );
+            }
+          }
+        }
+      ]
+    );
+  };
+
+
   // Get progress percentage
   const getProgressPercentage = () => {
     return ((currentPage) / totalPages) * 100;
   };
+
+
+  //
+
+
+
+
 
   // Format calendar date for marking selected date
   // const getMarkedDates = () => {
@@ -724,39 +873,7 @@ const [currentIndex, setCurrentIndex] = useState(0);
     </Modal>
   );
 
-  // Render calendar modal
-  // const renderCalendarModal = () => (
-  //   <Modal
-  //     visible={showCalendar}
-  //     animationType="slide"
-  //     transparent={true}
-  //     onRequestClose={() => setShowCalendar(false)}
-  //   >
-  //     <View style={styles.modalOverlay}>
-  //       <View style={styles.modalContent}>
-  //         <View style={styles.modalHeader}>
-  //           <Text style={styles.modalTitle}>Selectați Data</Text>
-  //           <TouchableOpacity onPress={() => setShowCalendar(false)}>
-  //             <Ionicons name="close" size={24} color="#333" />
-  //           </TouchableOpacity>
-  //         </View>
-          
-  //         <Calendar
-  //           onDayPress={handleDateSelect}
-  //           markedDates={getMarkedDates()}
-  //           theme={{
-  //             todayTextColor: '#3B82F6',
-  //             selectedDayBackgroundColor: '#3B82F6',
-  //             selectedDayTextColor: '#ffffff',
-  //             arrowColor: '#3B82F6',
-  //           }}
-  //         />
-  //       </View>
-  //     </View>
-  //   </Modal>
-  // );
-
-  // Render form type selection
+  
   if (formType === null) {
     return (
       <SafeAreaView style={styles.container}>
@@ -920,11 +1037,17 @@ const [currentIndex, setCurrentIndex] = useState(0);
             <Ionicons name="arrow-back" size={20} color="white" />
             <Text style={styles.buttonText}>Înapoi</Text>
           </TouchableOpacity>
-          
+          <TouchableOpacity 
+            style={[styles.button, styles.prevButton]} 
+            onPress={handleSubmitNow}
+          >
+            <Ionicons name="arrow-back" size={20} color="white" />
+            <Text style={styles.buttonText}>Trimite acum</Text>
+          </TouchableOpacity>
           <TouchableOpacity 
             style={[
               styles.button, 
-              styles.nextButton,
+              styles.prevButton,
               !areCurrentFieldsValid() && styles.disabledButton
             ]} 
             onPress={handleNext}
@@ -953,207 +1076,304 @@ const [currentIndex, setCurrentIndex] = useState(0);
   );
 };
 
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   keyboardAvoidingView: {
     flex: 1,
   },
-  header: {
+  navigationHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: 'white',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: COLORS.border,
   },
   backButton: {
     padding: 8,
   },
-  headerTitle: {fontSize: 20,
+  headerTitle: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-     },
-    progressContainer: {
+    color: COLORS.text.dark,
+  },
+  headerCard: {
+    marginHorizontal: 20,
+    marginVertical: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  progressContainer: {
     padding: 16,
-    backgroundColor: 'white',
-     },
-    progressBar: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginVertical: 16,
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  progressBar: {
     height: 8,
     backgroundColor: '#E5E7EB',
     borderRadius: 4,
     marginBottom: 8,
-     },
-    progressFill: {
+  },
+  progressFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.primary,
     borderRadius: 4,
-     },
-    progressText: {
+  },
+  progressText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.lightAccent,
     textAlign: 'right',
-     },
-    formContainer: {
+  },
+  formContainer: {
     flex: 1,
     padding: 24,
-     },
-    inputContainer: {
-    marginBottom: 28,
-     },
-    label: {
-    fontSize: 18,
+  },
+  formCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    marginBottom: 24,
+  },
+  inputContainer: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 12,
-    color: '#333',
-     },
-    input: {
+    marginBottom: 8,
+    color: COLORS.text.light,
+    paddingLeft: 4,
+  },
+  input: {
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
+    borderColor: COLORS.border,
     borderRadius: 12,
     padding: 16,
-    fontSize: 18,
-    backgroundColor: 'white',
+    fontSize: 16,
+    backgroundColor: COLORS.card,
+    color: COLORS.text.dark,
     height: 60,
-     },
-    selectInput: {
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  selectInput: {
     borderWidth: 1.5,
-    borderColor: '#D1D5DB',
+    borderColor: COLORS.border,
     borderRadius: 12,
     padding: 16,
-    fontSize: 18,
-    backgroundColor: 'white',
+    fontSize: 16,
+    backgroundColor: COLORS.card,
     height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-     },
-    selectInputText: {
-    fontSize: 18,
-    color: '#333',
-     },
-    selectInputPlaceholder: {
-    fontSize: 18,
-    color: '#9CA3AF',
-     },
-    buttonContainer: {
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  selectInputText: {
+    fontSize: 16,
+    color: COLORS.text.dark,
+  },
+  selectInputPlaceholder: {
+    fontSize: 16,
+    color: COLORS.lightAccent,
+  },
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.card,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-     },
-    button: {
+    borderTopColor: COLORS.border,
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
-    flex: 1,
-    marginHorizontal: 8,
-     },
-    prevButton: {
-    backgroundColor: '#64748B',
-     },
-    nextButton: {
-    backgroundColor: '#3B82F6',
-     },
-    disabledButton: {
+    flex: 0.33,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  prevButton: {
+    backgroundColor: COLORS.accent,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    minWidth: 80,
+  },
+  nextButton: {
+    backgroundColor: COLORS.primary,
+  },
+  disabledButton: {
     backgroundColor: '#94A3B8',
-     },
-    buttonText: {
+  },
+  buttonText: {
     color: 'white',
     fontWeight: '600',
     fontSize: 16,
     marginHorizontal: 8,
-     },
-    // Styles for selection screen
-    selectionContainer: {
+  },
+  // Styles for selection screen
+  selectionContainer: {
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-     },
-    selectionTitle: {
-    fontSize: 22,
+  },
+  selectionTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 32,
-    color: '#333',
+    color: COLORS.primary,
     textAlign: 'center',
-     },
-    selectionButton: {
-    backgroundColor: 'white',
+  },
+  selectionButton: {
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 24,
     marginBottom: 24,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 3,
-     },
-    selectionButtonText: {
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  selectionButtonText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.text.dark,
     marginTop: 12,
     marginBottom: 8,
-     },
-    selectionDescription: {
+  },
+  selectionDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.lightAccent,
     textAlign: 'center',
-     },
-    // Modal styles
-    modalOverlay: {
+  },
+  // Modal styles
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-     },
-    modalContent: {
-    backgroundColor: 'white',
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     width: '100%',
     maxHeight: '80%',
     padding: 20,
-     },
-    modalHeader: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-     },
-    modalTitle: {
+    borderBottomColor: COLORS.border,
+  },
+  modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
-     },
-    countryItem: {
+    color: COLORS.primary,
+  },
+  countryItem: {
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-     },
-    countryText: {
-    fontSize: 18,
-    color: '#333',
-     },
-     optionItem:{
-      paddingVertical: 16,
+    borderBottomColor: COLORS.border,
+  },
+  countryText: {
+    fontSize: 16,
+    color: COLORS.text.dark,
+  },
+  optionItem: {
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-     },
-     optionText:{
-      fontSize: 18,
-    color: '#333',
-     }
-    });
+    borderBottomColor: COLORS.border,
+  },
+  optionText: {
+    fontSize: 16,
+    color: COLORS.text.dark,
+  },
+  // Loading styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    padding: 20,
+  },
+  loadingCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    width: '80%',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: COLORS.primary,
+    fontWeight: '500',
+  },
+});
+
+
     export default TransportForm; 
