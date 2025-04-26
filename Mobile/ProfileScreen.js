@@ -1,8 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = () => {
+  const navigation = useNavigation();
+  const [profileData, setProfileData] = useState({
+    company: "",
+    name: "",
+    role: "",
+    initials: ""
+  });
+  
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+  
+  const fetchProfileData = async () => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      console.log('[DEBUG] Retrieved auth token:', authToken);
+      if (!authToken) {
+        console.error('[DEBUG] No auth token found. Aborting fetch.');
+        return;
+      }
+      
+      const headers = {
+        'Authorization': `Token ${authToken}`,
+      };
+      
+      console.log('[DEBUG] Sending GET request to /get_profile with headers:', headers);
+      const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/get_profile/', {
+        method: 'GET',
+        headers: headers
+      });
+      
+      console.log('[DEBUG] Response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[DEBUG] Server responded with error:', errorText);
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('[DEBUG] Received profile data:', data);
+      
+      const nameParts = data.name.split(' ');
+      const initials = nameParts.length > 1
+        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
+        : nameParts[0].substring(0, 2);
+      
+      setProfileData({
+        name: data.name,
+        role: "Sofer",
+        initials: initials.toUpperCase(),
+        company: data.company || "" // Add the company field here
+      });
+      
+    } catch (error) {
+      console.error('[DEBUG] Caught error in fetchProfileData:', error);
+    }
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -19,13 +79,12 @@ const ProfileScreen = () => {
       
       {/* Profile Info */}
       <View style={styles.profileInfoContainer}>
-        <Image 
-          source={{ uri: 'https://via.placeholder.com/150' }}
-          style={styles.profileImage}
-        />
+      <View style={styles.profileContainer}>
+            <Text style={styles.profileInitials}>{profileData.initials}</Text>
+          </View>
         <View style={styles.profileTextContainer}>
-          <Text style={styles.profileName}>Andrei Popescu</Text>
-          <Text style={styles.profileRole}>Driver</Text>
+          <Text style={styles.profileName}>{profileData.name}</Text>
+          <Text style={styles.profileRole}>{profileData.role}</Text>
         </View>
         <TouchableOpacity style={styles.notificationButton}>
           <Feather name="bell" size={24} color="#000" />
@@ -33,56 +92,41 @@ const ProfileScreen = () => {
       </View>
       
       {/* Profile Details Section */}
-      <View style={styles.sectionContainer}>
-        <View style={styles.sectionHeader}>
-          <View style={styles.iconCircle}>
-            <Feather name="user" size={20} color="#777" />
-          </View>
-          <View style={styles.sectionTitleContainer}>
-            <Text style={styles.sectionTitle}>Profile details</Text>
-            <Text style={styles.sectionSubtitle}>Manage your account</Text>
-          </View>
-          <Ionicons name="chevron-down" size={24} color="#777" />
-        </View>
-      </View>
+     
       
       {/* General Data Section */}
       <View style={styles.dataContainer}>
-        <Text style={styles.dataTitle}>General data</Text>
+        <Text style={styles.dataTitle}>Date generale</Text>
         
         <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>Company</Text>
+          <Text style={styles.dataLabel}>Companie</Text>
           <Text style={styles.dataDivider}>|</Text>
-          <Text style={styles.dataValue}>Gigi Trans SRL</Text>
+          <Text style={styles.dataValue}>{profileData.company}</Text>
         </View>
         
         <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>Truck ID</Text>
+          <Text style={styles.dataLabel}>Camion actual</Text>
           <Text style={styles.dataDivider}>|</Text>
           <Text style={styles.dataValue}>TRK-7842</Text>
         </View>
         
         <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>License</Text>
+          <Text style={styles.dataLabel}>Expirare Permis</Text>
           <Text style={styles.dataDivider}>|</Text>
           <Text style={styles.dataValue}>B-234567</Text>
         </View>
         
         <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>Phone</Text>
+          <Text style={styles.dataLabel}>Telefon:</Text>
           <Text style={styles.dataDivider}>|</Text>
           <Text style={styles.dataValue}>0745123456</Text>
         </View>
         
-        <View style={styles.dataRow}>
-          <Text style={styles.dataLabel}>Email</Text>
-          <Text style={styles.dataDivider}>|</Text>
-          <Text style={styles.dataValue}>andrei.driver@gmail.com</Text>
-        </View>
+       
       </View>
       
       {/* Settings Section */}
-      <Text style={styles.settingsTitle}>Settings</Text>
+      <Text style={styles.settingsTitle}>Setari</Text>
       
       {/* Notifications Section */}
       <View style={styles.settingContainer}>
@@ -90,8 +134,8 @@ const ProfileScreen = () => {
           <Feather name="bell" size={20} color="#777" />
         </View>
         <View style={styles.settingTextContainer}>
-          <Text style={styles.settingTitle}>Notifications</Text>
-          <Text style={styles.settingSubtitle}>Manage your notifications</Text>
+          <Text style={styles.settingTitle}>Notificari</Text>
+          <Text style={styles.settingSubtitle}>Editeaza notificarile</Text>
         </View>
         <Ionicons name="chevron-down" size={24} color="#777" />
       </View>
@@ -102,8 +146,8 @@ const ProfileScreen = () => {
           <Feather name="map" size={20} color="#777" />
         </View>
         <View style={styles.settingTextContainer}>
-          <Text style={styles.settingTitle}>Routes</Text>
-          <Text style={styles.settingSubtitle}>View your assigned routes</Text>
+          <Text style={styles.settingTitle}>Rute</Text>
+          <Text style={styles.settingSubtitle}>Vezi istoricul rutelor</Text>
         </View>
         <Ionicons name="chevron-down" size={24} color="#777" />
       </View>
@@ -114,15 +158,49 @@ const ProfileScreen = () => {
           <Feather name="phone" size={20} color="#777" />
         </View>
         <View style={styles.settingTextContainer}>
-          <Text style={styles.settingTitle}>Dispatcher Contact</Text>
-          <Text style={styles.settingSubtitle}>Contact your dispatcher</Text>
+          <Text style={styles.settingTitle}>Contact dispecer</Text>
+          <Text style={styles.settingSubtitle}>Contacteaza-ti telefonic dispecerul</Text>
         </View>
         <Ionicons name="chevron-down" size={24} color="#777" />
       </View>
       
       {/* Sign Out Button */}
-      <TouchableOpacity style={styles.signOutButton}>
-        <Text style={styles.signOutText}>Sign out</Text>
+      <TouchableOpacity style={styles.signOutButton}
+       onPress={async () => {
+        try {
+          const token = await AsyncStorage.getItem('authToken');
+    
+          if (!token) {
+            alert('No token found.');
+            return;
+          }
+    
+          const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/auth/token/logout', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+    
+          if (response.ok) {
+            // Navigate to Login
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          } else {
+            const err = await response.json();
+            console.error('Logout failed:', err);
+            alert('Logout failed.');
+          }
+        } catch (error) {
+          console.error('Logout error:', error);
+          alert('Something went wrong during logout.');
+        }
+      }}
+      >
+        <Text style={styles.signOutText}>Delogheaza-te</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -289,6 +367,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#F44336',
     fontWeight: '500',
+  },
+  profileContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#6366F1",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

@@ -18,7 +18,7 @@ const Tab = createBottomTabNavigator();
 const HomeStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="HomeScreen" component={HomeScreen}/> 
+      <Stack.Screen name="HomeScreen" component={HomeScreen}/>
     </Stack.Navigator>
   );
 };
@@ -61,7 +61,6 @@ const TabNavigator = () => {
       <Tab.Screen name="Home" component={HomeStack} />
       <Tab.Screen name="Transports" component={TransportsStack} />
       <Tab.Screen name="Profile" component={ProfileStack} />
-      
     </Tab.Navigator>
   );
 };
@@ -69,9 +68,19 @@ const TabNavigator = () => {
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator 
+        initialRouteName="Login"
+        screenOptions={{ headerShown: false }}
+      >
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Main" component={TabNavigator} />
+        <Stack.Screen 
+          name="Main" 
+          component={TabNavigator} 
+          options={{
+            gestureEnabled: false,  // Disable swipe back gesture
+            headerLeft: null,       // Remove back button
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -102,41 +102,74 @@ const LoginScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Card style={styles.card}>
-        <Card.Content>
-          <Image source={require("./assets/LOGO_ATRUX.jpeg")} style={styles.logo} />
-          <Title style={styles.title}>Log In</Title>
-          <TextInput
-            label="Email Address"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-            mode="outlined"
-          />
-          <TextInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-            mode="outlined"
-          />
-          <TouchableOpacity>
-            <Text style={styles.forgotPassword}>Forgot password?</Text>
-          </TouchableOpacity>
-          <Button mode="contained" onPress={handleLogin} style={styles.button}>
-            Log In
-          </Button>
-          <Text style={styles.signupText}>
-            Don't have an account? <Text style={styles.signupLink}>Create Account</Text>
-          </Text>
-          
-        </Card.Content>
-      </Card>
+      <View style={styles.headerCard}>
+        <Image source={require("./assets/LOGO_ATRUX.jpeg")} style={styles.logo} />
+        <Text style={styles.headerTitle}>Bine ai venit!</Text>
+        <Text style={styles.headerSubtitle}>Logheaza-te pentru a continua</Text>
+      </View>
+      
+      <View style={styles.formCard}>
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Adresa de email</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              style={styles.input}
+              mode="flat"
+              underlineColor="transparent"
+              theme={{ colors: { primary: '#3B82F6' } }}
+            />
+          </View>
+        </View>
+
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Parola</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={styles.input}
+              mode="flat"
+              underlineColor="transparent"
+              theme={{ colors: { primary: '#3B82F6' } }}
+            />
+          </View>
+        </View>
+
+        <TouchableOpacity>
+          <Text style={styles.forgotPassword}>Ai uitat parola?</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.submitButton}
+          onPress={handleLogin}
+        >
+          <Text style={styles.submitButtonText}>Logheaza-te</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.signupText}>
+          Nu ai un cont? <Text style={styles.signupLink}>Creeaza contul</Text>
+        </Text>
+      </View>
     </View>
   );
+};
+
+const COLORS = {
+  background: '#f5f5f5',
+  card: '#ffffff',
+  primary: '#5A5BDE',
+  accent: '#64748B',
+  lightAccent: '#6B7280',
+  border: '#D1D5DB',
+  text: {
+    dark: '#333333',
+    light: '#6B7280',
+  },
 };
 
 const styles = StyleSheet.create({
@@ -144,68 +177,106 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ffffff",
+    backgroundColor: COLORS.background,
     padding: 20,
   },
-  card: {
-    width: "100%",
+  headerCard: {
+    width: '100%',
     maxWidth: 400,
+    marginVertical: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
     padding: 20,
-    elevation: 5,
-    borderRadius: 10,
-    backgroundColor: "#ffffff",
+    alignItems: 'center',
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
   },
   logo: {
-    width: 100,
-    height: 100,
-    alignSelf: "center",
+    width: 80,
+    height: 80,
     marginBottom: 15,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: COLORS.lightAccent,
+  },
+  formCard: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  inputWrapper: {
     marginBottom: 20,
-    color: "#3b82f6",
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: COLORS.text.light,
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  inputContainer: {
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 2, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    height: 56,
   },
   input: {
-    marginBottom: 15,
+    backgroundColor: 'transparent',
+    height: 54,
   },
   forgotPassword: {
-    color: "red",
+    color: COLORS.primary,
     textAlign: "right",
-    marginBottom: 15,
+    marginBottom: 24,
+    marginTop: 8,
   },
-  button: {
+  submitButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: 10,
     marginTop: 10,
-    borderRadius: 25,
-    paddingVertical: 8,
-    backgroundColor: "#3b82f6",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  submitButtonText: {
+    color: COLORS.card,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   signupText: {
     textAlign: "center",
-    marginTop: 15,
-    color: "gray",
+    marginTop: 24,
+    color: COLORS.text.light,
   },
   signupLink: {
     fontWeight: "bold",
-    color: "black",
-  },
-  orText: {
-    textAlign: "center",
-    marginVertical: 10,
-    color: "gray",
-  },
-  socialContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  socialIcon: {
-    width: 40,
-    height: 40,
-    marginHorizontal: 10,
+    color: COLORS.primary,
   },
 });
-
 export default LoginScreen;
