@@ -119,8 +119,6 @@ const LoginScreen = () => {
               autoCapitalize="none"
               style={styles.input}
               mode="flat"
-              underlineColor="transparent"
-              theme={{ colors: { primary: '#3B82F6' } }}
             />
           </View>
         </View>
@@ -241,6 +239,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     height: 56,
+    underlineColor: 'transparent',
   },
   input: {
     backgroundColor: 'transparent',
