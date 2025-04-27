@@ -10,7 +10,7 @@ import TransportStatus from "./TransportStatus.js";
 import ProfileScreen from "./ProfileScreen.js";
 import DocumentsScreen from "./DocumentsGeneral.js";
 import Transport_Update from "./Modify_transport_page.js";
-
+import Truck from "./Truck.js";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -19,6 +19,7 @@ const HomeStack = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeScreen" component={HomeScreen}/>
+      <Stack.Screen name="Truck" component={Truck} />
     </Stack.Navigator>
   );
 };

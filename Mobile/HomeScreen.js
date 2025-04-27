@@ -159,7 +159,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
             
             {/* Trucks Button */}
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Camion')}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Truck')}>
               <View style={[styles.actionIconContainer, {backgroundColor: '#FEF2F2'}]}>
                 <Ionicons name="car-outline" size={24} color="#EF4444" />
               </View>
