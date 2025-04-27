@@ -13,7 +13,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
 const TransportsScreen = ({ navigation, route }) => {
   const [transports, setTransports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,170 +122,209 @@ const TransportsScreen = ({ navigation, route }) => {
     navigation.navigate('Transport_Update', { transport: transport });
   };
 
-  const renderStatusIcon = (status) => {
-    if (status === 'ok') {
-      return <Ionicons name="checkmark-circle" size={20} color="green" />;
-    } else if (status === 'probleme') {
-      return <Ionicons name="warning" size={20} color="orange" />;
-    } else {
-      return <Ionicons name="alert-circle" size={20} color="red" />;
-    }
+  const getStatusColor = (status) => {
+    if (status === 'ok') return '#10B981'; // Green like statusIndicator in second file
+    if (status === 'probleme') return '#F59E0B'; // Orange/amber color
+    return '#EF4444'; // Red for errors
+  };
+
+  const getStatusIcon = (status) => {
+    if (status === 'ok') return 'checkmark-circle';
+    if (status === 'probleme') return 'warning';
+    return 'alert-circle';
   };
 
   const renderTransportItem = ({ item }) => (
     <View style={styles.transportCard}>
-    <View style={styles.transportHeader}>
-      <Text style={styles.transportTitle}>Transport #{item.id}</Text>
-      <TouchableOpacity 
-        style={styles.modifyButton} 
-        onPress={() => handleModifyData(item)}  // Make sure you're passing the entire item
-      >
-        <Text style={styles.modifyButtonText}>Modifică</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.transportHeader}>
+        <View>
+          <Text style={styles.transportTitle}>Transport #{item.id}</Text>
+          <Text style={styles.transportSubtitle}>{item.truck_combination || 'N/A'}</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.modifyButton} 
+          onPress={() => handleModifyData(item)}
+        >
+          <Text style={styles.modifyButtonText}>Modifică</Text>
+          <Ionicons name="create-outline" size={16} color="#6366F1" />
+        </TouchableOpacity>
+      </View>
       
       <View style={styles.transportDetails}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Combinație camion:</Text>
-          <Text style={styles.detailValue}>{item.truck_combination || 'N/A'}</Text>
+        <View style={styles.detailSection}>
+          <View style={styles.sectionTitle}>
+            <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitleText}>Status Transport</Text>
+          </View>
+          
+          <View style={styles.detailGrid}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status camion</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_truck)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_truck)} size={16} color={getStatusColor(item.status_truck)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>{item.status_truck || 'N/A'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status marfă</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_goods)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_goods)} size={16} color={getStatusColor(item.status_goods)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>{item.status_goods || 'N/A'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status remorcă</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_trailer_wagon)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_trailer_wagon)} size={16} color={getStatusColor(item.status_trailer_wagon)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>{item.status_trailer_wagon || 'N/A'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status transport</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_transport)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_transport)} size={16} color={getStatusColor(item.status_transport)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>{item.status_transport || 'N/A'}</Text>
+              </View>
+            </View>
+          </View>
         </View>
         
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Status camion:</Text>
-          <View style={styles.statusContainer}>
-            {renderStatusIcon(item.status_truck)}
-            <Text style={styles.detailValue}>{item.status_truck || 'N/A'}</Text>
+        <View style={styles.detailSection}>
+          <View style={styles.sectionTitle}>
+            <Ionicons name="information-circle" size={18} color="#6366F1" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitleText}>Detalii Transport</Text>
+          </View>
+          
+          <View style={styles.detailGrid}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status cuplaj</Text>
+              <Text style={styles.detailValue}>{item.status_coupling || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Tip remorcă</Text>
+              <Text style={styles.detailValue}>{item.trailer_type || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Număr remorcă</Text>
+              <Text style={styles.detailValue}>{item.trailer_number || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Încărcare</Text>
+              <Text style={styles.detailValue}>
+                {item.status_loaded_truck === 'loaded' ? 'Încărcat' : 'Neîncărcat'}
+              </Text>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Detracție</Text>
+              <Text style={styles.detailValue}>{item.detraction || 'N/A'}</Text>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Dispecer ID</Text>
+              <Text style={styles.detailValue}>{item.dispatcher || 'N/A'}</Text>
+            </View>
           </View>
         </View>
         
         {item.status_truck_text && (
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Detalii status camion:</Text>
-            <Text style={styles.detailValue}>{item.status_truck_text}</Text>
+          <View style={styles.notesSection}>
+            <View style={styles.sectionTitle}>
+              <Ionicons name="document-text" size={18} color="#6366F1" style={styles.sectionIcon} />
+              <Text style={styles.sectionTitleText}>Notă</Text>
+            </View>
+            <Text style={styles.noteText}>{item.status_truck_text}</Text>
           </View>
         )}
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Status marfă:</Text>
-          <View style={styles.statusContainer}>
-            {renderStatusIcon(item.status_goods)}
-            <Text style={styles.detailValue}>{item.status_goods || 'N/A'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Status cuplaj:</Text>
-          <Text style={styles.detailValue}>{item.status_coupling || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Tip remorcă:</Text>
-          <Text style={styles.detailValue}>{item.trailer_type || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Număr remorcă:</Text>
-          <Text style={styles.detailValue}>{item.trailer_number || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Status remorcă:</Text>
-          <View style={styles.statusContainer}>
-            {renderStatusIcon(item.status_trailer_wagon)}
-            <Text style={styles.detailValue}>{item.status_trailer_wagon || 'N/A'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Status încărcare:</Text>
-          <Text style={styles.detailValue}>
-            {item.status_loaded_truck === 'loaded' ? 'Încărcat' : 'Neîncărcat'}
-          </Text>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Detracție:</Text>
-          <Text style={styles.detailValue}>{item.detraction || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Status transport:</Text>
-          <View style={styles.statusContainer}>
-            {renderStatusIcon(item.status_transport)}
-            <Text style={styles.detailValue}>{item.status_transport || 'N/A'}</Text>
-          </View>
-        </View>
-
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Dispecer ID:</Text>
-          <Text style={styles.detailValue}>{item.dispatcher || 'N/A'}</Text>
-        </View>
       </View>
     </View>
   );
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366F1" />
+          <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Transporturile Mele</Text>
-        <View style={{ width: 24 }} />
-      </View>
-      
-      {transports.length > 0 ? (
-        <FlatList
-          data={transports}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderTransportItem}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={['#3B82F6']}
-            />
-          }
-        />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="car-outline" size={60} color="#ccc" />
-          <Text style={styles.emptyText}>Nu există transporturi disponibile</Text>
-          <TouchableOpacity
-            style={styles.refreshButton}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Transporturile Mele</Text>
+          <TouchableOpacity 
+            style={styles.refreshIconButton}
             onPress={onRefresh}
           >
-            <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
+            <Ionicons name="refresh" size={22} color="#6366F1" />
           </TouchableOpacity>
         </View>
-      )}
+        
+        {transports.length > 0 ? (
+          <FlatList
+            data={transports}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderTransportItem}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#6366F1']}
+              />
+            }
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <View style={styles.emptyIconContainer}>
+              <Ionicons name="car-outline" size={40} color="#6366F1" />
+            </View>
+            <Text style={styles.emptyTitle}>Niciun transport găsit</Text>
+            <Text style={styles.emptyText}>Nu există transporturi disponibile în acest moment</Text>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={onRefresh}
+            >
+              <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
+              <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f8f9fa",
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f8f9fa",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f8f9fa",
   },
   loadingText: {
     marginTop: 12,
@@ -297,10 +335,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#f0f0f0',
   },
   headerTitle: {
     fontSize: 18,
@@ -309,6 +348,13 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+  },
+  refreshIconButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
   },
   listContainer: {
     padding: 16,
@@ -318,10 +364,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
     overflow: 'hidden',
   },
   transportHeader: {
@@ -329,51 +375,96 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#3B82F6',
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   transportTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#333',
+  },
+  transportSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
   },
   modifyButton: {
-    backgroundColor: 'white',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
   modifyButtonText: {
-    color: '#3B82F6',
-    fontWeight: 'bold',
+    color: '#6366F1',
+    fontWeight: '500',
     fontSize: 14,
+    marginRight: 4,
   },
   transportDetails: {
     padding: 16,
   },
-  detailRow: {
+  detailSection: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
     flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    marginRight: 6,
+  },
+  sectionTitleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  detailGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  },
+  detailItem: {
+    width: '48%',
+    marginBottom: 12,
   },
   detailLabel: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#666',
-    flex: 1,
+    marginBottom: 4,
   },
   detailValue: {
     fontSize: 15,
     fontWeight: '500',
     color: '#333',
-    flex: 1,
-    textAlign: 'right',
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  statusIcon: {
+    marginRight: 4,
+  },
+  statusText: {
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  notesSection: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
+  },
+  noteText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
   emptyContainer: {
     flex: 1,
@@ -381,18 +472,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
   emptyText: {
     fontSize: 16,
     color: '#666',
-    marginTop: 12,
-    marginBottom: 20,
+    marginBottom: 24,
     textAlign: 'center',
   },
   refreshButton: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
+    flexDirection: 'row',
+    backgroundColor: '#6366F1',
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
+    alignItems: 'center',
   },
   refreshButtonText: {
     color: 'white',
