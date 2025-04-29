@@ -852,6 +852,7 @@ const TransportForm = ({ navigation }) => {
   );
 
   
+  
   if (formType === null) {
     return (
       <SafeAreaView style={styles.container}>
@@ -859,35 +860,70 @@ const TransportForm = ({ navigation }) => {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Tip Transport</Text>
+          <Text style={styles.headerTitle}>Transport actual</Text>
           <View style={{ width: 24 }} />
         </View>
-        <View style={styles.selectionContainer}>
-          <Text style={styles.selectionTitle}>Alegeți tipul de formular:</Text>
-          <TouchableOpacity
-            style={styles.selectionButton}
-            onPress={() => setFormType('cmr')}
-          >
-            <Ionicons name="document-text-outline" size={40} color="#3B82F6" />
-            <Text style={styles.selectionButtonText}>CMR</Text>
-            <Text style={styles.selectionDescription}>
-              Scrisoare de transport internațional de mărfuri (Expeditor, Destinatar, etc.)
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.selectionButton}
-            onPress={() => setFormType('status')}
-          >
-            <Ionicons name="car-outline" size={40} color="#3B82F6" />
-            <Text style={styles.selectionButtonText}>Status Transport</Text>
-            <Text style={styles.selectionDescription}>
-              Informații despre starea camionului, mărfii și a transportului
-            </Text>
-          </TouchableOpacity>
-        </View>
+        
+        <ScrollView 
+          contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* UIT Code Information */}
+          <View style={styles.uitCodeContainer}>
+            <Text style={styles.uitLabel}>COD UIT:</Text>
+            <Text style={styles.uitCode}>TR-8529-RO</Text>
+          </View>
+          
+          <View style={styles.selectionContainer}>
+            <Text style={styles.selectionTitle}>Alegeți tipul de formular:</Text>
+            
+            {/* CMR Button */}
+            <TouchableOpacity
+              style={[styles.selectionButton, { marginBottom: 20 }]}
+              onPress={() => setFormType('cmr')}
+            >
+              <Ionicons name="document-text-outline" size={40} color="#3B82F6" />
+              <Text style={styles.selectionButtonText}>CMR</Text>
+              <Text style={styles.selectionDescription}>
+                Scrisoare de transport internațional de mărfuri (Expeditor, Destinatar, etc.)
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Transport Status Button */}
+            <TouchableOpacity
+              style={[styles.selectionButton, { marginBottom: 20 }]}
+              onPress={() => setFormType('status')}
+            >
+              <Ionicons name="car-outline" size={40} color="#3B82F6" />
+              <Text style={styles.selectionButtonText}>Status Transport</Text>
+              <Text style={styles.selectionDescription}>
+                Informații despre starea camionului, mărfii și a transportului
+              </Text>
+            </TouchableOpacity>
+            
+            {/* Download CMR Button */}
+            <TouchableOpacity 
+              style={styles.downloadButton} 
+              onPress={() => handleDownloadCMR()}
+            >
+              <Ionicons name="cloud-download-outline" size={24} color="#FFFFFF" />
+              <Text style={styles.downloadButtonText}>Descarcă acum CMR-ul</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
+  
+  // Add this function to handle the download
+  const handleDownloadCMR = () => {
+    // Implement download functionality here
+    Alert.alert(
+      'Descărcare CMR',
+      'Descărcarea documentului CMR a început.',
+      [{ text: 'OK' }]
+    );
+  };
 
   // Render input based on field type
   const renderInput = (field) => {
@@ -905,18 +941,6 @@ const TransportForm = ({ navigation }) => {
           <Ionicons name="chevron-down" size={20} color="#6B7280" />
         </TouchableOpacity>
       );
-    // } else if (field.type === 'date') {
-    //   return (
-    //     <TouchableOpacity
-    //       style={styles.selectInput}
-    //       onPress={() => handleFieldTouch(field)}
-    //     >
-    //       <Text style={styles.selectInputText}>
-    //         {formData[field.key]}
-    //       </Text>
-    //       <Ionicons name="calendar" size={20} color="#6B7280" />
-    //     </TouchableOpacity>
-    //   );
     } else if (field.type === 'options') {
       return (
         <TouchableOpacity
@@ -1075,6 +1099,90 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  uitCodeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F7FA',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginHorizontal: 24,
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  uitLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4B5563',
+    marginRight: 8,
+  },
+  uitCode: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#6366F1',
+  },
+  selectionContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    alignItems: 'center',
+  },
+  selectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 24,
+    color: COLORS.primary,
+    textAlign: 'center',
+  },
+  selectionButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: '100%',
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#EEF0F2',
+  },
+  selectionButtonText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text.dark,
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  selectionDescription: {
+    fontSize: 14,
+    color: COLORS.lightAccent,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  downloadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6366F1',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+    width: '100%',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  downloadButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginLeft: 10,
   },
   headerTitle: {
     fontSize: 18,
