@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   SafeAreaView,
-  View,
+    View,
   Text,
   FlatList,
   StyleSheet,
@@ -28,7 +28,6 @@ const TransportsScreen = ({ navigation, route }) => {
         console.log('Attempting to load auth token from AsyncStorage');
         const token = await AsyncStorage.getItem('authToken');
         console.log('Token from AsyncStorage:', token ? 'Token exists' : 'No token found');
-        
         if (token) {
           setAuthToken(token);
           console.log('Auth token loaded and set in state');
@@ -37,17 +36,18 @@ const TransportsScreen = ({ navigation, route }) => {
         } else {
           console.error("No auth token found in AsyncStorage");
           setLoading(false);
-          Alert.alert('Eroare', 'Sesiune expirată. Vă rugăm să vă autentificați din nou.');
+          // Instead of showing an alert here, just keep loading state
         }
       } catch (error) {
         console.error("Error loading auth token:", error);
         setLoading(false);
-        Alert.alert('Eroare', 'Nu s-a putut încărca token-ul de autentificare.');
+        // Instead of showing an alert here, just keep loading state
       }
     };
-    
     loadAuthToken();
   }, []);
+
+;
   
   // Fetch latest transport when driverId or authToken changes
   useEffect(() => {
@@ -246,13 +246,13 @@ const TransportsScreen = ({ navigation, route }) => {
     </View>
   );
 
-  if (loading && !refreshing) {
+  if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
-        </View>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+
       </SafeAreaView>
     );
   }
@@ -506,6 +506,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff' // Or whatever background color you prefer
+  }
 });
 
 export default TransportsScreen;

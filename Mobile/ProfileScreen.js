@@ -69,12 +69,13 @@ const ProfileScreen = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuButton}>
-          <Feather name="menu" size={24} color="#000" />
-        </TouchableOpacity>
+      <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+        
       </View>
       
       {/* Profile Info */}
@@ -86,9 +87,7 @@ const ProfileScreen = () => {
           <Text style={styles.profileName}>{profileData.name}</Text>
           <Text style={styles.profileRole}>{profileData.role}</Text>
         </View>
-        <TouchableOpacity style={styles.notificationButton}>
-          <Feather name="bell" size={24} color="#000" />
-        </TouchableOpacity>
+        
       </View>
       
       {/* Profile Details Section */}
@@ -218,11 +217,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backButton: {
-    padding: 4,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
   },
-  menuButton: {
-    padding: 4,
-  },
+  
   profileInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',

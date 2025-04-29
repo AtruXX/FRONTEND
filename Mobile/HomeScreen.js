@@ -136,9 +136,7 @@ const HomeScreen = () => {
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Acțiuni rapide</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Vezi toate</Text>
-            </TouchableOpacity>
+            
           </View>
           
           <View style={styles.actionsGrid}>

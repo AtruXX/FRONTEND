@@ -784,28 +784,6 @@ const TransportForm = ({ navigation }) => {
   };
 
 
-  //
-
-
-
-
-
-  // Format calendar date for marking selected date
-  // const getMarkedDates = () => {
-  //   if (formType === 'cmr' && cmrFormData.data_incarcare) {
-  //     const parts = cmrFormData.data_incarcare.split('/');
-  //     if (parts.length === 3) {
-  //       const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-  //       return {
-  //         [formattedDate]: { selected: true, selectedColor: '#3B82F6' }
-  //       };
-  //     }
-  //   }
-   
-  //   return {};
-  // };
-
-  // Render country selection modal
   const renderCountryModal = () => (
     <Modal
       visible={showCountryModal}
@@ -884,26 +862,23 @@ const TransportForm = ({ navigation }) => {
           <Text style={styles.headerTitle}>Tip Transport</Text>
           <View style={{ width: 24 }} />
         </View>
-
         <View style={styles.selectionContainer}>
           <Text style={styles.selectionTitle}>Alegeți tipul de formular:</Text>
-          
-          <TouchableOpacity 
-            style={styles.selectionButton} 
+          <TouchableOpacity
+            style={styles.selectionButton}
             onPress={() => setFormType('cmr')}
           >
-            <Ionicons name="document-text-outline" size={36} color="#3B82F6" />
+            <Ionicons name="document-text-outline" size={40} color="#3B82F6" />
             <Text style={styles.selectionButtonText}>CMR</Text>
             <Text style={styles.selectionDescription}>
               Scrisoare de transport internațional de mărfuri (Expeditor, Destinatar, etc.)
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.selectionButton} 
+          <TouchableOpacity
+            style={styles.selectionButton}
             onPress={() => setFormType('status')}
           >
-            <Ionicons name="car-outline" size={36} color="#3B82F6" />
+            <Ionicons name="car-outline" size={40} color="#3B82F6" />
             <Text style={styles.selectionButtonText}>Status Transport</Text>
             <Text style={styles.selectionDescription}>
               Informații despre starea camionului, mărfii și a transportului
@@ -1090,25 +1065,32 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
   },
-  navigationHeader: {
+ 
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: '#f0f0f0',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
   backButton: {
     padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text.dark,
-  },
-  headerCard: {
+  refreshIconButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+  },Card: {
     marginHorizontal: 20,
     marginVertical: 16,
     backgroundColor: COLORS.card,
@@ -1263,37 +1245,43 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
   },
   selectionTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
-    marginBottom: 32,
-    color: COLORS.primary,
+    marginBottom: 40,
+    color: COLORS.text.light,
     textAlign: 'center',
   },
   selectionButton: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 28,
+    marginBottom: 28,
     alignItems: 'center',
+    width: '90%',
     shadowColor: '#A7A9AF',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#EEF0F2',
   },
   selectionButtonText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: COLORS.text.dark,
-    marginTop: 12,
-    marginBottom: 8,
+    marginTop: 16,
+    marginBottom: 12,
   },
   selectionDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.lightAccent,
     textAlign: 'center',
+    lineHeight: 22,
   },
   // Modal styles
   modalOverlay: {
