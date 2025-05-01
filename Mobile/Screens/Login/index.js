@@ -4,7 +4,7 @@ import { TextInput, Button, Card, Title } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-
+import { styles } from "./styles"; 
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -103,7 +103,7 @@ const LoginScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerCard}>
-        <Image source={require("../assets/LOGO_ATRUX.jpeg")} style={styles.logo} />
+        <Image source={require("../../assets/LOGO_ATRUX.jpeg")} style={styles.logo} />
         <Text style={styles.headerTitle}>Bine ai venit!</Text>
         <Text style={styles.headerSubtitle}>Logheaza-te pentru a continua</Text>
       </View>
@@ -157,125 +157,7 @@ const LoginScreen = () => {
   );
 };
 
-const COLORS = {
-  background: '#f5f5f5',
-  card: '#ffffff',
-  primary: '#5A5BDE',
-  accent: '#64748B',
-  lightAccent: '#6B7280',
-  border: '#D1D5DB',
-  text: {
-    dark: '#333333',
-    light: '#6B7280',
-  },
-};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.background,
-    padding: 20,
-  },
-  headerCard: {
-    width: '100%',
-    maxWidth: 400,
-    marginVertical: 16,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    shadowColor: '#A7A9AF',
-    shadowOffset: { width: 5, height: 5 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 15,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: COLORS.lightAccent,
-  },
-  formCard: {
-    width: '100%',
-    maxWidth: 400,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#A7A9AF',
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  inputWrapper: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: COLORS.text.light,
-    marginBottom: 8,
-    paddingLeft: 4,
-  },
-  inputContainer: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: '#A7A9AF',
-    shadowOffset: { width: 2, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-    height: 56,
-    underlineColor: 'transparent',
-  },
-  input: {
-    backgroundColor: 'transparent',
-    height: 54,
-  },
-  forgotPassword: {
-    color: COLORS.primary,
-    textAlign: "right",
-    marginBottom: 24,
-    marginTop: 8,
-  },
-  submitButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 10,
-    marginTop: 10,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  submitButtonText: {
-    color: COLORS.card,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  signupText: {
-    textAlign: "center",
-    marginTop: 24,
-    color: COLORS.text.light,
-  },
-  signupLink: {
-    fontWeight: "bold",
-    color: COLORS.primary,
-  },
-});
+
+
 export default LoginScreen;

@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import LoginScreen from "./Screens/Login.js";
+import LoginScreen from "./Screens/Login";
 import HomeScreen from "./Screens/HomeScreen.js";
 import Transports from "./Screens/Transports.js";
 import TransportStatus from "./Screens/TransportStatus.js";
