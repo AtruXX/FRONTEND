@@ -25,7 +25,8 @@ const TransportForm = ({ navigation }) => {
   // Reference for capturing images
   const [capturedImage, setCapturedImage] = useState(null);
   
-  
+  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
+
   // Current date for calendar default
   const today = new Date();
   const formattedToday = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
@@ -70,7 +71,7 @@ const TransportForm = ({ navigation }) => {
   const fetchDriverProfile = async (token) => {
     try {
       const response = await fetch(
-        "https://atrux-717ecf8763ea.herokuapp.com/get_profile/",
+        `${BASE_URL}profile/`,
         {
           method: "GET",
           headers: {
@@ -872,7 +873,7 @@ const TransportForm = ({ navigation }) => {
               onPress={() => setFormType('cmr')}
             >
               <Ionicons name="document-text-outline" size={40} color="#3B82F6" />
-              <Text style={styles.selectionButtonText}>CMR</Text>
+              <Text style={styles.selectionButtonText}>CMR Digital</Text>
               <Text style={styles.selectionDescription}>
                 Scrisoare de transport internațional de mărfuri (Expeditor, Destinatar, etc.)
               </Text>
@@ -889,7 +890,16 @@ const TransportForm = ({ navigation }) => {
                 Informații despre starea camionului, mărfii și a transportului
               </Text>
             </TouchableOpacity>
-            
+            <TouchableOpacity
+              style={[styles.selectionButton, { marginBottom: 20 }]}
+              onPress={() => setFormType('status')}
+            >
+              <Ionicons name="camera-outline" size={40} color="#3B82F6" />
+              <Text style={styles.selectionButtonText}>Fotografiaza CMR-UL</Text>
+              <Text style={styles.selectionDescription}>
+                Incarca o fotografie cu CMR-ul in format fizic
+              </Text>
+            </TouchableOpacity>
             {/* Download CMR Button */}
             <TouchableOpacity 
               style={styles.downloadButton} 
