@@ -14,7 +14,7 @@ const LoginScreen = () => {
     try {
       console.log('Fetching user profile with token');
       const response = await fetch(
-        `${BASE_URL}/api/v0.1/profile/`,
+        `${BASE_URL}profile/`,
         {
           method: "GET",
           headers: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,10 +10,12 @@ const HomeScreen = () => {
   const [profileData, setProfileData] = useState({
     name: "",
     role: "",
-    initials: ""
+    initials: "",
+    id:"",
+    on_road: false,
   });
   const [currentDate, setCurrentDate] = useState(new Date());
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com";
+  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
 
   useEffect(() => {
     fetchProfileData();
@@ -58,7 +60,7 @@ const HomeScreen = () => {
 
       console.log('[DEBUG] Sending GET request to /get_profile with headers:', headers);
 
-      const response = await fetch(`${BASE_URL}/api/v0.1/profile/`, {
+      const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: headers
       });
@@ -82,14 +84,79 @@ const HomeScreen = () => {
       setProfileData({
         name: data.name,
         role: "Sofer",
-        initials: initials.toUpperCase()
+        initials: initials.toUpperCase(),
+        id: data.id,
+        on_road: data.on_road,
       });
 
     } catch (error) {
       console.error('[DEBUG] Caught error in fetchProfileData:', error);
     }
   };
+  const [transport, setTransport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  useEffect(() => {
+    // Function to fetch the transport data
+    const fetchTransport = async () => {
+      try {
+        const authToken = await AsyncStorage.getItem('authToken');
+      console.log('[DEBUG] Retrieved auth token:', authToken);
+
+      if (!authToken) {
+        console.error('[DEBUG] No auth token found. Aborting fetch.');
+        return;
+      }
+
+      const headers = {
+        'Authorization': `Token ${authToken}`,
+      };
+
+      console.log('[DEBUG] Sending GET request to /get_profile with headers:', headers);
+
+      const response = await fetch(`${BASE_URL}transports/${profileData.id}`, {
+        method: 'GET',
+        headers: headers
+      });
+        setLoading(true);
+        
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        
+        const data = await response.json();
+        
+        // Get the last transport from the array
+        const lastTransport = data.transports[data.transports.length - 1];
+        setTransport(lastTransport);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchTransport();
+  }, []);
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Se încarcă...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Eroare: {error}</Text>
+      </View>
+    );
+  }
+
+  
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
@@ -202,36 +269,58 @@ const HomeScreen = () => {
           <View style={styles.statusHeader}>
             <Text style={styles.statusTitle}>Status Curent</Text>
             <View style={styles.statusIndicator}>
-              <Text style={styles.statusText}>La volan</Text>
-            </View>
+            <Text style={styles.statusText}>
+            {profileData.on_road === true ? 'La volan' : 'Staționare'}
+          </Text>
+           </View>
           </View>
         </View>
 
         {/* Upcoming delivery card */}
         <View style={styles.deliveryCard}>
-          <View style={styles.deliveryHeader}>
-            <View>
-              <Text style={styles.deliveryTitle}>LYON → CLUJ</Text>
-              <Text style={styles.deliverySubtitle}>Maine, 14:00</Text>
-            </View>
-            <View style={styles.deliveryBadge}>
-              <Text style={styles.deliveryBadgeText}>La timp</Text>
-            </View>
-          </View>
-          <View style={styles.deliveryDetails}>
-            <View style={styles.deliveryItem}>
-              <Ionicons name="cube-outline" size={20} color="#666" />
-              <Text style={styles.deliveryItemText}>Electronice - 2 paleti</Text>
-            </View>
-            <View style={styles.deliveryItem}>
-              <Ionicons name="navigate-outline" size={20} color="#666" />
-              <Text style={styles.deliveryItemText}>280 km</Text>
-            </View>
-          </View>
-          <TouchableOpacity style={styles.deliveryButton}>
-            <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
-          </TouchableOpacity>
+      <View style={styles.deliveryHeader}>
+        <View>
+          <Text style={styles.deliveryTitle}>
+            {transport.origin_city} → {transport.destination_city}
+          </Text>
+          <Text style={styles.deliverySubtitle}>
+            {transport.time_estimation || 'Maine, 14:00'}
+          </Text>
         </View>
+        <View style={[
+          styles.deliveryBadge,
+          transport.status_transport === 'not started' ? styles.badgeNotStarted :
+          transport.status_transport === 'in progress' ? styles.badgeInProgress :
+          transport.status_transport === 'delayed' ? styles.badgeDelayed :
+          styles.badgeCompleted
+        ]}>
+          <Text style={styles.deliveryBadgeText}>
+            {transport.status_transport === 'not started' ? 'Neînceput' :
+             transport.status_transport === 'in progress' ? 'În desfășurare' :
+             transport.status_transport === 'delayed' ? 'Întârziat' :
+             'Finalizat'}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.deliveryDetails}>
+        <View style={styles.deliveryItem}>
+          <Ionicons name="cube-outline" size={20} color="#666" />
+          <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
+        </View>
+        <View style={styles.deliveryItem}>
+          <Ionicons name="navigate-outline" size={20} color="#666" />
+          <Text style={styles.deliveryItemText}>
+            {transport.trailer_number || 'CJ12ABC'}
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity 
+        style={styles.deliveryButton}
+        onPress={() => console.log('Transport details:', transport)}
+      >
+        <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
+      </TouchableOpacity>
+    </View>
       </ScrollView>
     </SafeAreaView>
   );

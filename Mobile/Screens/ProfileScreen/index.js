@@ -11,9 +11,12 @@ const ProfileScreen = () => {
     name: "",
     role: "",
     initials: ""
+    
   });
   const [contactExpanded, setContactExpanded] = useState(false);
   const dispatcherNumber = '0745346397';
+  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
+
   const toggleContact = () => {
     setContactExpanded(!contactExpanded);
   };
@@ -49,7 +52,7 @@ const ProfileScreen = () => {
       };
 
       console.log('[DEBUG] Sending GET request to /get_profile with headers:', headers);
-      const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/get_profile/', {
+      const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: headers
       });

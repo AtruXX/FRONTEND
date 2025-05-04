@@ -20,7 +20,7 @@ const TransportsScreen = ({ navigation, route }) => {
   const [authToken, setAuthToken] = useState(null);
   const [driverId, setDriverId] = useState(route.params?.driverId || 1);
   const [transportId, setTransportId] = useState(null);
-  
+  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
   // Load auth token on component mount
   useEffect(() => {
     const loadAuthToken = async () => {
@@ -63,7 +63,7 @@ const TransportsScreen = ({ navigation, route }) => {
     
     setLoading(true);
     try {
-      const url = `https://atrux-717ecf8763ea.herokuapp.com/latest_n_transports/5/${driverId}/`;
+      const url = `${BASE_URL}transports/${driverId}`;
       console.log("Fetching URL:", url);
   
       const response = await fetch(url, {
