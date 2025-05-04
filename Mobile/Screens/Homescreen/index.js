@@ -101,44 +101,54 @@ const HomeScreen = () => {
     // Function to fetch the transport data
     const fetchTransport = async () => {
       try {
-        const authToken = await AsyncStorage.getItem('authToken');
-      console.log('[DEBUG] Retrieved auth token:', authToken);
-
-      if (!authToken) {
-        console.error('[DEBUG] No auth token found. Aborting fetch.');
-        return;
-      }
-
-      const headers = {
-        'Authorization': `Token ${authToken}`,
-      };
-
-      console.log('[DEBUG] Sending GET request to /get_profile with headers:', headers);
-
-      const response = await fetch(`${BASE_URL}transports/${profileData.id}`, {
-        method: 'GET',
-        headers: headers
-      });
         setLoading(true);
+        const authToken = await AsyncStorage.getItem('authToken');
+        console.log('[DEBUG] Retrieved auth token:', authToken);
+        
+        if (!authToken) {
+          console.error('[DEBUG] No auth token found. Aborting fetch.');
+          setLoading(false);
+          return;
+        }
+        
+        const headers = {
+          'Authorization': `Token ${authToken}`,
+        };
+        
+        // Updated URL to match your API endpoint
+        console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${profileData.id}`);
+        
+        const response = await fetch(`${BASE_URL}transports?driver_id=${profileData.id}`, {
+          method: 'GET',
+          headers: headers
+        });
         
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          throw new Error(`API request failed with status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('[DEBUG] Received transport data:', data);
         
-        // Get the last transport from the array
-        const lastTransport = data.transports[data.transports.length - 1];
-        setTransport(lastTransport);
+        if (data.transports && data.transports.length > 0) {
+          // Get the last transport from the array based on the id (assuming higher id = newer)
+          const sortedTransports = [...data.transports].sort((a, b) => b.id - a.id);
+          const lastTransport = sortedTransports[0];
+          setTransport(lastTransport);
+        } else {
+          console.log('[DEBUG] No transports found in the response');
+        }
+        
         setLoading(false);
       } catch (err) {
+        console.error('[DEBUG] Error fetching transport:', err);
         setError(err.message);
         setLoading(false);
       }
     };
-
+    
     fetchTransport();
-  }, []);
+  }, [profileData.id]); // Add profileData.id as a dependency
   if (loading) {
     return (
       <View style={styles.loadingContainer}>

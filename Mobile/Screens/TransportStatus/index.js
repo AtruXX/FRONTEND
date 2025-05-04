@@ -99,7 +99,7 @@ const TransportForm = ({ navigation }) => {
     console.log("Token:", token);
   
     try {
-      const url = `https://atrux-717ecf8763ea.herokuapp.com/latest_n_transports/1/${driverId}/`;
+      const url = `${BASE_URL}transport?driver_id=${driverId}`;
       console.log("Fetching URL:", url);
   
       const response = await fetch(url, {
