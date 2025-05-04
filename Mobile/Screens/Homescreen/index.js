@@ -13,6 +13,7 @@ const HomeScreen = () => {
     initials: ""
   });
   const [currentDate, setCurrentDate] = useState(new Date());
+  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com";
 
   useEffect(() => {
     fetchProfileData();
@@ -57,7 +58,7 @@ const HomeScreen = () => {
 
       console.log('[DEBUG] Sending GET request to /get_profile with headers:', headers);
 
-      const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/get_profile/', {
+      const response = await fetch(`${BASE_URL}/api/v0.1/profile/`, {
         method: 'GET',
         headers: headers
       });
@@ -123,7 +124,7 @@ const HomeScreen = () => {
                   return;
                 }
 
-                const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/auth/token/logout', {
+                const response = await fetch(`${BASE_URL}/api/v0.1/auth/${authToken}/logout`, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Token ${authToken}`,

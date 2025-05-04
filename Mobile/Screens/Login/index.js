@@ -9,11 +9,12 @@ const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
+  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
   const fetchUserProfile = async (token) => {
     try {
       console.log('Fetching user profile with token');
       const response = await fetch(
-        "https://atrux-717ecf8763ea.herokuapp.com/get_profile/",
+        `${BASE_URL}/api/v0.1/profile/`,
         {
           method: "GET",
           headers: {
@@ -66,7 +67,7 @@ const LoginScreen = () => {
     try {
       console.log('Attempting login with:', email);
       const response = await fetch(
-        "https://atrux-717ecf8763ea.herokuapp.com/auth/token/login/",
+        `${BASE_URL}auth/token/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
