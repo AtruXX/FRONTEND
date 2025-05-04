@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Alert, ActivityIndicator,TouchableOpacity, ScrollView, Image, Platform, Linking } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import {styles} from './styles'; // Import your styles from the styles.js file
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
 
 const DocumentsScreen = () => {
   // Sample recent documents data
   const [recentDocuments, setRecentDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [documentTitle, setDocumentTitle] = useState('Foaia de parcurs'); // Default title from UI
+  const [category, setCategory] = useState('atestate'); // Default category from your provided data
+
 
   const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
     // Function to fetch personal documents from the API
@@ -202,6 +210,156 @@ const DocumentsScreen = () => {
   }, []);
   
 
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+        const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        
+        if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
+          Alert.alert('Permission required', 'Camera and media library permissions are needed to use this feature.');
+        }
+      }
+    })();
+  }, []);
+
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'],
+        copyToCacheDirectory: true
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const fileInfo = result.assets[0];
+      const fileSize = await getFileSize(fileInfo.uri);
+      
+      if (fileSize > 10 * 1024 * 1024) { // 10MB limit
+        Alert.alert('File too large', 'Please select a file smaller than 10MB.');
+        return;
+      }
+
+      setSelectedFile(fileInfo);
+    } catch (error) {
+      console.error('Error picking document:', error);
+      Alert.alert('Error', 'An error occurred while picking the document.');
+    }
+  };
+
+  const takePicture = async () => {
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: true,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      const fileInfo = result.assets[0];
+      const fileSize = await getFileSize(fileInfo.uri);
+      
+      if (fileSize > 10 * 1024 * 1024) { // 10MB limit
+        Alert.alert('File too large', 'Please select a file smaller than 10MB.');
+        return;
+      }
+
+      setSelectedFile(fileInfo);
+    } catch (error) {
+      console.error('Error taking picture:', error);
+      Alert.alert('Error', 'An error occurred while taking the picture.');
+    }
+  };
+
+  const getFileSize = async (uri) => {
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(uri);
+      return fileInfo.size;
+    } catch (error) {
+      console.error('Error getting file size:', error);
+      return 0;
+    }
+  };
+
+  const getFileExtensionUp = (uri) => {
+    return uri.split('.').pop().toLowerCase();
+  };
+
+  const getFileName = (uri) => {
+    return uri.split('/').pop();
+  };
+
+  const uploadDocument = async () => {
+    if (!selectedFile) {
+      Alert.alert('No file selected', 'Please select a document to upload.');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      // Get the auth token from AsyncStorage
+      const authToken = await AsyncStorage.getItem('authToken');
+      
+      if (!authToken) {
+        Alert.alert('Authentication Error', 'Please log in to upload documents.');
+        setIsUploading(false);
+        return;
+      }
+
+      // Prepare file information
+      const fileUri = selectedFile.uri;
+      const fileName = getFileName(fileUri);
+      const fileExtension = getFileExtensionUp(fileUri);
+      const fileType = selectedFile.mimeType || `application/${fileExtension}`;
+      
+      // Create form data
+      const formData = new FormData();
+      
+      // Add the file
+      formData.append('document', {
+        uri: fileUri,
+        name: fileName,
+        type: fileType,
+      });
+      
+      // Add other required fields
+      formData.append('title', documentTitle);
+      formData.append('category', category);
+
+      // Make the API request
+      const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/personal-documents/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${authToken}`,
+          // Add any other headers needed from AsyncStorage
+        },
+        body: formData,
+      });
+
+      const responseData = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', 'Document uploaded successfully!');
+        // Navigate back or to a success screen
+        
+      } else {
+        console.error('Upload failed:', responseData);
+        Alert.alert('Upload Failed', responseData.message || 'An error occurred while uploading the document.');
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      Alert.alert('Error', 'An error occurred while uploading the document. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   
 
   return (
@@ -221,22 +379,30 @@ const DocumentsScreen = () => {
         {/* Upload Section */}
         <View style={styles.uploadSection}>
           <Text style={styles.sectionTitle}>Upload or take a photo of</Text>
-          <Text style={styles.documentName}>Foaia de parcurs</Text>
-          
+          <Text style={styles.documentName}>{documentTitle}</Text>
           <Text style={styles.helpText}>
             This helps you and your dispatcher access easier all the documents if needed to.
-            You can always find it in it's folder in the "Papers" section.
+            You can always find it in its folder in the "Papers" section.
           </Text>
-
-          <View style={styles.filePreviewContainer}>
-            <MaterialCommunityIcons name="file" size={40} color="#4285F4" />
-          </View>
-
-          <TouchableOpacity style={styles.uploadArea}>
+          
+          {selectedFile ? (
+            <View style={styles.filePreviewContainer}>
+              <MaterialCommunityIcons name="file-check" size={40} color="#4285F4" />
+              <Text style={styles.selectedFileName} numberOfLines={1} ellipsizeMode="middle">
+                {getFileName(selectedFile.uri)}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.filePreviewContainer}>
+              <MaterialCommunityIcons name="file" size={40} color="#4285F4" />
+            </View>
+          )}
+          
+          <TouchableOpacity style={styles.uploadArea} onPress={pickDocument}>
             <Ionicons name="add-circle-outline" size={32} color="#4285F4" />
             <Text style={styles.uploadText}>Click to upload</Text>
           </TouchableOpacity>
-
+          
           <View style={styles.fileTypesContainer}>
             <View style={styles.fileType}>
               <Text style={styles.fileTypeText}>PDF</Text>
@@ -248,19 +414,27 @@ const DocumentsScreen = () => {
               <Text style={styles.fileTypeText}>JPG</Text>
             </View>
             <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>&gt; 10 MB</Text>
+              <Text style={styles.fileTypeText}>&lt; 10 MB</Text>
             </View>
           </View>
-
+          
           <Text style={styles.orText}>Or</Text>
-
-          <TouchableOpacity style={styles.cameraButton}>
+          
+          <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
             <Ionicons name="camera" size={20} color="#4285F4" />
             <Text style={styles.cameraButtonText}>Open Camera & Take Photo</Text>
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.uploadDocumentButton}>
-            <Text style={styles.uploadDocumentButtonText}>Upload document</Text>
+          
+          <TouchableOpacity
+            style={[styles.uploadDocumentButton, (!selectedFile || isUploading) && styles.disabledButton]}
+            onPress={uploadDocument}
+            disabled={!selectedFile || isUploading}
+          >
+            {isUploading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.uploadDocumentButtonText}>Upload document</Text>
+            )}
           </TouchableOpacity>
         </View>
 
