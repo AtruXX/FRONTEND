@@ -1,47 +1,208 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Image, Platform, Linking } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import {styles} from './styles'; // Import your styles from the styles.js file
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const DocumentsScreen = () => {
   // Sample recent documents data
-  const [recentDocuments, setRecentDocuments] = useState([
-    { id: 1, name: 'Foaia de parcurs', type: 'PDF', size: '1.2 MB', date: 'Today, 10:24 AM', status: 'approved' },
-    { id: 2, name: 'Invoice TR-8742', type: 'DOCX', size: '0.8 MB', date: 'Yesterday', status: 'pending' },
-    { id: 3, name: 'Delivery confirmation', type: 'JPG', size: '2.5 MB', date: '12 Feb, 2025', status: 'approved' },
-    { id: 4, name: 'Truck maintenance report', type: 'PDF', size: '3.7 MB', date: '10 Feb, 2025', status: 'rejected' },
-    { id: 5, name: 'Route plan February', type: 'PDF', size: '0.9 MB', date: '05 Feb, 2025', status: 'approved' },
-  ]);
+  const [recentDocuments, setRecentDocuments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
+    // Function to fetch personal documents from the API
+    const fetchPersonalDocuments = async () => {
+        try {
+          // Get the authentication token from AsyncStorage
+          const authToken = await AsyncStorage.getItem('authToken');
+          
+          if (!authToken) {
+            throw new Error('Authentication token not found');
+          }
+          
+          // Set up the request with the authentication token in the header
+          const response = await fetch(`${BASE_URL}personal-documents/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Token ${authToken}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+          }
+          
+          // Parse the JSON response
+          const data = await response.json();
+          
+          // Map the API response to match the document format in your state
+          const formattedDocuments = data.map((doc) => ({
+            id: doc.id,
+            name: doc.title,
+            type: getFileExtension(doc.document),
+            size: '1.0 MB', // Placeholder size since not provided by API
+            date: new Date().toLocaleDateString(), // Current date as placeholder
+            status: getCategoryStatus(doc.category), // Map category to a status
+            url: doc.document,
+            category: doc.category
+          }));
+          
+          return formattedDocuments;
+        } catch (error) {
+          console.error('Error fetching personal documents:', error);
+          throw error;
+        }
+      };
+  
+  // Helper function to extract file extension from URL
+  const getFileExtension = (url) => {
+    if (!url) return '';
+    
+    // Extract filename from URL
+    const filename = url.split('?')[0]; // Remove query parameters
+    const extension = filename.split('.').pop().toUpperCase();
+    
+    return extension || '';
+  };
+  
+  
+  
+  // Map document category to status for display
+  const getCategoryStatus = (category) => {
+    const statusMap = {
+      'carnet_de_sofer': 'approved',
+      'atestate': 'approved',
+      // Add more category to status mappings as needed
+    };
+    
+    return statusMap[category] || 'pending';
+  };
+  
+  // Get file icon based on document type
   const getFileIcon = (type) => {
-    switch(type) {
-      case 'PDF':
-        return <MaterialCommunityIcons name="file-pdf-box" size={24} color="#E94335" />;
-      case 'DOCX':
-        return <MaterialCommunityIcons name="file-word-box" size={24} color="#4285F4" />;
-      case 'JPG':
-        return <MaterialCommunityIcons name="file-image" size={24} color="#34A853" />;
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return <MaterialIcons name="picture-as-pdf" size={24} color="#E74C3C" />;
+      case 'docx':
+      case 'doc':
+        return <MaterialIcons name="description" size={24} color="#3498DB" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return <MaterialIcons name="image" size={24} color="#27AE60" />;
       default:
-        return <MaterialCommunityIcons name="file-document" size={24} color="#777" />;
+        return <MaterialIcons name="insert-drive-file" size={24} color="#95A5A6" />;
     }
   };
-
+  
+  // Get status color based on document status
   const getStatusColor = (status) => {
-    switch(status) {
-      case 'approved': return '#34A853';
-      case 'pending': return '#FBBC05';
-      case 'rejected': return '#E94335';
-      default: return '#777';
+    switch (status) {
+      case 'approved':
+        return '#27AE60'; // Green
+      case 'pending':
+        return '#F39C12'; // Orange
+      case 'rejected':
+        return '#E74C3C'; // Red
+      default:
+        return '#95A5A6'; // Gray
     }
   };
-
+  
+  // Get status label based on document status
   const getStatusLabel = (status) => {
-    switch(status) {
-      case 'approved': return 'Approved';
-      case 'pending': return 'Pending';
-      case 'rejected': return 'Rejected';
-      default: return status;
+    switch (status) {
+      case 'approved':
+        return 'Approved';
+      case 'pending':
+        return 'Pending';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return 'Unknown';
     }
   };
+  const openDocument = async (url) => {
+    try {
+      // Check if the URL can be opened
+      const supported = await Linking.canOpenURL(url);
+      
+      if (supported) {
+        // Open the URL in device browser
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(
+          'Error',
+          'Cannot open this document. The URL may be invalid or expired.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error opening document URL:', error);
+      Alert.alert(
+        'Error',
+        'Failed to open the document. Please try again later.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+  const showDocumentOptions = (document) => {
+    Alert.alert(
+      document.name,
+      'Choose an action',
+      [
+        {
+          text: 'Open',
+          onPress: () => openDocument(document.url)
+        },
+        {
+          text: 'Share',
+          onPress: () => shareDocument(document)
+        },
+        {
+          text: 'Download',
+          onPress: () => downloadDocument(document)
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+  const shareDocument = (document) => {
+    // Implementation for sharing document
+    Alert.alert('Share', `Sharing ${document.name} functionality would be implemented here`);
+  };
+  
+  // Function to download document (placeholder)
+  const downloadDocument = (document) => {
+    // Implementation for downloading document
+    Alert.alert('Download', `Downloading ${document.name} functionality would be implemented here`);
+  };
+  
+  // Load documents when component mounts
+  useEffect(() => {
+    const loadDocuments = async () => {
+      setLoading(true);
+      try {
+        const documents = await fetchPersonalDocuments();
+        setRecentDocuments(documents);
+        setError(null);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadDocuments();
+  }, []);
+  
+
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -105,14 +266,17 @@ const DocumentsScreen = () => {
 
         {/* Recent Documents Section */}
         <View style={styles.recentDocumentsSection}>
-          <Text style={styles.recentDocumentsTitle}>Recent Documents</Text>
-          
-          {recentDocuments.map(doc => (
-            <View key={doc.id} style={styles.documentItem}>
+        <Text style={styles.recentDocumentsTitle}>Recent Documents</Text>
+        {recentDocuments.length > 0 ? (
+          recentDocuments.map(doc => (
+            <TouchableOpacity 
+              key={doc.id} 
+              style={styles.documentItem}
+              onPress={() => openDocument(doc.url)}
+            >
               <View style={styles.documentIconContainer}>
                 {getFileIcon(doc.type)}
               </View>
-              
               <View style={styles.documentInfo}>
                 <Text style={styles.documentTitle}>{doc.name}</Text>
                 <View style={styles.documentDetails}>
@@ -121,18 +285,25 @@ const DocumentsScreen = () => {
                   <Text style={styles.documentDate}>{doc.date}</Text>
                 </View>
               </View>
-              
               <View style={styles.documentStatus}>
                 <View style={[styles.statusIndicator, {backgroundColor: getStatusColor(doc.status)}]} />
                 <Text style={styles.statusText}>{getStatusLabel(doc.status)}</Text>
               </View>
-              
-              <TouchableOpacity style={styles.documentMenuButton}>
+              <TouchableOpacity 
+                style={styles.documentMenuButton}
+                onPress={(e) => {
+                  e.stopPropagation(); // Prevent triggering the parent onPress
+                  showDocumentOptions(doc);
+                }}
+              >
                 <MaterialIcons name="more-vert" size={20} color="#777" />
               </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.noDocumentsText}>No documents found</Text>
+        )}
+      </View>
       </ScrollView>
     </SafeAreaView>
   );
