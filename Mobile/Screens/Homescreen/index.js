@@ -265,7 +265,7 @@ const HomeScreen = () => {
               <Text style={styles.actionLabel}>Camion</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Transports', { screen: 'TransportStatus' })}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('TransportStatus', { screen: 'TransportStatus' })}>
               <View style={[styles.actionIconContainer, { backgroundColor: '#F0FFF4' }]}>
                 <Ionicons name="map-outline" size={28} color="#10B981" />
               </View>
