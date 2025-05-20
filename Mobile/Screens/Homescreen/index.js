@@ -40,7 +40,10 @@ const HomeScreen = () => {
     ];
     return months[month];
   };
-
+  //adaugare alagere curse
+  //curse atribuite sofer? 
+  //preluare id transport - insusire poate in get driver 
+  
   const monthName = getMonthNameRomanian(currentDate.getMonth());
   const year = currentDate.getFullYear();
 
@@ -136,7 +139,7 @@ const HomeScreen = () => {
           const lastTransport = sortedTransports[0];
           setTransport(lastTransport);
         } else {
-          console.log('[DEBUG] No transports found in the response');
+          
         }
         
         setLoading(false);
@@ -282,6 +285,9 @@ const HomeScreen = () => {
             <Text style={styles.statusText}>
             {profileData.on_road === true ? 'La volan' : 'Staționare'}
           </Text>
+          <TouchableOpacity>
+            Alege o cursa!
+          </TouchableOpacity>
            </View>
           </View>
         </View>
