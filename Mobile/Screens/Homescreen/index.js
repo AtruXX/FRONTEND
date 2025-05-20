@@ -245,7 +245,7 @@ const HomeScreen = () => {
           <View style={styles.actionsGrid}>
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Transports')}>
               <View style={[styles.actionIconContainer, { backgroundColor: '#EFF6FF' }]}>
-                <Ionicons name="subway-outline" size={24} color="#3B82F6" />
+                <Ionicons name="subway-outline" size={28} color="#3B82F6" />
               </View>
               <Text style={styles.actionLabel}>Transporturi</Text>
             </TouchableOpacity>
@@ -253,21 +253,21 @@ const HomeScreen = () => {
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Profile', { screen: 'DocumentsGeneral' })}>
 
               <View style={[styles.actionIconContainer, { backgroundColor: '#F0F9FF' }]}>
-                <Ionicons name="file-tray-full-outline" size={24} color="#0EA5E9" />
+                <Ionicons name="file-tray-full-outline" size={28} color="#0EA5E9" />
               </View>
               <Text style={styles.actionLabel}>Documente</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Truck')}>
               <View style={[styles.actionIconContainer, { backgroundColor: '#FEF2F2' }]}>
-                <Ionicons name="bus-outline" size={24} color="#EF4444" />
+                <Ionicons name="bus-outline" size={28} color="#EF4444" />
               </View>
               <Text style={styles.actionLabel}>Camion</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Transports', { screen: 'TransportStatus' })}>
               <View style={[styles.actionIconContainer, { backgroundColor: '#F0FFF4' }]}>
-                <Ionicons name="map-outline" size={24} color="#10B981" />
+                <Ionicons name="map-outline" size={28} color="#10B981" />
               </View>
               <Text style={styles.actionLabel}>Transport actual</Text>
             </TouchableOpacity>
@@ -287,6 +287,7 @@ const HomeScreen = () => {
         </View>
 
         {/* Upcoming delivery card */}
+        {transport != null  ? (
         <View style={styles.deliveryCard}>
       <View style={styles.deliveryHeader}>
         <View>
@@ -331,6 +332,7 @@ const HomeScreen = () => {
         <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
       </TouchableOpacity>
     </View>
+        ):(null)}
       </ScrollView>
     </SafeAreaView>
   );
