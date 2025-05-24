@@ -10,6 +10,21 @@ const LoginScreen = () => {
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
   const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
+  const handleForgotPassword = () => {
+    Alert.alert(
+      'Parola uitata',
+      'Te rugam sa iti contactezi administratorul firmei pentru a putea recupera credentialele.',
+      [{ text: 'OK', style: 'default' }]
+    );
+  };
+
+  const handleCreateAccount = () => {
+    Alert.alert(
+      'Creare cont',
+      'Te rugam sa vorbesti cu administratorul firmei tale pentru a putea intra in contact.',
+      [{ text: 'OK', style: 'default' }]
+    );
+  };
   const fetchUserProfile = async (token) => {
     try {
       console.log('Fetching user profile with token');
@@ -139,7 +154,7 @@ const LoginScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleForgotPassword}>
           <Text style={styles.forgotPassword}>Ai uitat parola?</Text>
         </TouchableOpacity>
         
@@ -151,8 +166,9 @@ const LoginScreen = () => {
         </TouchableOpacity>
         
         <Text style={styles.signupText}>
-          Nu ai un cont? <Text style={styles.signupLink}>Creeaza contul</Text>
+          Nu ai un cont? <Text style={styles.signupLink} onPress={handleCreateAccount}>Creeaza contul</Text>
         </Text>
+
       </View>
     </View>
   );

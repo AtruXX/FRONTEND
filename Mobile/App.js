@@ -10,6 +10,7 @@ import ProfileScreen from "./Screens/ProfileScreen";
 import DocumentsScreen from "./Screens/DocumentsGeneral";
 import Transport_Update from "./Screens/ModifyTransport";
 import Truck from "./Screens/Truck";
+import SplashScreen from "./Screens/SplashScreen";
 import { NavigationContainer } from '@react-navigation/native';
 import { Pressable, View, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -101,9 +102,10 @@ const AppNavigator = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName="Splash"
         screenOptions={{ headerShown: false }}
       >
+        <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen
           name="Main"
@@ -124,7 +126,6 @@ const AppNavigator = () => {
     </NavigationContainer>
   );
 };
-
 // Styles for the fluid tab bar
 const styles = StyleSheet.create({
   tabContainer: {
