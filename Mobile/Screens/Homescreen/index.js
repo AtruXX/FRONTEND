@@ -169,7 +169,44 @@ const HomeScreen = () => {
     );
   }
 
-  
+  const handleStatusChange = async () => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`${BASE_URL}status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Token ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          on_road: !profileData.on_road
+        })
+      });
+
+      if (response.ok) {
+        const updatedData = await response.json();
+        onStatusUpdate(updatedData);
+        
+        // Optional success feedback
+        Alert.alert(
+          'Status actualizat',
+          `Statusul a fost schimbat în: ${!profileData.on_road ? 'La volan' : 'Staționare'}`
+        );
+      } else {
+        throw new Error('Failed to update status');
+      }
+    } catch (error) {
+      Alert.alert('Eroare', 'Nu s-a putut actualiza statusul. Încearcă din nou.');
+      console.error('Status update error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const currentStatus = profileData.on_road === true ? 'La volan' : 'Staționare';
+  const nextStatus = profileData.on_road === true ? 'Staționare' : 'La volan';
+
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
@@ -279,18 +316,53 @@ const HomeScreen = () => {
 
         {/* Status Card - Current status */}
         <View style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <Text style={styles.statusTitle}>Status Curent</Text>
-            <View style={styles.statusIndicator}>
-            <Text style={styles.statusText}>
-            {profileData.on_road === true ? 'La volan' : 'Staționare'}
-          </Text>
-          <TouchableOpacity>
-            Alege o cursa!
-          </TouchableOpacity>
-           </View>
+      <View style={styles.statusHeader}>
+        <Text style={styles.statusTitle}>Statusul tau:</Text>
+        
+        <TouchableOpacity 
+          style={[
+            styles.statusButton,
+            profileData.on_road ? styles.drivingStatus : styles.parkedStatus,
+            loading && styles.disabledButton
+          ]}
+          onPress={handleStatusChange}
+          disabled={loading}
+          activeOpacity={0.7}
+        >
+          <View style={styles.statusButtonContent}>
+            {/* Status Icon/Indicator */}
+            <View style={[
+              styles.statusDot,
+              profileData.on_road ? styles.drivingDot : styles.parkedDot
+            ]} />
+            
+            {/* Current Status */}
+            <Text style={[
+              styles.currentStatusText,
+              profileData.on_road ? styles.drivingText : styles.parkedText
+            ]}>
+              {currentStatus}
+            </Text>
           </View>
-        </View>
+          
+          {/* Change Instructions */}
+          <View style={styles.changeInstructions}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#666" />
+            ) : (
+              <>
+                <Text style={styles.instructionText}>
+                  Apasă pentru a schimba statusul
+                </Text>
+                <Text style={styles.nextStatusText}>
+                  → {nextStatus}
+                </Text>
+              </>
+            )}
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
 
         {/* Upcoming delivery card */}
         {transport != null  ? (

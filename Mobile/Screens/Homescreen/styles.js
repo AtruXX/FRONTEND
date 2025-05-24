@@ -176,38 +176,107 @@ export const styles = StyleSheet.create({
     marginTop: 5,
   },
   statusCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    marginHorizontal: 20,
-    marginTop: 20,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
+  
   statusHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: 'center',
   },
+  
   statusTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },
+  
+  statusButton: {
+    width: '100%',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  
+  drivingStatus: {
+    backgroundColor: '#e8f5e8',
+    borderColor: '#4CAF50',
+  },
+  
+  parkedStatus: {
+    backgroundColor: '#e3f2fd',
+    borderColor: '#2196F3',
+  },
+  
+  disabledButton: {
+    opacity: 0.6,
+  },
+  
+  statusButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  
+  drivingDot: {
+    backgroundColor: '#4CAF50',
+  },
+  
+  parkedDot: {
+    backgroundColor: '#2196F3',
+  },
+  
+  currentStatusText: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
   },
-  statusIndicator: {
-    backgroundColor: "#10B981",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+  
+  drivingText: {
+    color: '#2E7D32',
   },
-  statusText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 12,
+  
+  parkedText: {
+    color: '#1565C0',
   },
+  
+  changeInstructions: {
+    alignItems: 'center',
+  },
+  
+  instructionText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  
+  nextStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#888',
+  },
+
   deliveryCard: {
     backgroundColor: "white",
     borderRadius: 12,
