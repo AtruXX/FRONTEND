@@ -4,14 +4,14 @@ import { useNavigation } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { styles } from "./styles"; 
+import { styles } from "./styles";
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [profileData, setProfileData] = useState({
     name: "",
     role: "",
     initials: "",
-    id:"",
+    id: "",
     on_road: false,
   });
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -43,7 +43,7 @@ const HomeScreen = () => {
   //adaugare alagere curse
   //curse atribuite sofer? 
   //preluare id transport - insusire poate in get driver 
-  
+
   const monthName = getMonthNameRomanian(currentDate.getMonth());
   const year = currentDate.getFullYear();
 
@@ -107,41 +107,41 @@ const HomeScreen = () => {
         setLoading(true);
         const authToken = await AsyncStorage.getItem('authToken');
         console.log('[DEBUG] Retrieved auth token:', authToken);
-        
+
         if (!authToken) {
           console.error('[DEBUG] No auth token found. Aborting fetch.');
           setLoading(false);
           return;
         }
-        
+
         const headers = {
           'Authorization': `Token ${authToken}`,
         };
-        
+
         // Updated URL to match your API endpoint
         console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${profileData.id}`);
-        
+
         const response = await fetch(`${BASE_URL}transports?driver_id=${profileData.id}`, {
           method: 'GET',
           headers: headers
         });
-        
+
         if (!response.ok) {
           throw new Error(`API request failed with status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         console.log('[DEBUG] Received transport data:', data);
-        
+
         if (data.transports && data.transports.length > 0) {
           // Get the last transport from the array based on the id (assuming higher id = newer)
           const sortedTransports = [...data.transports].sort((a, b) => b.id - a.id);
           const lastTransport = sortedTransports[0];
           setTransport(lastTransport);
         } else {
-          
+
         }
-        
+
         setLoading(false);
       } catch (err) {
         console.error('[DEBUG] Error fetching transport:', err);
@@ -149,7 +149,7 @@ const HomeScreen = () => {
         setLoading(false);
       }
     };
-    
+
     fetchTransport();
   }, [profileData.id]); // Add profileData.id as a dependency
   if (loading) {
@@ -172,7 +172,7 @@ const HomeScreen = () => {
   const handleStatusChange = async () => {
     try {
       setLoading(true);
-      
+
       const response = await fetch(`${BASE_URL}status`, {
         method: 'PATCH',
         headers: {
@@ -187,7 +187,7 @@ const HomeScreen = () => {
       if (response.ok) {
         const updatedData = await response.json();
         onStatusUpdate(updatedData);
-        
+
         // Optional success feedback
         Alert.alert(
           'Status actualizat',
@@ -316,101 +316,101 @@ const HomeScreen = () => {
 
         {/* Status Card - Current status */}
         <View style={styles.statusCard}>
-      <View style={styles.statusHeader}>
-        <Text style={styles.statusTitle}>Statusul tau:</Text>
-        
-        <TouchableOpacity 
-          style={[
-            styles.statusButton,
-            profileData.on_road ? styles.drivingStatus : styles.parkedStatus,
-            loading && styles.disabledButton
-          ]}
-          onPress={handleStatusChange}
-          disabled={loading}
-          activeOpacity={0.7}
-        >
-          <View style={styles.statusButtonContent}>
-            {/* Status Icon/Indicator */}
-            <View style={[
-              styles.statusDot,
-              profileData.on_road ? styles.drivingDot : styles.parkedDot
-            ]} />
-            
-            {/* Current Status */}
-            <Text style={[
-              styles.currentStatusText,
-              profileData.on_road ? styles.drivingText : styles.parkedText
-            ]}>
-              {currentStatus}
-            </Text>
-          </View>
-          
-          {/* Change Instructions */}
-          <View style={styles.changeInstructions}>
-            {loading ? (
-              <ActivityIndicator size="small" color="#666" />
-            ) : (
-              <>
-                <Text style={styles.instructionText}>
-                  Apasă pentru a schimba statusul
+          <View style={styles.statusHeader}>
+            <Text style={styles.statusTitle}>Statusul tau:</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.statusButton,
+                profileData.on_road ? styles.drivingStatus : styles.parkedStatus,
+                loading && styles.disabledButton
+              ]}
+              onPress={handleStatusChange}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              <View style={styles.statusButtonContent}>
+                {/* Status Icon/Indicator */}
+                <View style={[
+                  styles.statusDot,
+                  profileData.on_road ? styles.drivingDot : styles.parkedDot
+                ]} />
+
+                {/* Current Status */}
+                <Text style={[
+                  styles.currentStatusText,
+                  profileData.on_road ? styles.drivingText : styles.parkedText
+                ]}>
+                  {currentStatus}
                 </Text>
-                <Text style={styles.nextStatusText}>
-                  → {nextStatus}
-                </Text>
-              </>
-            )}
+              </View>
+
+              {/* Change Instructions */}
+              <View style={styles.changeInstructions}>
+                {loading ? (
+                  <ActivityIndicator size="small" color="#666" />
+                ) : (
+                  <>
+                    <Text style={styles.instructionText}>
+                      Apasă pentru a schimba statusul
+                    </Text>
+                    <Text style={styles.nextStatusText}>
+                      → {nextStatus}
+                    </Text>
+                  </>
+                )}
+              </View>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </View>
-    </View>
+        </View>
 
         {/* Upcoming delivery card */}
-        {transport != null  ? (
-        <View style={styles.deliveryCard}>
-      <View style={styles.deliveryHeader}>
-        <View>
-          <Text style={styles.deliveryTitle}>
-            {transport.origin_city} → {transport.destination_city}
-          </Text>
-          <Text style={styles.deliverySubtitle}>
-            {transport.time_estimation || 'Maine, 14:00'}
-          </Text>
-        </View>
-        <View style={[
-          styles.deliveryBadge,
-          transport.status_transport === 'not started' ? styles.badgeNotStarted :
-          transport.status_transport === 'in progress' ? styles.badgeInProgress :
-          transport.status_transport === 'delayed' ? styles.badgeDelayed :
-          styles.badgeCompleted
-        ]}>
-          <Text style={styles.deliveryBadgeText}>
-            {transport.status_transport === 'not started' ? 'Neînceput' :
-             transport.status_transport === 'in progress' ? 'În desfășurare' :
-             transport.status_transport === 'delayed' ? 'Întârziat' :
-             'Finalizat'}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.deliveryDetails}>
-        <View style={styles.deliveryItem}>
-          <Ionicons name="cube-outline" size={20} color="#666" />
-          <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
-        </View>
-        <View style={styles.deliveryItem}>
-          <Ionicons name="navigate-outline" size={20} color="#666" />
-          <Text style={styles.deliveryItemText}>
-            {transport.trailer_number || 'CJ12ABC'}
-          </Text>
-        </View>
-      </View>
-      <TouchableOpacity 
-        style={styles.deliveryButton}
-        onPress={() => console.log('Transport details:', transport)}
-      >
-        <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
-      </TouchableOpacity>
-    </View>
-        ):(null)}
+        {transport != null ? (
+          <View style={styles.deliveryCard}>
+            <View style={styles.deliveryHeader}>
+              <View>
+                <Text style={styles.deliveryTitle}>
+                  {transport.origin_city} → {transport.destination_city}
+                </Text>
+                <Text style={styles.deliverySubtitle}>
+                  {transport.time_estimation || 'Maine, 14:00'}
+                </Text>
+              </View>
+              <View style={[
+                styles.deliveryBadge,
+                transport.status_transport === 'not started' ? styles.badgeNotStarted :
+                  transport.status_transport === 'in progress' ? styles.badgeInProgress :
+                    transport.status_transport === 'delayed' ? styles.badgeDelayed :
+                      styles.badgeCompleted
+              ]}>
+                <Text style={styles.deliveryBadgeText}>
+                  {transport.status_transport === 'not started' ? 'Neînceput' :
+                    transport.status_transport === 'in progress' ? 'În desfășurare' :
+                      transport.status_transport === 'delayed' ? 'Întârziat' :
+                        'Finalizat'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.deliveryDetails}>
+              <View style={styles.deliveryItem}>
+                <Ionicons name="cube-outline" size={20} color="#666" />
+                <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
+              </View>
+              <View style={styles.deliveryItem}>
+                <Ionicons name="navigate-outline" size={20} color="#666" />
+                <Text style={styles.deliveryItemText}>
+                  {transport.trailer_number || 'CJ12ABC'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.deliveryButton}
+              onPress={() => console.log('Transport details:', transport)}
+            >
+              <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (null)}
       </ScrollView>
     </SafeAreaView>
   );

@@ -106,22 +106,129 @@ const AppNavigator = () => {
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} 
+        options={{
+          // Custom transition just for Login screen
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 600, // Slower fade for login
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+              opacity: current.progress,
+            },
+          }),
+        }}
+        />
         <Stack.Screen
           name="Main"
           component={MainTabs}
+          
           options={{
             gestureEnabled: false,
             headerLeft: null,
+            // Custom transition just for Login screen
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 600, // Slower fade for login
+                },
+              },
+            },
+            cardStyleInterpolator: ({ current }) => ({
+              cardStyle: {
+                opacity: current.progress,
+              },
+            }),
           }}
         />
         {/* Home related screens */}
-        <Stack.Screen name="Truck" component={Truck} />
+        <Stack.Screen name="Truck" component={Truck} 
+        options={{
+          gestureEnabled: false,
+          headerLeft: null,
+          // Custom transition just for Login screen
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 600, // Slower fade for login
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+              opacity: current.progress,
+            },
+          }),
+        }}/>
         {/* Transport related screens */}
-        <Stack.Screen name="TransportStatus" component={TransportStatus} />
-        <Stack.Screen name="Transport_Update" component={Transport_Update} />
+        <Stack.Screen name="TransportStatus" component={TransportStatus} 
+        options={{
+          gestureEnabled: false,
+          headerLeft: null,
+          // Custom transition just for Login screen
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 600, // Slower fade for login
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+              opacity: current.progress,
+            },
+          }),
+        }}
+        />
+        <Stack.Screen name="Transport_Update" component={Transport_Update}
+        options={{
+          gestureEnabled: false,
+          headerLeft: null,
+          // Custom transition just for Login screen
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 600, // Slower fade for login
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+              opacity: current.progress,
+            },
+          }),
+        }}
+        />
         {/* Profile related screens */}
-        <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} />
+        <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
+        options={{
+          gestureEnabled: false,
+          headerLeft: null,
+          // Custom transition just for Login screen
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 600, // Slower fade for login
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+              opacity: current.progress,
+            },
+          }),
+        }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

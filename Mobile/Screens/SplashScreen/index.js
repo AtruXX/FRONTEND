@@ -1,40 +1,54 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import Animated, { useSharedValue, withTiming, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 
 const COLORS = {
-  background: "#F4F5FB",     // Light lavender background
-  card: "#FFFFFF",           // White
-  primary: "#5A5BDE",        // Purple-blue (primary)
-  secondary: "#6F89FF",      // Light blue
-  accent: "#FF8C66",         // Soft orange
-  accent2: "#81C3F8",        // Sky blue
-  dark: "#373A56",           // Dark navy
-  medium: "#6B6F8D",         // Medium navy-gray
-  light: "#A0A4C1",          // Light gray-purple
-  border: "#E2E5F1",         // Light border
-  success: "#63C6AE",        // Turquoise
-  warning: "#FFBD59",        // Amber
-  danger: "#FF7285",         // Soft red
+  background: "#F4F5FB", // Light lavender background
+  card: "#FFFFFF", // White
+  primary: "#5A5BDE", // Purple-blue (primary)
+  secondary: "#6F89FF", // Light blue
+  accent: "#FF8C66", // Soft orange
+  accent2: "#81C3F8", // Sky blue
+  dark: "#373A56", // Dark navy
+  medium: "#6B6F8D", // Medium navy-gray
+  light: "#A0A4C1", // Light gray-purple
+  border: "#E2E5F1", // Light border
+  success: "#63C6AE", // Turquoise
+  warning: "#FFBD59", // Amber
+  danger: "#FF7285", // Soft red
 };
 
 const SplashScreen = ({ navigation }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace('Login'); // or whatever your login screen is named
-    }, 3000); // 3 seconds
+  const opacity = useSharedValue(1);
 
-    return () => clearTimeout(timer); // Clean up timer on component unmount
-  }, [navigation]);
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  useEffect(() => {
+    const navigateToLogin = () => {
+      navigation.replace('Login');
+    };
+
+    const timer = setTimeout(() => {
+      opacity.value = withTiming(0, { duration: 500 }, (finished) => {
+        if (finished) {
+          runOnJS(navigateToLogin)();
+        }
+      });
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [navigation, opacity]);
 
   return (
-    <View style={styles.container}>
-      <Image 
-        source={require("/Users/ioanagavrila/Desktop/FRONTEND/FRONTEND/Mobile/assets/LOGO_ATRUX.jpeg")} 
-        style={styles.logo} 
+    <Animated.View style={[styles.container, animatedStyle]}>
+      <Image
+        source={require("/Users/ioanagavrila/Desktop/FRONTEND/FRONTEND/Mobile/assets/LOGO_NB.png")}
+        style={styles.logo}
         resizeMode="contain"
       />
-      <Text style={styles.message}>AtruX - Ajutorul soferului la orice pas</Text>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -43,12 +57,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 20,
   },
   logo: {
-    width: 180,
-    height: 180,
+    width: 263,
+    height: 166,
     marginBottom: 40,
     shadowColor: COLORS.dark,
     shadowOffset: { width: 0, height: 4 },
