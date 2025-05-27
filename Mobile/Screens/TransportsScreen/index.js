@@ -174,184 +174,65 @@ const TransportsScreen = ({ navigation, route }) => {
 
   const renderTransportItem = ({ item }) => (
     <View style={styles.transportCard}>
-  <View style={styles.transportHeader}>
-    <View>
-      <Text style={styles.transportTitle}>Transport #{item.id}</Text>
-      <Text style={styles.transportSubtitle}>{item.truck_combination || 'N/A'}</Text>
-    </View>
-    <TouchableOpacity 
-      style={styles.modifyButton} 
-      onPress={() => handleModifyData(item)}
-    >
-      <Text style={styles.modifyButtonText}>Modifică</Text>
-      <Ionicons name="create-outline" size={16} color="#6366F1" />
-    </TouchableOpacity>
-  </View>
-  
-  <View style={styles.transportDetails}>
-    <View style={styles.detailSection}>
-      <View style={styles.sectionTitle}>
-        <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
-        <Text style={styles.sectionTitleText}>Status Transport</Text>
+      <View style={styles.transportHeader}>
+        <View>
+          <Text style={styles.transportTitle}>Transport #{item.id}</Text>
+          <Text style={styles.transportSubtitle}>{item.truck_combination || 'N/A'}</Text>
+        </View>
+        <TouchableOpacity 
+          style={styles.modifyButton} 
+          onPress={() => handleViewDetails(item)}
+        >
+          <Text style={styles.modifyButtonText}>Vezi detalii</Text>
+          <Ionicons name="chevron-forward-outline" size={16} color="#6366F1" />
+        </TouchableOpacity>
       </View>
       
-      <View style={styles.detailGrid}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Status camion</Text>
-          <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_truck)}15`}]}>
-            <Ionicons name={getStatusIcon(item.status_truck)} size={16} color={getStatusColor(item.status_truck)} style={styles.statusIcon} />
-            <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>{item.status_truck || 'N/A'}</Text>
+      <View style={styles.transportDetails}>
+        <View style={styles.detailSection}>
+          <View style={styles.sectionTitle}>
+            <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitleText}>Status Transport</Text>
           </View>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Status marfă</Text>
-          <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_goods)}15`}]}>
-            <Ionicons name={getStatusIcon(item.status_goods)} size={16} color={getStatusColor(item.status_goods)} style={styles.statusIcon} />
-            <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>{item.status_goods || 'N/A'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Status remorcă</Text>
-          <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_trailer_wagon)}15`}]}>
-            <Ionicons name={getStatusIcon(item.status_trailer_wagon)} size={16} color={getStatusColor(item.status_trailer_wagon)} style={styles.statusIcon} />
-            <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>{item.status_trailer_wagon || 'N/A'}</Text>
-          </View>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Status transport</Text>
-          <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_transport)}15`}]}>
-            <Ionicons name={getStatusIcon(item.status_transport)} size={16} color={getStatusColor(item.status_transport)} style={styles.statusIcon} />
-            <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>{item.status_transport === 'not started' ? 'Neînceput' : item.status_transport || 'N/A'}</Text>
+          
+          <View style={styles.detailGrid}>
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status camion</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_truck)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_truck)} size={16} color={getStatusColor(item.status_truck)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>{item.status_truck || 'N/A'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status marfă</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_goods)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_goods)} size={16} color={getStatusColor(item.status_goods)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>{item.status_goods || 'N/A'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status remorcă</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_trailer_wagon)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_trailer_wagon)} size={16} color={getStatusColor(item.status_trailer_wagon)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>{item.status_trailer_wagon || 'N/A'}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Status transport</Text>
+              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_transport)}15`}]}>
+                <Ionicons name={getStatusIcon(item.status_transport)} size={16} color={getStatusColor(item.status_transport)} style={styles.statusIcon} />
+                <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>{item.status_transport === 'not started' ? 'Neînceput' : item.status_transport || 'N/A'}</Text>
+              </View>
+            </View>
           </View>
         </View>
       </View>
     </View>
-    
-    <View style={styles.detailSection}>
-      <View style={styles.sectionTitle}>
-        <Ionicons name="information-circle" size={18} color="#6366F1" style={styles.sectionIcon} />
-        <Text style={styles.sectionTitleText}>Detalii Transport</Text>
-      </View>
-      
-      <View style={styles.detailGrid}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Status cuplaj</Text>
-          <Text style={styles.detailValue}>{item.status_coupling || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Tip remorcă</Text>
-          <Text style={styles.detailValue}>{item.trailer_type || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Număr remorcă</Text>
-          <Text style={styles.detailValue}>{item.trailer_number || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Încărcare</Text>
-          <Text style={styles.detailValue}>
-            {item.status_loaded_truck === 'ok' ? 'Încărcat' : 'Neîncărcat'}
-          </Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Detracție</Text>
-          <Text style={styles.detailValue}>{item.detraction || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Dispecer ID</Text>
-          <Text style={styles.detailValue}>{item.dispatcher || 'N/A'}</Text>
-        </View>
-      </View>
-    </View>
-    
-    <View style={styles.detailSection}>
-      <View style={styles.sectionTitle}>
-        <Ionicons name="map" size={18} color="#6366F1" style={styles.sectionIcon} />
-        <Text style={styles.sectionTitleText}>Rută & Marfă</Text>
-      </View>
-      
-      <View style={styles.detailGrid}>
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Oraș origine</Text>
-          <Text style={styles.detailValue}>{item.origin_city || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Oraș destinație</Text>
-          <Text style={styles.detailValue}>{item.destination_city || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Tip marfă</Text>
-          <Text style={styles.detailValue}>{item.goods_type || 'N/A'}</Text>
-        </View>
-        
-        <View style={styles.detailItem}>
-          <Text style={styles.detailLabel}>Companie</Text>
-          <Text style={styles.detailValue}>{item.company || 'N/A'}</Text>
-        </View>
-        
-        {item.delay_estimation && (
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Estimare întârziere</Text>
-            <Text style={styles.detailValue}>{item.delay_estimation}</Text>
-          </View>
-        )}
-        
-        {item.time_estimation && (
-          <View style={styles.detailItem}>
-            <Text style={styles.detailLabel}>Estimare durată</Text>
-            <Text style={styles.detailValue}>{item.time_estimation}</Text>
-          </View>
-        )}
-      </View>
-    </View>
-    
-    {item.status_truck_text && (
-      <View style={styles.notesSection}>
-        <View style={styles.sectionTitle}>
-          <Ionicons name="document-text" size={18} color="#6366F1" style={styles.sectionIcon} />
-          <Text style={styles.sectionTitleText}>Notă camion</Text>
-        </View>
-        <Text style={styles.noteText}>{item.status_truck_text}</Text>
-      </View>
-    )}
-    
-    {item.status_trailer_wagon_description && (
-      <View style={styles.notesSection}>
-        <View style={styles.sectionTitle}>
-          <Ionicons name="document-text" size={18} color="#6366F1" style={styles.sectionIcon} />
-          <Text style={styles.sectionTitleText}>Notă remorcă</Text>
-        </View>
-        <Text style={styles.noteText}>{item.status_trailer_wagon_description}</Text>
-      </View>
-    )}
-    
-    {item.goods_photos && item.goods_photos.length > 0 && (
-      <View style={styles.photosSection}>
-        <View style={styles.sectionTitle}>
-          <Ionicons name="images" size={18} color="#6366F1" style={styles.sectionIcon} />
-          <Text style={styles.sectionTitleText}>Fotografii marfă</Text>
-        </View>
-        <ScrollView horizontal style={styles.photosContainer}>
-          {item.goods_photos.map((photo, index) => (
-            <TouchableOpacity key={index} onPress={() => handleViewPhoto(photo)}>
-              <Image source={{ uri: photo }} style={styles.photoThumbnail} />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    )}
-  </View>
-</View>
   );
+  
 
   if (loading) {
     return (

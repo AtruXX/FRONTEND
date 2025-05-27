@@ -144,17 +144,6 @@ export const styles = StyleSheet.create({
       fontWeight: '500',
       fontSize: 14,
     },
-    notesSection: {
-      backgroundColor: '#F9FAFB',
-      borderRadius: 8,
-      padding: 12,
-      marginTop: 8,
-    },
-    noteText: {
-      fontSize: 14,
-      color: '#666',
-      lineHeight: 20,
-    },
     emptyContainer: {
       flex: 1,
       justifyContent: 'center',

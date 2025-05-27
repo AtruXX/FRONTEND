@@ -177,79 +177,187 @@ export const styles = StyleSheet.create({
   },
   statusCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
     margin: 16,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  
   statusHeader: {
     alignItems: 'center',
   },
-  
   statusTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2c3e50',
+    marginBottom: 24,
   },
-  
-  statusButton: {
-    width: '100%',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    minHeight: 100,
-    justifyContent: 'center',
-  },
-  
-  drivingStatus: {
-    backgroundColor: '#e8f5e8',
-    borderColor: '#4CAF50',
-  },
-  
-  parkedStatus: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#2196F3',
-  },
-  
-  disabledButton: {
-    opacity: 0.6,
-  },
-  
-  statusButtonContent: {
+  currentStatusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 32,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    backgroundColor: '#f8f9fa',
   },
-  
+  statusIndicator: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  drivingIndicator: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+  },
+  parkedIndicator: {
+    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+  },
   statusDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
   },
-  
   drivingDot: {
     backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  
   parkedDot: {
     backgroundColor: '#2196F3',
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  
   currentStatusText: {
-    fontSize: 20,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  drivingText: {
+    color: '#2e7d32',
+  },
+  parkedText: {
+    color: '#1565c0',
+  },
+  circularButton: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowOffset: {
+      width: 0,
+      height: 6,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  circularButtonDriving: {
+    backgroundColor: '#2196F3',
+    shadowColor: '#2196F3',
+  },
+  circularButtonParked: {
+    backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  buttonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    marginBottom: 8,
+  },
+  // Parking icon styles
+  parkingIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  parkingSquare: {
+    width: 32,
+    height: 32,
+    borderWidth: 3,
+    borderColor: '#fff',
+    borderRadius: 4,
+    marginBottom: 2,
+  },
+  parkingText: {
+    position: 'absolute',
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
+  },
+  // Car icon styles
+  carIcon: {
+    width: 40,
+    height: 24,
+    position: 'relative',
+  },
+  carBody: {
+    width: 40,
+    height: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    position: 'absolute',
+    top: 4,
+  },
+  carWindows: {
+    width: 24,
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 4,
+    position: 'absolute',
+    top: 6,
+    left: 8,
+  },
+  carWheel: {
+    width: 8,
+    height: 8,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    position: 'absolute',
+    bottom: 0,
+  },
+  frontWheel: {
+    right: 2,
+  },
+  backWheel: {
+    left: 2,
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  nextStatusHint: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  helperText: {
+    color: '#7f8c8d',
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   
   drivingText: {
