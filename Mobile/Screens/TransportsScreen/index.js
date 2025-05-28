@@ -23,6 +23,8 @@ const TransportsScreen = ({ navigation, route }) => {
   const [authToken, setAuthToken] = useState(null);
   const [driverId, setDriverId] = useState(route.params?.driverId || 1);
   const [error, setError] = useState(null);
+  const [activeTransportId, setActiveTransportId] = useState(null); // Track active transport
+  const [startingTransport, setStartingTransport] = useState(null); // Track which transport is being started
   const [profileData, setProfileData] = useState({
     name: "",
     role: "",
@@ -60,6 +62,27 @@ const TransportsScreen = ({ navigation, route }) => {
       Alert.alert('Eroare', 'Verificați conexiunea la internet.');
     }
   };
+
+  // Load active transport from storage
+  const loadActiveTransport = async () => {
+    try {
+      const activeId = await AsyncStorage.getItem('activeTransportId');
+      if (activeId) {
+        setActiveTransportId(parseInt(activeId));
+      }
+    } catch (error) {
+      console.error("Error loading active transport:", error);
+    }
+  };
+
+  // Save active transport to storage
+  const saveActiveTransport = async (transportId) => {
+    try {
+      await AsyncStorage.setItem('activeTransportId', transportId.toString());
+    } catch (error) {
+      console.error("Error saving active transport:", error);
+    }
+  };
   
   useEffect(() => {
     const loadAuthToken = async () => {
@@ -72,6 +95,8 @@ const TransportsScreen = ({ navigation, route }) => {
           console.log('Auth token loaded and set in state');
           // Once we have the token, fetch the profile to get driverId
           fetchDriverProfile(token);
+          // Load active transport
+          loadActiveTransport();
         } else {
           console.error("No auth token found in AsyncStorage");
           setLoading(false);
@@ -84,69 +109,94 @@ const TransportsScreen = ({ navigation, route }) => {
     loadAuthToken();
   }, []);
 
-  // Define the fetch function outside of useEffect
+  // Hardcoded transport data for testing
   const fetchTransports = async (token, driverId) => {
     try {
       setLoading(true);
-      console.log('[DEBUG] Using auth token:', token);
       
-      if (!token) {
-        console.error('[DEBUG] No auth token found. Aborting fetch.');
+      // Simulate loading delay
+      setTimeout(() => {
+        const hardcodedTransports = [
+          {
+            id: 1,
+            truck_combination: "Scania R450 + Remorcă Krone",
+            destination: "București → Cluj-Napoca",
+            status_truck: "ok",
+            status_goods: "ok",
+            status_trailer_wagon: "ok",
+            status_transport: "not started",
+            departure_time: "08:00",
+            arrival_time: "14:30",
+            distance: "450 km"
+          },
+          {
+            id: 2,
+            truck_combination: "Mercedes Actros + Remorcă Schmitz",
+            destination: "Cluj-Napoca → Timișoara",
+            status_truck: "ok",
+            status_goods: "probleme",
+            status_trailer_wagon: "ok",
+            status_transport: "not started",
+            departure_time: "06:00",
+            arrival_time: "12:00",
+            distance: "320 km"
+          },
+          {
+            id: 3,
+            truck_combination: "Volvo FH16 + Remorcă Kögel",
+            destination: "Timișoara → Constanța",
+            status_truck: "probleme",
+            status_goods: "ok",
+            status_trailer_wagon: "ok",
+            status_transport: "not started",
+            departure_time: "10:00",
+            arrival_time: "18:00",
+            distance: "520 km"
+          }
+        ];
+        
+        setTransports(hardcodedTransports);
         setLoading(false);
-        return;
-      }
-      
-      const headers = {
-        'Authorization': `Token ${token}`,
-      };
-      
-      // Use the passed driver ID
-      console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${driverId}`);
-      
-      const response = await fetch(`${BASE_URL}transports?driver_id=${driverId}`, {
-        method: 'GET',
-        headers: headers
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('[DEBUG] Received transport data:', data);
-      
-      if (data.transports && data.transports.length > 0) {
-        // Set all transports instead of just the latest one
-        setTransports(data.transports);
         setRefreshing(false);
-      } else {
-        console.log('[DEBUG] No transports found in the response');
-        setTransports([]);
-      }
-      
-      setLoading(false);
+      }, 1000);
     } catch (err) {
-      console.error('[DEBUG] Error fetching transport:', err);
+      console.error('[DEBUG] Error setting hardcoded transports:', err);
       setError(err.message);
       setLoading(false);
       setRefreshing(false);
     }
   };
+
+  // Handle starting a transport
+  const handleStartTransport = async (transport) => {
+    setStartingTransport(transport.id);
+    
+    // Simulate a short delay for better UX
+    setTimeout(() => {
+      // Set this transport as active
+      setActiveTransportId(transport.id);
+      saveActiveTransport(transport.id);
+      
+      // Show success alert
+      Alert.alert(
+        'Succes!',
+        'TI-AI INSUSIT CURSA CU SUCCES! DISPECERUL TAU VA FI ANUNTAT!',
+        [{ text: 'OK' }]
+      );
+      
+      setStartingTransport(null);
+    }, 1000);
+  };
   
-  // Single useEffect that calls the function when dependencies change
+  // Single useEffect that calls the function when component mounts
   useEffect(() => {
-    if (authToken && driverId) {
-      fetchTransports(authToken, driverId);
-    }
-  }, [authToken, driverId]);
+    // Always load hardcoded data
+    fetchTransports();
+  }, []);
   
   const onRefresh = () => {
     setRefreshing(true);
-    if (authToken && driverId) {
-      fetchTransports(authToken, driverId);
-    } else {
-      setRefreshing(false);
-    }
+    fetchTransports();
   };
 
   const handleModifyData = (transport) => {
@@ -156,6 +206,11 @@ const TransportsScreen = ({ navigation, route }) => {
   const handleViewPhoto = (photoUrl) => {
     // Implement photo viewing functionality
     Alert.alert('View Photo', `Would open photo: ${photoUrl}`);
+  };
+
+  const handleViewDetails = (item) => {
+    // Navigate to details or implement details view
+    console.log('View details for transport:', item.id);
   };
 
   const getStatusColor = (status) => {
@@ -171,76 +226,115 @@ const TransportsScreen = ({ navigation, route }) => {
     return 'alert-circle';
   };
 
+  const renderTransportItem = ({ item }) => {
+    const isActive = activeTransportId === item.id;
+    const isStarting = startingTransport === item.id;
+    const isDisabled = activeTransportId !== null && !isActive;
 
-  const renderTransportItem = ({ item }) => (
-    <View style={styles.transportCard}>
-      <View style={styles.transportHeader}>
-        <View>
-          <Text style={styles.transportTitle}>Transport #{item.id}</Text>
-          <Text style={styles.transportSubtitle}>{item.truck_combination || 'N/A'}</Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.modifyButton} 
-          onPress={() => handleViewDetails(item)}
-        >
-          <Text style={styles.modifyButtonText}>Vezi detalii</Text>
-          <Ionicons name="chevron-forward-outline" size={16} color="#6366F1" />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.transportDetails}>
-        <View style={styles.detailSection}>
-          <View style={styles.sectionTitle}>
-            <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitleText}>Status Transport</Text>
+    return (
+      <View style={[styles.transportCard, isDisabled && styles.disabledCard]}>
+        <View style={styles.transportHeader}>
+          <View>
+            <Text style={styles.transportTitle}>Transport #{item.id}</Text>
+            <Text style={styles.transportSubtitle}>{item.truck_combination || 'N/A'}</Text>
+            {item.destination && (
+              <Text style={styles.destinationText}>
+                <Ionicons name="location-outline" size={14} color="#666" />
+                {' '}{item.destination}
+              </Text>
+            )}
           </View>
-          
-          <View style={styles.detailGrid}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Status camion</Text>
-              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_truck)}15`}]}>
-                <Ionicons name={getStatusIcon(item.status_truck)} size={16} color={getStatusColor(item.status_truck)} style={styles.statusIcon} />
-                <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>{item.status_truck || 'N/A'}</Text>
-              </View>
+          <TouchableOpacity 
+            style={styles.modifyButton} 
+            onPress={() => handleViewDetails(item)}
+          >
+            <Text style={styles.modifyButtonText}>Vezi detalii</Text>
+            <Ionicons name="chevron-forward-outline" size={16} color="#6366F1" />
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.transportDetails}>
+          <View style={styles.detailSection}>
+            <View style={styles.sectionTitle}>
+              <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
+              <Text style={styles.sectionTitleText}>Status Transport</Text>
             </View>
             
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Status marfă</Text>
-              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_goods)}15`}]}>
-                <Ionicons name={getStatusIcon(item.status_goods)} size={16} color={getStatusColor(item.status_goods)} style={styles.statusIcon} />
-                <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>{item.status_goods || 'N/A'}</Text>
+            <View style={styles.detailGrid}>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Status camion</Text>
+                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_truck)}15`}]}>
+                  <Ionicons name={getStatusIcon(item.status_truck)} size={16} color={getStatusColor(item.status_truck)} style={styles.statusIcon} />
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>{item.status_truck || 'N/A'}</Text>
+                </View>
               </View>
-            </View>
-            
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Status remorcă</Text>
-              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_trailer_wagon)}15`}]}>
-                <Ionicons name={getStatusIcon(item.status_trailer_wagon)} size={16} color={getStatusColor(item.status_trailer_wagon)} style={styles.statusIcon} />
-                <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>{item.status_trailer_wagon || 'N/A'}</Text>
+              
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Status marfă</Text>
+                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_goods)}15`}]}>
+                  <Ionicons name={getStatusIcon(item.status_goods)} size={16} color={getStatusColor(item.status_goods)} style={styles.statusIcon} />
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>{item.status_goods || 'N/A'}</Text>
+                </View>
               </View>
-            </View>
-            
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Status transport</Text>
-              <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_transport)}15`}]}>
-                <Ionicons name={getStatusIcon(item.status_transport)} size={16} color={getStatusColor(item.status_transport)} style={styles.statusIcon} />
-                <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>{item.status_transport === 'not started' ? 'Neînceput' : item.status_transport || 'N/A'}</Text>
+              
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Status remorcă</Text>
+                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_trailer_wagon)}15`}]}>
+                  <Ionicons name={getStatusIcon(item.status_trailer_wagon)} size={16} color={getStatusColor(item.status_trailer_wagon)} style={styles.statusIcon} />
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>{item.status_trailer_wagon || 'N/A'}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Status transport</Text>
+                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_transport)}15`}]}>
+                  <Ionicons name={getStatusIcon(item.status_transport)} size={16} color={getStatusColor(item.status_transport)} style={styles.statusIcon} />
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>{item.status_transport === 'not started' ? 'Neînceput' : item.status_transport || 'N/A'}</Text>
+                </View>
               </View>
             </View>
           </View>
         </View>
+
+        {/* Start Transport Button */}
+        <View style={styles.actionSection}>
+          <TouchableOpacity
+            style={[
+              styles.startButton,
+              isActive && styles.activeButton,
+              isDisabled && styles.disabledButton
+            ]}
+            onPress={() => handleStartTransport(item)}
+            disabled={isDisabled || isStarting}
+          >
+            {isStarting ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <>
+                <Ionicons 
+                  name={isActive ? "checkmark-circle" : "play-circle"} 
+                  size={20} 
+                  color="white" 
+                  style={styles.buttonIcon} 
+                />
+                <Text style={styles.startButtonText}>
+                  {isActive ? "CURSA ACTUALĂ" : "ÎNCEPE"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
-  
+    );
+  };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-
+          <ActivityIndicator size="large" color="#6366F1" />
+          <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -298,7 +392,5 @@ const TransportsScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
-
 
 export default TransportsScreen;

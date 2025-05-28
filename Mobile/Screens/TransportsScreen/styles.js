@@ -189,5 +189,100 @@ export const styles = StyleSheet.create({
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#fff' // Or whatever background color you prefer
-    }
+    },
+    actionSection: {
+      marginTop: 16,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: '#E5E7EB',
+    },
+  
+    // Start transport button
+    startButton: {
+      backgroundColor: '#6366F1',
+      paddingVertical: 12,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 3,
+    },
+  
+    // Active button state (CURSA ACTUALĂ)
+    activeButton: {
+      backgroundColor: '#10B981', // Green color
+    },
+  
+    // Disabled button state
+    disabledButton: {
+      backgroundColor: '#9CA3AF', // Gray color
+      opacity: 0.6,
+    },
+  
+    // Button text
+    startButtonText: {
+      color: 'white',
+      fontSize: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+  
+    // Button icon
+    buttonIcon: {
+      marginRight: 8,
+    },
+  
+    // Disabled card style
+    disabledCard: {
+      opacity: 0.7,
+      backgroundColor: '#F9FAFB',
+    },
+  
+    // Destination text
+    destinationText: {
+      fontSize: 12,
+      color: '#666',
+      marginTop: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+  
+    // Loading text
+    loadingText: {
+      marginTop: 12,
+      fontSize: 16,
+      color: '#666',
+      textAlign: 'center',
+    },
+  
+    // Transport info section
+    transportInfoSection: {
+      backgroundColor: '#F8FAFC',
+      padding: 12,
+      borderRadius: 8,
+      marginBottom: 12,
+    },
+  
+    // Info row
+    infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 6,
+    },
+  
+    // Info text
+    infoText: {
+      fontSize: 14,
+      color: '#374151',
+      marginLeft: 8,
+      fontWeight: '500',
+    },
   });
