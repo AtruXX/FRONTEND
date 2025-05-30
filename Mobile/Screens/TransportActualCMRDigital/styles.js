@@ -1,16 +1,18 @@
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
+
 const COLORS = {
-    background: '#f5f5f5',
-    card: '#ffffff',
-    primary: '#3B82F6',
-    accent: '#64748B',
-    lightAccent: '#6B7280',
-    border: '#D1D5DB',
-    text: {
-      dark: '#333333',
-      light: '#6B7280',
-    },
-  };
+  background: '#f5f5f5',
+  card: '#ffffff',
+  primary: '#5A5BDE',
+  accent: '#64748B',
+  lightAccent: '#6B7280',
+  border: '#D1D5DB',
+  text: {
+    dark: '#333333',
+    light: '#6B7280',
+  },
+};
+
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -55,7 +57,7 @@ export const styles = StyleSheet.create({
   uitCode: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#6366F1',
+    color: COLORS.primary,
   },
   selectionContainer: {
     paddingHorizontal: 24,
@@ -100,13 +102,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6366F1',
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
     marginTop: 16,
     width: '100%',
-    shadowColor: '#6366F1',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -132,7 +134,8 @@ export const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#EFF6FF',
-  },Card: {
+  },
+  Card: {
     marginHorizontal: 20,
     marginVertical: 16,
     backgroundColor: COLORS.card,

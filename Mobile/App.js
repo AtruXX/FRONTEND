@@ -174,25 +174,7 @@ const AppNavigator = () => {
         }}/>
         
         {/* Transport related screens */}
-        <Stack.Screen name="TransportStatus" component={TransportStatus} 
-        options={{
-          gestureEnabled: false,
-          headerLeft: null,
-          transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 600,
-              },
-            },
-          },
-          cardStyleInterpolator: ({ current }) => ({
-            cardStyle: {
-              opacity: current.progress,
-            },
-          }),
-        }}
-        />
+        
         <Stack.Screen name="Transport_Update" component={Transport_Update}
         options={{
           gestureEnabled: false,
