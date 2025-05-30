@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useNavigation } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Alert, ActivityIndicator,TouchableOpacity, ScrollView, Image, Platform, Linking } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import {styles} from './styles'; // Import your styles from the styles.js file
@@ -7,7 +7,7 @@ import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
-const DocumentsScreen = () => {
+const DocumentsScreen = ({ navigation, route }) => {
   // Sample recent documents data
   const [recentDocuments, setRecentDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -368,7 +368,7 @@ const DocumentsScreen = () => {
       <View style={styles.header}>
       <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation.navigate("Main")}
           >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>

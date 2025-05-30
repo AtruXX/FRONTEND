@@ -309,7 +309,7 @@ const HomeScreen = () => {
               <Text style={styles.actionLabel}>Transporturi</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Profile', { screen: 'DocumentsGeneral' })}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('DocumentsGeneral', { screen: 'DocumentsGeneral' })}>
 
               <View style={[styles.actionIconContainer, { backgroundColor: '#F0F9FF' }]}>
                 <Ionicons name="file-tray-full-outline" size={28} color="#0EA5E9" />
