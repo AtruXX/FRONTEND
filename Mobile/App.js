@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "./Screens/Login";
 import HomeScreen from "./Screens/Homescreen";
 import Transports from "./Screens/TransportsScreen";
-import TransportStatus from "./Screens/TransportStatus";
 import ProfileScreen from "./Screens/ProfileScreen";
 import DocumentsScreen from "./Screens/DocumentsGeneral";
 import Transport_Update from "./Screens/ModifyTransport";

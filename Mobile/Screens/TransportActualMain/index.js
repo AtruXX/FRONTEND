@@ -100,12 +100,28 @@ const TransportMainPage = ({ navigation }) => {
         <View style={styles.selectionContainer}>
           <Text style={styles.selectionTitle}>Alegeți tipul de formular:</Text>
           
+          {/* Vezi Ruta Button */}
+          <TouchableOpacity
+            style={[styles.selectionButton, { marginBottom: 20 }]}
+            onPress={() => navigateTo('RouteView')}
+          >
+            <View style={styles.iconCircle}>
+              <Ionicons name="map-outline" size={32} color="#FFFFFF" />
+            </View>
+            <Text style={styles.selectionButtonText}>Vezi Ruta</Text>
+            <Text style={styles.selectionDescription}>
+              Vizualizează ruta de transport și punctele de oprire
+            </Text>
+          </TouchableOpacity>
+          
           {/* CMR Digital Button */}
           <TouchableOpacity
             style={[styles.selectionButton, { marginBottom: 20 }]}
             onPress={() => navigateTo('CMRDigitalForm')}
           >
-            <Ionicons name="document-text-outline" size={40} color="#3B82F6" />
+            <View style={styles.iconCircle}>
+              <Ionicons name="document-text-outline" size={32} color="#FFFFFF" />
+            </View>
             <Text style={styles.selectionButtonText}>CMR Digital</Text>
             <Text style={styles.selectionDescription}>
               Scrisoare de transport internațional de mărfuri (Expeditor, Destinatar, etc.)
@@ -117,7 +133,9 @@ const TransportMainPage = ({ navigation }) => {
             style={[styles.selectionButton, { marginBottom: 20 }]}
             onPress={() => navigateTo('StatusTransportForm')}
           >
-            <Ionicons name="car-outline" size={40} color="#3B82F6" />
+            <View style={styles.iconCircle}>
+              <Ionicons name="car-outline" size={32} color="#FFFFFF" />
+            </View>
             <Text style={styles.selectionButtonText}>Status Transport</Text>
             <Text style={styles.selectionDescription}>
               Informații despre starea camionului, mărfii și a transportului
@@ -129,7 +147,9 @@ const TransportMainPage = ({ navigation }) => {
             style={[styles.selectionButton, { marginBottom: 20 }]}
             onPress={() => navigateTo('PhotoCMRForm')}
           >
-            <Ionicons name="camera-outline" size={40} color="#3B82F6" />
+            <View style={styles.iconCircle}>
+              <Ionicons name="camera-outline" size={32} color="#FFFFFF" />
+            </View>
             <Text style={styles.selectionButtonText}>Fotografiaza CMR-UL</Text>
             <Text style={styles.selectionDescription}>
               Incarca o fotografie cu CMR-ul in format fizic
