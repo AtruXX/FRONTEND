@@ -11,6 +11,13 @@ import DocumentsScreen from "./Screens/DocumentsGeneral";
 import Transport_Update from "./Screens/ModifyTransport";
 import Truck from "./Screens/Truck";
 import SplashScreen from "./Screens/SplashScreen";
+
+// Updated Transport Screen imports - replace the old ones
+import TransportMainPage from "./Screens/TransportActualMain";
+import CMRDigitalForm from "./Screens/TransportActualCMRDigital";
+import StatusTransportForm from "./Screens/TransportActualStatus";
+import PhotoCMRForm from "./Screens/TransportActualCMRPhoto";
+
 import { NavigationContainer } from '@react-navigation/native';
 import { Pressable, View, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -127,7 +134,6 @@ const AppNavigator = () => {
         <Stack.Screen
           name="Main"
           component={MainTabs}
-          
           options={{
             gestureEnabled: false,
             headerLeft: null,
@@ -147,17 +153,17 @@ const AppNavigator = () => {
             }),
           }}
         />
+        
         {/* Home related screens */}
         <Stack.Screen name="Truck" component={Truck} 
         options={{
           gestureEnabled: false,
           headerLeft: null,
-          // Custom transition just for Login screen
           transitionSpec: {
             open: {
               animation: 'timing',
               config: {
-                duration: 600, // Slower fade for login
+                duration: 600,
               },
             },
           },
@@ -167,17 +173,17 @@ const AppNavigator = () => {
             },
           }),
         }}/>
+        
         {/* Transport related screens */}
         <Stack.Screen name="TransportStatus" component={TransportStatus} 
         options={{
           gestureEnabled: false,
           headerLeft: null,
-          // Custom transition just for Login screen
           transitionSpec: {
             open: {
               animation: 'timing',
               config: {
-                duration: 600, // Slower fade for login
+                duration: 600,
               },
             },
           },
@@ -192,12 +198,11 @@ const AppNavigator = () => {
         options={{
           gestureEnabled: false,
           headerLeft: null,
-          // Custom transition just for Login screen
           transitionSpec: {
             open: {
               animation: 'timing',
               config: {
-                duration: 600, // Slower fade for login
+                duration: 600,
               },
             },
           },
@@ -208,17 +213,51 @@ const AppNavigator = () => {
           }),
         }}
         />
+
+        {/* NEW: Transport Actual Flow - 4 separate pages */}
+        <Stack.Screen 
+          name="TransportMainPage" 
+          component={TransportMainPage}
+          options={{
+            gestureEnabled: true,
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="CMRDigitalForm" 
+          component={CMRDigitalForm}
+          options={{
+            gestureEnabled: true,
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="StatusTransportForm" 
+          component={StatusTransportForm}
+          options={{
+            gestureEnabled: true,
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen 
+          name="PhotoCMRForm" 
+          component={PhotoCMRForm}
+          options={{
+            gestureEnabled: true,
+            headerShown: false,
+          }}
+        />
+        
         {/* Profile related screens */}
         <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
         options={{
           gestureEnabled: false,
           headerLeft: null,
-          // Custom transition just for Login screen
           transitionSpec: {
             open: {
               animation: 'timing',
               config: {
-                duration: 600, // Slower fade for login
+                duration: 600,
               },
             },
           },
@@ -233,6 +272,7 @@ const AppNavigator = () => {
     </NavigationContainer>
   );
 };
+
 // Styles for the fluid tab bar
 const styles = StyleSheet.create({
   tabContainer: {

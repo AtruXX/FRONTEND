@@ -5,6 +5,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles } from "./styles";
+import TransportMainPage from "../TransportActualMain";
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [profileData, setProfileData] = useState({
@@ -324,7 +325,7 @@ const HomeScreen = () => {
               <Text style={styles.actionLabel}>Camion</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('TransportStatus', { screen: 'TransportStatus' })}>
+            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate(TransportMainPage)}>
               <View style={[styles.actionIconContainer, { backgroundColor: '#F0FFF4' }]}>
                 <Ionicons name="map-outline" size={28} color="#10B981" />
               </View>
