@@ -154,42 +154,74 @@ const AppNavigator = () => {
         />
         
         {/* Home related screens */}
-        <Stack.Screen name="Truck" component={Truck} 
-        options={{
-          gestureEnabled: false,
-          headerLeft: null,
-          transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 600,
+        <Stack.Screen 
+          name="Truck" 
+          component={Truck} 
+          options={{
+            // FIXED: Enable gestures and remove headerLeft restriction for proper back navigation
+            gestureEnabled: true,
+            headerShown: false, // Keep your custom header
+            // Remove headerLeft: null to allow back navigation
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 300, // Faster transition for better UX
+                },
+              },
+              close: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
               },
             },
-          },
-          cardStyleInterpolator: ({ current }) => ({
-            cardStyle: {
-              opacity: current.progress,
-            },
-          }),
-        }}/>
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            }),
+          }}
+        />
         
         {/* Transport related screens */}
         
         <Stack.Screen name="Transport_Update" component={Transport_Update}
         options={{
-          gestureEnabled: false,
-          headerLeft: null,
+          // FIXED: Enable gestures for better navigation
+          gestureEnabled: true,
+          headerShown: false,
           transitionSpec: {
             open: {
               animation: 'timing',
               config: {
-                duration: 600,
+                duration: 300,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 300,
               },
             },
           },
-          cardStyleInterpolator: ({ current }) => ({
+          cardStyleInterpolator: ({ current, layouts }) => ({
             cardStyle: {
-              opacity: current.progress,
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
             },
           }),
         }}
@@ -202,6 +234,33 @@ const AppNavigator = () => {
           options={{
             gestureEnabled: true,
             headerShown: false,
+            // Added smooth transition
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+              close: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+            },
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            }),
           }}
         />
         <Stack.Screen 
@@ -210,6 +269,32 @@ const AppNavigator = () => {
           options={{
             gestureEnabled: true,
             headerShown: false,
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+              close: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+            },
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            }),
           }}
         />
         <Stack.Screen 
@@ -218,6 +303,32 @@ const AppNavigator = () => {
           options={{
             gestureEnabled: true,
             headerShown: false,
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+              close: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+            },
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            }),
           }}
         />
         <Stack.Screen 
@@ -226,25 +337,65 @@ const AppNavigator = () => {
           options={{
             gestureEnabled: true,
             headerShown: false,
+            transitionSpec: {
+              open: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+              close: {
+                animation: 'timing',
+                config: {
+                  duration: 300,
+                },
+              },
+            },
+            cardStyleInterpolator: ({ current, layouts }) => ({
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            }),
           }}
         />
         
         {/* Profile related screens */}
         <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
         options={{
-          gestureEnabled: false,
-          headerLeft: null,
+          // FIXED: Enable gestures for better navigation
+          gestureEnabled: true,
+          headerShown: false,
           transitionSpec: {
             open: {
               animation: 'timing',
               config: {
-                duration: 600,
+                duration: 300,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 300,
               },
             },
           },
-          cardStyleInterpolator: ({ current }) => ({
+          cardStyleInterpolator: ({ current, layouts }) => ({
             cardStyle: {
-              opacity: current.progress,
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
             },
           }),
         }}

@@ -44,8 +44,8 @@ const SplashScreen = ({ navigation }) => {
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <Image
-        source={require("/Users/ioanagavrila/Desktop/FRONTEND/FRONTEND/Mobile/assets/LOGO_NB.png")}
-        style={styles.logo}
+// ✅ CORRECT - Relative path
+source={require("../../assets/LOGO_NB.png")}        style={styles.logo}
         resizeMode="contain"
       />
     </Animated.View>

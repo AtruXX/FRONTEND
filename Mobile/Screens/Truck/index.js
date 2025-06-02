@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles'; // Import your styles from the styles.js file
+
 const TruckDetailsScreen = ({ navigation, route }) => {
   const [truckDetails, setTruckDetails] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -231,6 +232,33 @@ const TruckDetailsScreen = ({ navigation, route }) => {
     }
   };
 
+  // FIXED: Improved back button handler with multiple fallback options
+  const handleBackPress = () => {
+    try {
+      // Method 1: Try to go back if possible
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        // Method 2: Navigate to a specific screen if can't go back
+        navigation.navigate('Home'); // Replace 'Home' with your main screen name
+        // Alternative: navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Method 3: Fallback - try to pop to top
+      try {
+        navigation.popToTop();
+      } catch (fallbackError) {
+        console.error('Fallback navigation error:', fallbackError);
+        // Method 4: Last resort - reset navigation stack
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }], // Replace with your main screen
+        });
+      }
+    }
+  };
+
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('ro-RO', options);
@@ -271,15 +299,30 @@ const TruckDetailsScreen = ({ navigation, route }) => {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            style={[styles.backButton, { 
+              // FIXED: Ensure proper touch target size and styling
+              minWidth: 44, 
+              minHeight: 44, 
+              justifyContent: 'center', 
+              alignItems: 'center' 
+            }]}
+            onPress={handleBackPress}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Increase touch area
           >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Detalii Camion</Text>
           <TouchableOpacity 
-            style={styles.refreshIconButton}
+            style={[styles.refreshIconButton, {
+              minWidth: 44,
+              minHeight: 44,
+              justifyContent: 'center',
+              alignItems: 'center'
+            }]}
             onPress={onRefresh}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="refresh" size={22} color="#6366F1" />
           </TouchableOpacity>
@@ -461,4 +504,5 @@ const TruckDetailsScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
+
 export default TruckDetailsScreen;
