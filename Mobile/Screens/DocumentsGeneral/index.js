@@ -134,11 +134,9 @@ const DocumentsScreen = ({ navigation, route }) => {
   };
   const openDocument = async (url) => {
     try {
-      // Check if the URL can be opened
       const supported = await Linking.canOpenURL(url);
       
       if (supported) {
-        // Open the URL in device browser
         await Linking.openURL(url);
       } else {
         Alert.alert(
@@ -364,122 +362,122 @@ const DocumentsScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-      <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.navigate("Main")}
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-        <Text style={styles.headerTitle}>Upload a document</Text>
-      </View>
+    {/* Header */}
+    <View style={styles.header}>
+    <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.navigate("Main")}
+        >
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+      <Text style={styles.headerTitle}>Încarcă un document</Text>
+    </View>
 
-      <ScrollView style={styles.scrollContainer}>
-        {/* Upload Section */}
-        <View style={styles.uploadSection}>
-          <Text style={styles.sectionTitle}>Upload or take a photo of</Text>
-          <Text style={styles.documentName}>{documentTitle}</Text>
-          <Text style={styles.helpText}>
-            This helps you and your dispatcher access easier all the documents if needed to.
-            You can always find it in its folder in the "Papers" section.
-          </Text>
-          
-          {selectedFile ? (
-            <View style={styles.filePreviewContainer}>
-              <MaterialCommunityIcons name="file-check" size={40} color="#4285F4" />
-              <Text style={styles.selectedFileName} numberOfLines={1} ellipsizeMode="middle">
-                {getFileName(selectedFile.uri)}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.filePreviewContainer}>
-              <MaterialCommunityIcons name="file" size={40} color="#4285F4" />
-            </View>
-          )}
-          
-          <TouchableOpacity style={styles.uploadArea} onPress={pickDocument}>
-            <Ionicons name="add-circle-outline" size={32} color="#4285F4" />
-            <Text style={styles.uploadText}>Click to upload</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.fileTypesContainer}>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>PDF</Text>
-            </View>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>DOCX</Text>
-            </View>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>JPG</Text>
-            </View>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>&lt; 10 MB</Text>
-            </View>
+    <ScrollView style={styles.scrollContainer}>
+      {/* Upload Section */}
+      <View style={styles.uploadSection}>
+        <Text style={styles.sectionTitle}>Încarcă sau fotografiază</Text>
+        <Text style={styles.documentName}>{documentTitle}</Text>
+        <Text style={styles.helpText}>
+          Acest lucru te ajută pe tine și pe dispatcher să accesați mai ușor toate documentele dacă este necesar.
+          Îl poți găsi întotdeauna în dosarul său din secțiunea "Acte".
+        </Text>
+        
+        {selectedFile ? (
+          <View style={styles.filePreviewContainer}>
+            <MaterialCommunityIcons name="file-check" size={40} color="#4285F4" />
+            <Text style={styles.selectedFileName} numberOfLines={1} ellipsizeMode="middle">
+              {getFileName(selectedFile.uri)}
+            </Text>
           </View>
-          
-          <Text style={styles.orText}>Or</Text>
-          
-          <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
-            <Ionicons name="camera" size={20} color="#4285F4" />
-            <Text style={styles.cameraButtonText}>Open Camera & Take Photo</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.uploadDocumentButton, (!selectedFile || isUploading) && styles.disabledButton]}
-            onPress={uploadDocument}
-            disabled={!selectedFile || isUploading}
-          >
-            {isUploading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.uploadDocumentButtonText}>Upload document</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Recent Documents Section */}
-        <View style={styles.recentDocumentsSection}>
-        <Text style={styles.recentDocumentsTitle}>Recent Documents</Text>
-        {recentDocuments.length > 0 ? (
-          recentDocuments.map(doc => (
-            <TouchableOpacity 
-              key={doc.id} 
-              style={styles.documentItem}
-              onPress={() => openDocument(doc.url)}
-            >
-              <View style={styles.documentIconContainer}>
-                {getFileIcon(doc.type)}
-              </View>
-              <View style={styles.documentInfo}>
-                <Text style={styles.documentTitle}>{doc.name}</Text>
-                <View style={styles.documentDetails}>
-                  <Text style={styles.documentType}>{doc.type}</Text>
-                  <Text style={styles.documentSize}>{doc.size}</Text>
-                  <Text style={styles.documentDate}>{doc.date}</Text>
-                </View>
-              </View>
-              <View style={styles.documentStatus}>
-                <View style={[styles.statusIndicator, {backgroundColor: getStatusColor(doc.status)}]} />
-                <Text style={styles.statusText}>{getStatusLabel(doc.status)}</Text>
-              </View>
-              <TouchableOpacity 
-                style={styles.documentMenuButton}
-                onPress={(e) => {
-                  e.stopPropagation(); // Prevent triggering the parent onPress
-                  showDocumentOptions(doc);
-                }}
-              >
-                <MaterialIcons name="more-vert" size={20} color="#777" />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          ))
         ) : (
-          <Text style={styles.noDocumentsText}>No documents found</Text>
+          <View style={styles.filePreviewContainer}>
+            <MaterialCommunityIcons name="file" size={40} color="#4285F4" />
+          </View>
         )}
+        
+        <TouchableOpacity style={styles.uploadArea} onPress={pickDocument}>
+          <Ionicons name="add-circle-outline" size={32} color="#4285F4" />
+          <Text style={styles.uploadText}>Apasă pentru a încărca</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.fileTypesContainer}>
+          <View style={styles.fileType}>
+            <Text style={styles.fileTypeText}>PDF</Text>
+          </View>
+          <View style={styles.fileType}>
+            <Text style={styles.fileTypeText}>DOCX</Text>
+          </View>
+          <View style={styles.fileType}>
+            <Text style={styles.fileTypeText}>JPG</Text>
+          </View>
+          <View style={styles.fileType}>
+            <Text style={styles.fileTypeText}>&lt; 10 MB</Text>
+          </View>
+        </View>
+        
+        <Text style={styles.orText}>Sau</Text>
+        
+        <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
+          <Ionicons name="camera" size={20} color="#4285F4" />
+          <Text style={styles.cameraButtonText}>Deschide Camera & Fă o Poză</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.uploadDocumentButton, (!selectedFile || isUploading) && styles.disabledButton]}
+          onPress={uploadDocument}
+          disabled={!selectedFile || isUploading}
+        >
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.uploadDocumentButtonText}>Încarcă documentul</Text>
+          )}
+        </TouchableOpacity>
       </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+
+      {/* Recent Documents Section */}
+      <View style={styles.recentDocumentsSection}>
+      <Text style={styles.recentDocumentsTitle}>Documente Recente</Text>
+      {recentDocuments.length > 0 ? (
+        recentDocuments.map(doc => (
+          <TouchableOpacity 
+            key={doc.id} 
+            style={styles.documentItem}
+            onPress={() => openDocument(doc.url)}
+          >
+            <View style={styles.documentIconContainer}>
+              {getFileIcon(doc.type)}
+            </View>
+            <View style={styles.documentInfo}>
+              <Text style={styles.documentTitle}>{doc.name}</Text>
+              <View style={styles.documentDetails}>
+                <Text style={styles.documentType}>{doc.type}</Text>
+                <Text style={styles.documentSize}>{doc.size}</Text>
+                <Text style={styles.documentDate}>{doc.date}</Text>
+              </View>
+            </View>
+            <View style={styles.documentStatus}>
+              <View style={[styles.statusIndicator, {backgroundColor: getStatusColor(doc.status)}]} />
+              <Text style={styles.statusText}>{getStatusLabel(doc.status)}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.documentMenuButton}
+              onPress={(e) => {
+                e.stopPropagation(); // Prevent triggering the parent onPress
+                showDocumentOptions(doc);
+              }}
+            >
+              <MaterialIcons name="more-vert" size={20} color="#777" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))
+      ) : (
+        <Text style={styles.noDocumentsText}>Nu s-au găsit documente</Text>
+      )}
+    </View>
+    </ScrollView>
+  </SafeAreaView>
+);
 };
 export default DocumentsScreen;
