@@ -102,57 +102,58 @@ const HomeScreen = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Function to fetch the transport data
-    const fetchTransport = async () => {
-      try {
-        setLoading(true);
-        const authToken = await AsyncStorage.getItem('authToken');
-        console.log('[DEBUG] Retrieved auth token:', authToken);
-
-        if (!authToken) {
-          console.error('[DEBUG] No auth token found. Aborting fetch.');
-          setLoading(false);
-          return;
-        }
-
-        const headers = {
-          'Authorization': `Token ${authToken}`,
-        };
-
-        // Updated URL to match your API endpoint
-        console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${profileData.id}`);
-
-        const response = await fetch(`${BASE_URL}transports?driver_id=${profileData.id}`, {
-          method: 'GET',
-          headers: headers
-        });
-
-        if (!response.ok) {
-          throw new Error(`API request failed with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('[DEBUG] Received transport data:', data);
-
-        if (data.transports && data.transports.length > 0) {
-          // Get the last transport from the array based on the id (assuming higher id = newer)
-          const sortedTransports = [...data.transports].sort((a, b) => b.id - a.id);
-          const lastTransport = sortedTransports[0];
-          setTransport(lastTransport);
-        } else {
-
-        }
-
+  const fetchTransport = async () => {
+    try {
+      setLoading(true);
+      const authToken = await AsyncStorage.getItem('authToken');
+      console.log('[DEBUG] Retrieved auth token:', authToken);
+      
+      if (!authToken) {
+        console.error('[DEBUG] No auth token found. Aborting fetch.');
         setLoading(false);
-      } catch (err) {
-        console.error('[DEBUG] Error fetching transport:', err);
-        setError(err.message);
-        setLoading(false);
+        return;
       }
-    };
 
-    fetchTransport();
-  }, [profileData.id]); // Add profileData.id as a dependency
+      const headers = {
+        'Authorization': `Token ${authToken}`,
+      };
+
+      console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${profileData.id}`);
+      const response = await fetch(`${BASE_URL}transports?driver_id=${profileData.id}`, {
+        method: 'GET',
+        headers: headers
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('[DEBUG] Received transport data:', data);
+
+      if (data.transports && data.transports.length > 0) {
+        // Get the last transport (most recent one)
+        const sortedTransports = [...data.transports].sort((a, b) => b.id - a.id);
+        const lastTransport = sortedTransports[0];
+        setTransport(lastTransport);
+        console.log('[DEBUG] Set last transport:', lastTransport);
+      } else {
+        // No transports found
+        setTransport(null);
+        console.log('[DEBUG] No transports found for driver');
+      }
+
+    } catch (err) {
+      console.error('[DEBUG] Error fetching transport:', err);
+      setError(err.message);
+      setTransport(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTransport();
+}, [profileData.id]); // Add profileData.id as a dependency
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -361,54 +362,80 @@ const HomeScreen = () => {
   
 
         {/* Upcoming delivery card */}
-        {transport != null ? (
-          <View style={styles.deliveryCard}>
-            <View style={styles.deliveryHeader}>
-              <View>
-                <Text style={styles.deliveryTitle}>
-                  {transport.origin_city} → {transport.destination_city}
-                </Text>
-                <Text style={styles.deliverySubtitle}>
-                  {transport.time_estimation || 'Maine, 14:00'}
-                </Text>
-              </View>
-              <View style={[
-                styles.deliveryBadge,
-                transport.status_transport === 'not started' ? styles.badgeNotStarted :
-                  transport.status_transport === 'in progress' ? styles.badgeInProgress :
-                    transport.status_transport === 'delayed' ? styles.badgeDelayed :
-                      styles.badgeCompleted
-              ]}>
-                <Text style={styles.deliveryBadgeText}>
-                  {transport.status_transport === 'not started' ? 'Neînceput' :
-                    transport.status_transport === 'in progress' ? 'În desfășurare' :
-                      transport.status_transport === 'delayed' ? 'Întârziat' :
-                        'Finalizat'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.deliveryDetails}>
-              <View style={styles.deliveryItem}>
-                <Ionicons name="cube-outline" size={20} color="#666" />
-                <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
-              </View>
-              <View style={styles.deliveryItem}>
-                <Ionicons name="navigate-outline" size={20} color="#666" />
-                <Text style={styles.deliveryItemText}>
-                  {transport.trailer_number || 'CJ12ABC'}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.deliveryButton}
-              onPress={() => console.log('Transport details:', transport)}
-            >
-              <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (null)}
+       {loading ? (
+        
+ <>
+    <Text style={styles.sectionTitle}>Ultimul transport atribuit</Text>
+    <View style={styles.deliveryCard}>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
+      </View>
+    </View>
+  </>
+) : transport ? (
+  
+<>
+    <Text style={styles.sectionTitle}>Ultimul transport atribuit:</Text>
+  <View style={styles.deliveryCard}>
+    <View style={styles.deliveryHeader}>
+      <View>
+        <Text style={styles.deliveryTitle}>
+          {transport.origin_city} → {transport.destination_city}
+        </Text>
+        <Text style={styles.deliverySubtitle}>
+          {transport.time_estimation || 'Maine, 14:00'}
+        </Text>
+      </View>
+      <View style={[
+        styles.deliveryBadge,
+        transport.status_transport === 'not started' ? styles.badgeNotStarted :
+        transport.status_transport === 'in progress' ? styles.badgeInProgress :
+        transport.status_transport === 'delayed' ? styles.badgeDelayed :
+        styles.badgeCompleted
+      ]}>
+        <Text style={styles.deliveryBadgeText}>
+          {transport.status_transport === 'not started' ? 'Neînceput' :
+           transport.status_transport === 'in progress' ? 'În desfășurare' :
+           transport.status_transport === 'delayed' ? 'Întârziat' :
+           'Finalizat'}
+        </Text>
+      </View>
+    </View>
+    <View style={styles.deliveryDetails}>
+      <View style={styles.deliveryItem}>
+        <Ionicons name="cube-outline" size={20} color="#666" />
+        <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
+      </View>
+      <View style={styles.deliveryItem}>
+        <Ionicons name="navigate-outline" size={20} color="#666" />
+        <Text style={styles.deliveryItemText}>
+          {transport.trailer_number || 'CJ12ABC'}
+        </Text>
+      </View>
+    </View>
+    <TouchableOpacity
+      style={styles.deliveryButton}
+      onPress={() => console.log('Transport details:', transport)}
+    >
+      <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
+    </TouchableOpacity>
+  </View>
+  </>
+) : (
+  <View style={styles.deliveryCard}>
+    <View style={styles.noDataContainer}>
+      <Ionicons name="truck-outline" size={48} color="#ccc" />
+      <Text style={styles.noDataTitle}>Nu există transporturi înregistrate</Text>
+      <Text style={styles.noDataSubtitle}>
+        Transporturile tale vor apărea aici când vor fi asignate
+      </Text>
+    </View>
+  </View>
+)}
       </ScrollView>
     </SafeAreaView>
+    
   );
 };
 
