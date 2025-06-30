@@ -32,38 +32,48 @@ const TransportsScreen = ({ navigation, route }) => {
     id: "",
     on_road: false,
   });
-  
+
+  // ADD: Base URL - Update this with your actual API base URL
   const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
-  
-  // Load auth token on component mount
+
+  // ADD: fetchDriverProfile function
   const fetchDriverProfile = async (token) => {
     try {
-      const response = await fetch(
-        `${BASE_URL}profile/`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Token ${token}`
-          }
-        }
-      );
-      
-      if (response.ok) {
-        const profileData = await response.json();
-        setProfileData(profileData);
-        setDriverId(profileData.id);
-        console.log("Driver ID set:", profileData.id);
-      } else {
-        console.error("Failed to fetch driver profile");
-        Alert.alert('Eroare', 'Nu s-a putut obține profilul șoferului.');
+      const response = await fetch(`${BASE_URL}auth/users/me`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      
+      // Update profile data state
+      setProfileData({
+        name: data.name,
+        role: data.is_driver ? "Driver" : (data.is_dispatcher ? "Dispatcher" : "User"),
+        initials: data.name.split(' ').map(n => n[0]).join('').toUpperCase(),
+        id: data.id,
+        on_road: false, // You can update this based on your logic
+      });
+      
+      // Set the driver ID from the API response
+      setDriverId(data.id);
+      
+      console.log('Driver profile loaded:', data.name, 'ID:', data.id);
+      return data;
     } catch (error) {
-      console.error("Error fetching driver profile:", error);
-      Alert.alert('Eroare', 'Verificați conexiunea la internet.');
+      console.error('Error fetching driver profile:', error);
+      return null;
     }
   };
 
-  // Load active transport from storage
+  // ADD: Load active transport from storage
   const loadActiveTransport = async () => {
     try {
       const activeId = await AsyncStorage.getItem('activeTransportId');
@@ -75,7 +85,7 @@ const TransportsScreen = ({ navigation, route }) => {
     }
   };
 
-  // Save active transport to storage
+  // ADD: Save active transport to storage
   const saveActiveTransport = async (transportId) => {
     try {
       await AsyncStorage.setItem('activeTransportId', transportId.toString());
@@ -84,6 +94,68 @@ const TransportsScreen = ({ navigation, route }) => {
     }
   };
   
+  // FIXED: fetchTransports function with proper URL
+  const fetchTransports = async (token, driverId) => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching transports for driver ID:', driverId);
+      const url = `${BASE_URL}transports?status=atribuit&driver=${driverId}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Transform the API data to match your existing component structure
+      const transformedTransports = data.transports.map(transport => ({
+        id: transport.id,
+        truck_combination: transport.truck_combination,
+        destination: `${transport.origin_city} → ${transport.destination_city}`,
+        status_truck: transport.status_truck,
+        status_goods: transport.status_goods,
+        status_trailer_wagon: transport.status_trailer_wagon,
+        status_transport: transport.status_transport,
+        departure_time: transport.time_estimation ? 
+          new Date(transport.time_estimation).toLocaleTimeString('ro-RO', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : 'N/A',
+        arrival_time: 'N/A', // Not provided in API response
+        distance: 'N/A', // Not provided in API response
+        // Additional fields from API that might be useful
+        goods_type: transport.goods_type,
+        trailer_type: transport.trailer_type,
+        trailer_number: transport.trailer_number,
+        delay_estimation: transport.delay_estimation,
+        is_finished: transport.is_finished,
+        company: transport.company,
+        dispatcher: transport.dispatcher,
+        goods_photos: transport.goods_photos
+      }));
+      
+      setTransports(transformedTransports);
+      setLoading(false);
+      setRefreshing(false);
+      
+    } catch (err) {
+      console.error('[DEBUG] Error fetching transports:', err);
+      setError(err.message || 'Failed to fetch transports');
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // FIXED: useEffect to properly pass token and driverId
   useEffect(() => {
     const loadAuthToken = async () => {
       try {
@@ -93,10 +165,16 @@ const TransportsScreen = ({ navigation, route }) => {
         if (token) {
           setAuthToken(token);
           console.log('Auth token loaded and set in state');
-          // Once we have the token, fetch the profile to get driverId
-          fetchDriverProfile(token);
+          
           // Load active transport
-          loadActiveTransport();
+          await loadActiveTransport();
+          
+          // Fetch the profile to get driverId
+          const profileData = await fetchDriverProfile(token);
+          
+          // Fetch transports with token and driverId
+          const driverIdToUse = profileData?.id || driverId;
+          await fetchTransports(token, driverIdToUse);
         } else {
           console.error("No auth token found in AsyncStorage");
           setLoading(false);
@@ -109,65 +187,28 @@ const TransportsScreen = ({ navigation, route }) => {
     loadAuthToken();
   }, []);
 
-  // Hardcoded transport data for testing
-  const fetchTransports = async (token, driverId) => {
-    try {
-      setLoading(true);
-      
-      // Simulate loading delay
-      setTimeout(() => {
-        const hardcodedTransports = [
-          {
-            id: 1,
-            truck_combination: "Scania R450 + Remorcă Krone",
-            destination: "București → Cluj-Napoca",
-            status_truck: "ok",
-            status_goods: "ok",
-            status_trailer_wagon: "ok",
-            status_transport: "not started",
-            departure_time: "08:00",
-            arrival_time: "14:30",
-            distance: "450 km"
-          },
-          {
-            id: 2,
-            truck_combination: "Mercedes Actros + Remorcă Schmitz",
-            destination: "Cluj-Napoca → Timișoara",
-            status_truck: "ok",
-            status_goods: "probleme",
-            status_trailer_wagon: "ok",
-            status_transport: "not started",
-            departure_time: "06:00",
-            arrival_time: "12:00",
-            distance: "320 km"
-          },
-          {
-            id: 3,
-            truck_combination: "Volvo FH16 + Remorcă Kögel",
-            destination: "Timișoara → Constanța",
-            status_truck: "probleme",
-            status_goods: "ok",
-            status_trailer_wagon: "ok",
-            status_transport: "not started",
-            departure_time: "10:00",
-            arrival_time: "18:00",
-            distance: "520 km"
-          }
-        ];
-        
-        setTransports(hardcodedTransports);
-        setLoading(false);
-        setRefreshing(false);
-      }, 1000);
-    } catch (err) {
-      console.error('[DEBUG] Error setting hardcoded transports:', err);
-      setError(err.message);
-      setLoading(false);
-      setRefreshing(false);
+  // FIXED: onRefresh function
+  const onRefresh = () => {
+    setRefreshing(true);
+    if (authToken && driverId) {
+      fetchTransports(authToken, driverId);
+    } else {
+      // Fallback - try to reload everything
+      const loadAndRefresh = async () => {
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
+          const profileData = await fetchDriverProfile(token);
+          const driverIdToUse = profileData?.id || driverId;
+          await fetchTransports(token, driverIdToUse);
+        } else {
+          setRefreshing(false);
+        }
+      };
+      loadAndRefresh();
     }
   };
 
-  // Handle starting a transport
+  // ADD: Handle starting a transport
   const handleStartTransport = async (transport) => {
     setStartingTransport(transport.id);
     
@@ -180,50 +221,57 @@ const TransportsScreen = ({ navigation, route }) => {
       // Show success alert
       Alert.alert(
         'Succes!',
-        'TI-AI INSUSIT CURSA CU SUCCES! DISPECERUL TAU VA FI ANUNTAT!',
+        'TI-AI ÎNSUȘIT CURSA CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
         [{ text: 'OK' }]
       );
       
       setStartingTransport(null);
     }, 1000);
   };
-  
-  // Single useEffect that calls the function when component mounts
-  useEffect(() => {
-    // Always load hardcoded data
-    fetchTransports();
-  }, []);
-  
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchTransports();
-  };
 
-  const handleModifyData = (transport) => {
-    navigation.navigate('Transport_Update', { transport: transport });
-  };
-  
-  const handleViewPhoto = (photoUrl) => {
-    // Implement photo viewing functionality
-    Alert.alert('View Photo', `Would open photo: ${photoUrl}`);
-  };
-
-  const handleViewDetails = (item) => {
+  // ADD: Handle view details
+  const handleViewDetails = (transport) => {
     // Navigate to details or implement details view
-    console.log('View details for transport:', item.id);
+    console.log('View details for transport:', transport.id);
+    // You can navigate to a details screen here
+    // navigation.navigate('TransportDetails', { transport });
   };
 
+  // ADD: Get status color
   const getStatusColor = (status) => {
-    if (status === 'ok') return '#10B981'; // Green like statusIndicator in second file
-    if (status === 'probleme' || status === 'not started') return '#F59E0B'; // Orange/amber color
+    if (status === 'ok') return '#10B981'; // Green
+    if (status === 'probleme' || status === 'not started') return '#F59E0B'; // Orange/amber
     return '#EF4444'; // Red for errors
   };
 
+  // ADD: Get status icon
   const getStatusIcon = (status) => {
     if (status === 'ok') return 'checkmark-circle';
     if (status === 'probleme') return 'warning';
     if (status === 'not started') return 'time-outline';
     return 'alert-circle';
+  };
+
+  // FIXED: Error handling component
+  const renderError = () => {
+    if (!error) return null;
+    
+    return (
+      <View style={styles.errorContainer}>
+        <View style={styles.errorIconContainer}>
+          <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
+        </View>
+        <Text style={styles.errorTitle}>Eroare la încărcarea transporturilor</Text>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={onRefresh}
+        >
+          <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+          <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const renderTransportItem = ({ item }) => {
@@ -358,35 +406,37 @@ const TransportsScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
         
-        {transports.length > 0 ? (
-          <FlatList
-            data={transports}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderTransportItem}
-            contentContainerStyle={styles.listContainer}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={['#6366F1']}
-              />
-            }
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <Ionicons name="car-outline" size={40} color="#6366F1" />
+        {error ? renderError() : (
+          transports.length > 0 ? (
+            <FlatList
+              data={transports}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderTransportItem}
+              contentContainerStyle={styles.listContainer}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={['#6366F1']}
+                />
+              }
+            />
+          ) : (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons name="car-outline" size={40} color="#6366F1" />
+              </View>
+              <Text style={styles.emptyTitle}>Niciun transport găsit</Text>
+              <Text style={styles.emptyText}>Nu există transporturi disponibile în acest moment</Text>
+              <TouchableOpacity
+                style={styles.refreshButton}
+                onPress={onRefresh}
+              >
+                <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
+                <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
+              </TouchableOpacity>
             </View>
-            <Text style={styles.emptyTitle}>Niciun transport găsit</Text>
-            <Text style={styles.emptyText}>Nu există transporturi disponibile în acest moment</Text>
-            <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={onRefresh}
-            >
-              <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
-              <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
-            </TouchableOpacity>
-          </View>
+          )
         )}
       </View>
     </SafeAreaView>
