@@ -170,55 +170,44 @@ const HomeScreen = () => {
     );
   }
 
-  const handleStatusChange = async () => {
+   const handleStatusChange = async () => {
     try {
-      
       setLoading(true);
       
-      const requestBody = {
-        on_road: !profileData.driver.on_road
-      };
-      console.log('📤 Request body:', JSON.stringify(requestBody, null, 2));
-      console.log('🌐 Request URL:', `${BASE_URL}status`);
-      
-      const response = await fetch(`${BASE_URL}status`, {
+      console.log('🌐 Request URL:', `${BASE_URL}status/`);
+      const authToken = await AsyncStorage.getItem('authToken');
+
+      const response = await fetch(`${BASE_URL}status/`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Token ${authToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody)
       });
-  
+      
       console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
       
       if (response.ok) {
         const updatedData = await response.json();
         console.log('✅ Response data:', JSON.stringify(updatedData, null, 2));
         
-        onStatusUpdate(updatedData);
-        console.log('🔄 Called onStatusUpdate with:', JSON.stringify(updatedData, null, 2));
+        // Update the profile data directly
+        setProfileData(updatedData);
         
-        // Fixed: use driver.on_road for success message
-        const newStatus = !response.driver.on_road ? 'La volan' : 'Staționare';
-        console.log('📝 New status message:', newStatus);
+        // Show success message with consistent text
+        const newStatus = updatedData.driver.on_road ? 'La volan' : 'Parcat';
         
-        Alert.alert(
-          'Status actualizat',
-          `Statusul a fost schimbat în: ${newStatus}`
-        );
+        
       } else {
         const errorText = await response.text();
         console.error('❌ Response error:', response.status, errorText);
-        throw new Error(`Failed to update status: ${response.status} - ${errorText}`);
+        throw new Error(`Failed to update status: ${response.status}`);
       }
+      
     } catch (error) {
       console.error('💥 Status update error:', error);
-      console.error('💥 Error stack:', error.stack);
       Alert.alert('Eroare', 'Nu s-a putut actualiza statusul. Încearcă din nou.');
     } finally {
-      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   };
@@ -334,81 +323,42 @@ const HomeScreen = () => {
           </View>
         </View>
 
-        {/* Status Card - Current status */}
-        <View style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <Text style={styles.statusTitle}>Statusul tău:</Text>
+       <View style={styles.statusCard}>
+      {/* Current Status Display */}
+      <View style={[
+        styles.statusDisplay,
+        profileData.driver?.on_road ? styles.driving : styles.parked
+      ]}>
+        <View style={[
+          styles.statusDot,
+          profileData.driver?.on_road ? styles.drivingDot : styles.parkedDot
+        ]} />
+        <Text style={styles.statusText}>
+          {profileData.driver?.on_road ? 'La volan' : 'Parcat'}
+        </Text>
+      </View>
 
-            {/* Current Status Display */}
-            <View style={styles.currentStatusContainer}>
-              <View style={[
-                styles.statusIndicator,
-                profileData.driver?.on_road ? styles.drivingIndicator : styles.parkedIndicator
-              ]}>
-                <View style={[
-                  styles.statusDot,
-                  profileData.driver?.on_road ? styles.drivingDot : styles.parkedDot
-                ]} />
-              </View>
-              <Text style={[
-                styles.currentStatusText,
-                profileData.driver?.on_road ? styles.drivingText : styles.parkedText
-              ]}>
-                {currentStatus}
-              </Text>
-            </View>
-
-            {/* Circular Change Button */}
-            <TouchableOpacity
-              style={[
-                styles.circularButton,
-                profileData.driver?.on_road ? styles.circularButtonDriving : styles.circularButtonParked,
-                loading && styles.disabledButton
-              ]}
-              onPress={handleStatusChange}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator size="large" color="#fff" />
-              ) : (
-                <View style={styles.buttonContent}>
-                  {/* Icon based on next status */}
-                  <View style={styles.iconContainer}>
-                    {profileData.driver?.on_road ? (
-                      // Show parking icon when currently driving
-                      <View style={styles.parkingIcon}>
-                        <View style={styles.parkingSquare} />
-                        <Text style={styles.parkingText}>P</Text>
-                      </View>
-                    ) : (
-                      // Show car icon when currently parked
-                      <View style={styles.carIcon}>
-                        <View style={styles.carBody} />
-                        <View style={styles.carWindows} />
-                        <View style={[styles.carWheel, styles.frontWheel]} />
-                        <View style={[styles.carWheel, styles.backWheel]} />
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Action Text */}
-                  <Text style={styles.actionText}>
-                    {profileData.driver?.on_road ? 'PARCHEAZA' : 'PORNEȘTE'}
-                  </Text>
-                  <Text style={styles.nextStatusHint}>
-                    → {nextStatus}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {/* Helper Text */}
-            <Text style={styles.helperText}>
-              Apasă butonul pentru a schimba statusul
-            </Text>
-          </View>
-        </View>
+      {/* Simple Toggle Button */}
+      <TouchableOpacity
+        style={[
+          styles.toggleButton,
+          profileData.driver?.on_road ? styles.parkButton : styles.driveButton,
+          loading && styles.disabled
+        ]}
+        onPress={handleStatusChange}
+        disabled={loading}
+        activeOpacity={0.7}
+      >
+        {loading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>
+            {profileData.driver?.on_road ? 'Parcheaza' : 'Pornește'}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </View>
+  
 
         {/* Upcoming delivery card */}
         {transport != null ? (
