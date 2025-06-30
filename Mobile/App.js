@@ -151,6 +151,26 @@ const AppNavigator = () => {
               },
             }),
           }}
+          listeners={({ navigation }) => ({
+            // Prevent going back to Login screen
+            beforeRemove: (e) => {
+              // Check if we're trying to go back to Login
+              if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
+                // Prevent the default behavior
+                e.preventDefault();
+                
+                // Optional: You can show an alert or handle logout here
+                // Alert.alert(
+                //   'Logout',
+                //   'Are you sure you want to logout?',
+                //   [
+                //     { text: 'Cancel', style: 'cancel' },
+                //     { text: 'Logout', onPress: () => navigation.dispatch(e.data.action) }
+                //   ]
+                // );
+              }
+            },
+          })}
         />
         
         {/* Home related screens */}
@@ -158,15 +178,13 @@ const AppNavigator = () => {
           name="Truck" 
           component={Truck} 
           options={{
-            // FIXED: Enable gestures and remove headerLeft restriction for proper back navigation
             gestureEnabled: true,
-            headerShown: false, // Keep your custom header
-            // Remove headerLeft: null to allow back navigation
+            headerShown: false,
             transitionSpec: {
               open: {
                 animation: 'timing',
                 config: {
-                  duration: 300, // Faster transition for better UX
+                  duration: 300,
                 },
               },
               close: {
@@ -195,7 +213,6 @@ const AppNavigator = () => {
         
         <Stack.Screen name="Transport_Update" component={Transport_Update}
         options={{
-          // FIXED: Enable gestures for better navigation
           gestureEnabled: true,
           headerShown: false,
           transitionSpec: {
@@ -234,7 +251,6 @@ const AppNavigator = () => {
           options={{
             gestureEnabled: true,
             headerShown: false,
-            // Added smooth transition
             transitionSpec: {
               open: {
                 animation: 'timing',
@@ -369,7 +385,6 @@ const AppNavigator = () => {
         {/* Profile related screens */}
         <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
         options={{
-          // FIXED: Enable gestures for better navigation
           gestureEnabled: true,
           headerShown: false,
           transitionSpec: {
