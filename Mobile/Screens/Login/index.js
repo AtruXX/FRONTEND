@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles } from "./styles"; 
 const LoginScreen = () => {
-  const [email, setEmail] = useState("");
+  const [phone, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
   const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
@@ -78,9 +78,9 @@ const LoginScreen = () => {
     }
   };
   const handleLogin = async () => {
-    const loginData = { email, password };
+    const loginData = { phone_number, password };
     try {
-      console.log('Attempting login with:', email);
+      console.log('Attempting login with:', phone_number);
       const response = await fetch(
         `${BASE_URL}auth/token/login`,
         {
@@ -126,12 +126,12 @@ const LoginScreen = () => {
       
       <View style={styles.formCard}>
         <View style={styles.inputWrapper}>
-          <Text style={styles.inputLabel}>Adresa de email</Text>
+          <Text style={styles.inputLabel}>Numar de telefon</Text>
           <View style={styles.inputContainer}>
             <TextInput
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
+              value={phone_number}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
               autoCapitalize="none"
               style={styles.input}
               mode="flat"
