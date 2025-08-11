@@ -7,7 +7,7 @@ import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { BASE_URL } from "../../utils/BASE_URL";
-
+import PageHeader from '../../components/General/Header';
 const DocumentsScreen = ({ navigation, route }) => {
   // Document categories
   const documentCategories = [
@@ -426,15 +426,13 @@ const DocumentsScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.navigate("Main")}
-        >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Încarcă un document</Text>
-      </View>
+      <PageHeader
+        title="Profil"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
 
       <ScrollView style={styles.scrollContainer}>
         {/* Upload Section */}
