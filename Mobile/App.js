@@ -18,19 +18,23 @@ import StatusTransportForm from "./Screens/TransportActualStatus";
 import PhotoCMRForm from "./Screens/TransportActualCMRPhoto";
 
 import { NavigationContainer } from '@react-navigation/native';
-import { Pressable, View, StyleSheet } from 'react-native';
+import { Pressable, View, StyleSheet, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import your notifications context
 import { NotificationsProvider } from './Screens/NotificationsContext/index.js'; // Adjust path as needed
 import { LoadingProvider } from './components/General/loadingSpinner.js'; // Adjust path as needed
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Custom Tab Bar component with fluid animation
+// Custom Tab Bar component with fluid animation and safe area support
 const FluidTabBar = ({ state, descriptors, navigation }) => {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={styles.tabContainer}>
+    <View style={[styles.tabContainer, { paddingBottom: insets.bottom }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
@@ -424,21 +428,23 @@ const AppNavigatorContent = () => {
 // Main app navigator - this is the root component
 const AppNavigator = () => {
   return (
-    <NotificationsProvider>
-      <LoadingProvider>
-        <NavigationContainer>
-          <AppNavigatorContent />
-        </NavigationContainer>
-      </LoadingProvider>
-    </NotificationsProvider>
+    <SafeAreaProvider>
+      <NotificationsProvider>
+        <LoadingProvider>
+          <NavigationContainer>
+            <AppNavigatorContent />
+          </NavigationContainer>
+        </LoadingProvider>
+      </NotificationsProvider>
+    </SafeAreaProvider>
   );
 };
 
-// Styles for the fluid tab bar
+// Updated styles for the fluid tab bar with safe area support
 const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
-    height: 70,
+    minHeight: 70,
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#f1f1f1',
@@ -448,6 +454,10 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 5,
     paddingHorizontal: 10,
+    paddingTop: 10,
+    // Ensure the tab bar is above system navigation
+    position: 'relative',
+    zIndex: 1000,
   },
   tabButton: {
     flex: 1,
