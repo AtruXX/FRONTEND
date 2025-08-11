@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useNavigation } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Alert, ActivityIndicator,TouchableOpacity, ScrollView, Image, Platform, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TouchableOpacity, ScrollView, Image, Platform, Linking, Modal } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import {styles} from './styles'; // Import your styles from the styles.js file
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,61 +9,96 @@ import * as ImagePicker from 'expo-image-picker';
 import { BASE_URL } from "../../utils/BASE_URL";
 
 const DocumentsScreen = ({ navigation, route }) => {
+  // Document categories
+  const documentCategories = [
+    { value: 'permis_de_conducere', label: 'Permis de conducere' },
+    { value: 'atestate', label: 'Atestat profesional' },
+    { value: 'certificat_medical', label: 'Certificat medical' },
+    { value: 'aviz_psihologic', label: 'Aviz psihologic' },
+    { value: 'buletin', label: 'Carte de identitate' },
+    { value: 'fisa_postului', label: 'Fișa postului' },
+    { value: 'contract_munca', label: 'Contract individual de muncă' },
+    { value: 'adeverinta_angajator', label: 'Adeverință angajator' },
+    { value: 'formular_eu', label: 'Formular A1/Portable Document A1 (UE)' },
+    { value: 'cereri_de_concediu', label: 'Cereri concediu' },
+    { value: 'alte_documente_personale', label: 'Alte documente' }
+  ];
+
   // Sample recent documents data
   const [recentDocuments, setRecentDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [documentTitle, setDocumentTitle] = useState('Foaia de parcurs'); // Default title from UI
-  const [category, setCategory] = useState('atestate'); // Default category from your provided data
+  const [category, setCategory] = useState(''); // No default category
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showAllDocuments, setShowAllDocuments] = useState(false);
 
+  // Get documents to display (limit to 3 if showAllDocuments is false)
+  const getDocumentsToDisplay = () => {
+    if (showAllDocuments || recentDocuments.length <= 3) {
+      return recentDocuments;
+    }
+    return recentDocuments.slice(0, 3);
+  };
 
-    // Function to fetch personal documents from the API
-    const fetchPersonalDocuments = async () => {
-        try {
-          // Get the authentication token from AsyncStorage
-          const authToken = await AsyncStorage.getItem('authToken');
-          
-          if (!authToken) {
-            throw new Error('Authentication token not found');
-          }
-          
-          // Set up the request with the authentication token in the header
-          const response = await fetch(`${BASE_URL}personal-documents/`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Token ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
-          }
-          
-          // Parse the JSON response
-          const data = await response.json();
-          
-          // Map the API response to match the document format in your state
-          const formattedDocuments = data.map((doc) => ({
-            id: doc.id,
-            name: doc.title,
-            type: getFileExtension(doc.document),
-            size: '1.0 MB', // Placeholder size since not provided by API
-            date: new Date().toLocaleDateString(), // Current date as placeholder
-            status: getCategoryStatus(doc.category), // Map category to a status
-            url: doc.document,
-            category: doc.category
-          }));
-          
-          return formattedDocuments;
-        } catch (error) {
-          console.error('Error fetching personal documents:', error);
-          throw error;
-        }
-      };
-  
+  // Toggle show all documents
+  const toggleShowAllDocuments = () => {
+    setShowAllDocuments(!showAllDocuments);
+  };
+
+  // Get document title based on selected category
+  const getDocumentTitle = () => {
+    if (!category) return 'Selectează tipul documentului';
+    const selectedCategory = documentCategories.find(cat => cat.value === category);
+    return selectedCategory ? selectedCategory.label : 'Document';
+  };
+
+  // Function to fetch personal documents from the API
+  const fetchPersonalDocuments = async () => {
+    try {
+      // Get the authentication token from AsyncStorage
+      const authToken = await AsyncStorage.getItem('authToken');
+      
+      if (!authToken) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Set up the request with the authentication token in the header
+      const response = await fetch(`${BASE_URL}personal-documents/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+      
+      // Parse the JSON response
+      const data = await response.json();
+      
+      // Map the API response to match the document format in your state
+      const formattedDocuments = data.map((doc) => ({
+        id: doc.id,
+        name: doc.title,
+        type: getFileExtension(doc.document),
+        size: '1.0 MB', // Placeholder size since not provided by API
+        date: new Date().toLocaleDateString(), // Current date as placeholder
+        status: getCategoryStatus(doc.category), // Map category to a status
+        url: doc.document,
+        category: doc.category
+      }));
+      
+      return formattedDocuments;
+    } catch (error) {
+      console.error('Error fetching personal documents:', error);
+      throw error;
+    }
+  };
+
   // Helper function to extract file extension from URL
   const getFileExtension = (url) => {
     if (!url) return '';
@@ -74,9 +109,7 @@ const DocumentsScreen = ({ navigation, route }) => {
     
     return extension || '';
   };
-  
-  
-  
+
   // Map document category to status for display
   const getCategoryStatus = (category) => {
     const statusMap = {
@@ -87,7 +120,7 @@ const DocumentsScreen = ({ navigation, route }) => {
     
     return statusMap[category] || 'pending';
   };
-  
+
   // Get file icon based on document type
   const getFileIcon = (type) => {
     switch (type.toLowerCase()) {
@@ -104,7 +137,7 @@ const DocumentsScreen = ({ navigation, route }) => {
         return <MaterialIcons name="insert-drive-file" size={24} color="#95A5A6" />;
     }
   };
-  
+
   // Get status color based on document status
   const getStatusColor = (status) => {
     switch (status) {
@@ -118,7 +151,7 @@ const DocumentsScreen = ({ navigation, route }) => {
         return '#95A5A6'; // Gray
     }
   };
-  
+
   // Get status label based on document status
   const getStatusLabel = (status) => {
     switch (status) {
@@ -132,6 +165,7 @@ const DocumentsScreen = ({ navigation, route }) => {
         return 'Unknown';
     }
   };
+
   const openDocument = async (url) => {
     try {
       const supported = await Linking.canOpenURL(url);
@@ -154,6 +188,7 @@ const DocumentsScreen = ({ navigation, route }) => {
       );
     }
   };
+
   const showDocumentOptions = (document) => {
     Alert.alert(
       document.name,
@@ -178,35 +213,42 @@ const DocumentsScreen = ({ navigation, route }) => {
       ]
     );
   };
+
   const shareDocument = (document) => {
     // Implementation for sharing document
     Alert.alert('Share', `Sharing ${document.name} functionality would be implemented here`);
   };
-  
+
   // Function to download document (placeholder)
   const downloadDocument = (document) => {
     // Implementation for downloading document
     Alert.alert('Download', `Downloading ${document.name} functionality would be implemented here`);
   };
-  
+
+  // Function to load documents
+  const loadDocuments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const documents = await fetchPersonalDocuments();
+      setRecentDocuments(documents);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle retry function for refresh button
+  const handleRetry = async () => {
+    await loadDocuments();
+  };
+
   // Load documents when component mounts
   useEffect(() => {
-    const loadDocuments = async () => {
-      setLoading(true);
-      try {
-        const documents = await fetchPersonalDocuments();
-        setRecentDocuments(documents);
-        setError(null);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     loadDocuments();
   }, []);
-  
 
   useEffect(() => {
     (async () => {
@@ -221,7 +263,17 @@ const DocumentsScreen = ({ navigation, route }) => {
     })();
   }, []);
 
+  const selectCategory = (selectedCategory) => {
+    setCategory(selectedCategory.value);
+    setShowCategoryModal(false);
+  };
+
   const pickDocument = async () => {
+    if (!category) {
+      Alert.alert('Selectează tipul documentului', 'Te rugăm să selectezi mai întâi tipul documentului pe care vrei să îl încarci.');
+      return;
+    }
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'],
@@ -248,6 +300,11 @@ const DocumentsScreen = ({ navigation, route }) => {
   };
 
   const takePicture = async () => {
+    if (!category) {
+      Alert.alert('Selectează tipul documentului', 'Te rugăm să selectezi mai întâi tipul documentului pe care vrei să îl încarci.');
+      return;
+    }
+
     try {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -298,6 +355,11 @@ const DocumentsScreen = ({ navigation, route }) => {
       return;
     }
 
+    if (!category) {
+      Alert.alert('Selectează tipul documentului', 'Te rugăm să selectezi tipul documentului înainte de încărcare.');
+      return;
+    }
+
     setIsUploading(true);
 
     try {
@@ -327,11 +389,11 @@ const DocumentsScreen = ({ navigation, route }) => {
       });
       
       // Add other required fields
-      formData.append('title', documentTitle);
+      formData.append('title', getDocumentTitle());
       formData.append('category', category);
 
       // Make the API request
-      const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/personal-documents/', {
+      const response = await fetch(`${BASE_URL}personal-documents/`, {
         method: 'POST',
         headers: {
           'Authorization': `Token ${authToken}`,
@@ -344,8 +406,11 @@ const DocumentsScreen = ({ navigation, route }) => {
 
       if (response.ok) {
         Alert.alert('Success', 'Document uploaded successfully!');
-        // Navigate back or to a success screen
-        
+        // Reset the form
+        setSelectedFile(null);
+        setCategory('');
+        // Refresh the documents list
+        await loadDocuments();
       } else {
         console.error('Upload failed:', responseData);
         Alert.alert('Upload Failed', responseData.message || 'An error occurred while uploading the document.');
@@ -358,126 +423,236 @@ const DocumentsScreen = ({ navigation, route }) => {
     }
   };
 
-  
-
   return (
     <SafeAreaView style={styles.container}>
-    {/* Header */}
-    <View style={styles.header}>
-    <TouchableOpacity 
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.navigate("Main")}
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-      <Text style={styles.headerTitle}>Încarcă un document</Text>
-    </View>
-
-    <ScrollView style={styles.scrollContainer}>
-      {/* Upload Section */}
-      <View style={styles.uploadSection}>
-        <Text style={styles.sectionTitle}>Încarcă sau fotografiază</Text>
-        <Text style={styles.documentName}>{documentTitle}</Text>
-        <Text style={styles.helpText}>
-          Acest lucru te ajută pe tine și pe dispatcher să accesați mai ușor toate documentele dacă este necesar.
-          Îl poți găsi întotdeauna în dosarul său din secțiunea "Acte".
-        </Text>
-        
-        {selectedFile ? (
-          <View style={styles.filePreviewContainer}>
-            <MaterialCommunityIcons name="file-check" size={40} color="#4285F4" />
-            <Text style={styles.selectedFileName} numberOfLines={1} ellipsizeMode="middle">
-              {getFileName(selectedFile.uri)}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.filePreviewContainer}>
-            <MaterialCommunityIcons name="file" size={40} color="#4285F4" />
-          </View>
-        )}
-        
-        <TouchableOpacity style={styles.uploadArea} onPress={pickDocument}>
-          <Ionicons name="add-circle-outline" size={32} color="#4285F4" />
-          <Text style={styles.uploadText}>Apasă pentru a încărca</Text>
-        </TouchableOpacity>
-        
-        <View style={styles.fileTypesContainer}>
-          <View style={styles.fileType}>
-            <Text style={styles.fileTypeText}>PDF</Text>
-          </View>
-          <View style={styles.fileType}>
-            <Text style={styles.fileTypeText}>DOCX</Text>
-          </View>
-          <View style={styles.fileType}>
-            <Text style={styles.fileTypeText}>JPG</Text>
-          </View>
-          <View style={styles.fileType}>
-            <Text style={styles.fileTypeText}>&lt; 10 MB</Text>
-          </View>
-        </View>
-        
-        <Text style={styles.orText}>Sau</Text>
-        
-        <TouchableOpacity style={styles.cameraButton} onPress={takePicture}>
-          <Ionicons name="camera" size={20} color="#4285F4" />
-          <Text style={styles.cameraButtonText}>Deschide Camera & Fă o Poză</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.uploadDocumentButton, (!selectedFile || isUploading) && styles.disabledButton]}
-          onPress={uploadDocument}
-          disabled={!selectedFile || isUploading}
-        >
-          {isUploading ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={styles.uploadDocumentButtonText}>Încarcă documentul</Text>
-          )}
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Încarcă un document</Text>
       </View>
 
-      {/* Recent Documents Section */}
-      <View style={styles.recentDocumentsSection}>
-      <Text style={styles.recentDocumentsTitle}>Documente Recente</Text>
-      {recentDocuments.length > 0 ? (
-        recentDocuments.map(doc => (
+      <ScrollView style={styles.scrollContainer}>
+        {/* Upload Section */}
+        <View style={styles.uploadSection}>
+          <Text style={styles.sectionTitle}>Încarcă sau fotografiază</Text>
+          
+          {/* Document Type Selector */}
           <TouchableOpacity 
-            key={doc.id} 
-            style={styles.documentItem}
-            onPress={() => openDocument(doc.url)}
+            style={[styles.categorySelector, !category && styles.categorySelectorEmpty]}
+            onPress={() => setShowCategoryModal(true)}
           >
-            <View style={styles.documentIconContainer}>
-              {getFileIcon(doc.type)}
-            </View>
-            <View style={styles.documentInfo}>
-              <Text style={styles.documentTitle}>{doc.name}</Text>
-              <View style={styles.documentDetails}>
-                <Text style={styles.documentType}>{doc.type}</Text>
-                <Text style={styles.documentSize}>{doc.size}</Text>
-                <Text style={styles.documentDate}>{doc.date}</Text>
-              </View>
-            </View>
-            <View style={styles.documentStatus}>
-              <View style={[styles.statusIndicator, {backgroundColor: getStatusColor(doc.status)}]} />
-              <Text style={styles.statusText}>{getStatusLabel(doc.status)}</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.documentMenuButton}
-              onPress={(e) => {
-                e.stopPropagation(); // Prevent triggering the parent onPress
-                showDocumentOptions(doc);
-              }}
-            >
-              <MaterialIcons name="more-vert" size={20} color="#777" />
-            </TouchableOpacity>
+            <Text style={[styles.documentName, !category && styles.placeholderText]}>
+              {getDocumentTitle()}
+            </Text>
+            <MaterialIcons name="keyboard-arrow-down" size={24} color="#666" />
           </TouchableOpacity>
-        ))
-      ) : (
-        <Text style={styles.noDocumentsText}>Nu s-au găsit documente</Text>
-      )}
-    </View>
-    </ScrollView>
-  </SafeAreaView>
-);
+
+          <Text style={styles.helpText}>
+            Acest lucru te ajută pe tine și pe dispatcher să accesați mai ușor toate documentele dacă este necesar.
+            Îl poți găsi întotdeauna în dosarul său din secțiunea "Acte".
+          </Text>
+          
+          {selectedFile ? (
+            <View style={styles.filePreviewContainer}>
+              <MaterialCommunityIcons name="file-check" size={40} color="#4285F4" />
+              <Text style={styles.selectedFileName} numberOfLines={1} ellipsizeMode="middle">
+                {getFileName(selectedFile.uri)}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.filePreviewContainer}>
+              <MaterialCommunityIcons name="file" size={40} color="#4285F4" />
+            </View>
+          )}
+          
+          <TouchableOpacity 
+            style={[styles.uploadArea, !category && styles.disabledUploadArea]} 
+            onPress={pickDocument}
+            disabled={!category}
+          >
+            <Ionicons name="add-circle-outline" size={32} color={category ? "#4285F4" : "#ccc"} />
+            <Text style={[styles.uploadText, !category && styles.disabledText]}>
+              Apasă pentru a încărca
+            </Text>
+          </TouchableOpacity>
+          
+          <View style={styles.fileTypesContainer}>
+            <View style={styles.fileType}>
+              <Text style={styles.fileTypeText}>PDF</Text>
+            </View>
+            <View style={styles.fileType}>
+              <Text style={styles.fileTypeText}>DOCX</Text>
+            </View>
+            <View style={styles.fileType}>
+              <Text style={styles.fileTypeText}>JPG</Text>
+            </View>
+            <View style={styles.fileType}>
+              <Text style={styles.fileTypeText}>&lt; 10 MB</Text>
+            </View>
+          </View>
+          
+          <Text style={styles.orText}>Sau</Text>
+          
+          <TouchableOpacity 
+            style={[styles.cameraButton, !category && styles.disabledCameraButton]} 
+            onPress={takePicture}
+            disabled={!category}
+          >
+            <Ionicons name="camera" size={20} color={category ? "#4285F4" : "#ccc"} />
+            <Text style={[styles.cameraButtonText, !category && styles.disabledText]}>
+              Deschide Camera & Fă o Poză
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.uploadDocumentButton, (!selectedFile || !category || isUploading) && styles.disabledButton]}
+            onPress={uploadDocument}
+            disabled={!selectedFile || !category || isUploading}
+          >
+            {isUploading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.uploadDocumentButtonText}>Încarcă documentul</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Recent Documents Section */}
+        <View style={styles.recentDocumentsSection}>
+          <View style={styles.recentDocumentsHeader}>
+            <Text style={styles.recentDocumentsTitle}>Documente Recente</Text>
+            <TouchableOpacity 
+              style={styles.refreshButton}
+              onPress={handleRetry}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#4285F4" />
+              ) : (
+                <Ionicons name="refresh" size={20} color="#4285F4" />
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>Eroare la încărcarea documentelor: {error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+                <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+              </TouchableOpacity>
+            </View>
+          ) : loading ? (
+            <ActivityIndicator size="large" color="#4285F4" style={styles.loader} />
+          ) : recentDocuments.length > 0 ? (
+            <>
+              {getDocumentsToDisplay().map(doc => (
+                <TouchableOpacity 
+                  key={doc.id} 
+                  style={styles.documentItem}
+                  onPress={() => openDocument(doc.url)}
+                >
+                  <View style={styles.documentIconContainer}>
+                    {getFileIcon(doc.type)}
+                  </View>
+                  <View style={styles.documentInfo}>
+                    <Text style={styles.documentTitle}>{doc.name}</Text>
+                    <View style={styles.documentDetails}>
+                      <Text style={styles.documentType}>{doc.type}</Text>
+                      <Text style={styles.documentSize}>{doc.size}</Text>
+                      <Text style={styles.documentDate}>{doc.date}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.documentStatus}>
+                    <View style={[styles.statusIndicator, {backgroundColor: getStatusColor(doc.status)}]} />
+                    <Text style={styles.statusText}>{getStatusLabel(doc.status)}</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.documentMenuButton}
+                    onPress={(e) => {
+                      e.stopPropagation(); // Prevent triggering the parent onPress
+                      showDocumentOptions(doc);
+                    }}
+                  >
+                    <MaterialIcons name="more-vert" size={20} color="#777" />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+              
+              {recentDocuments.length > 3 && (
+                <TouchableOpacity 
+                  style={styles.showMoreButton}
+                  onPress={toggleShowAllDocuments}
+                >
+                  <Text style={styles.showMoreText}>
+                    {showAllDocuments 
+                      ? `Afișează mai puțin` 
+                      : `Afișează toate documentele (${recentDocuments.length})`
+                    }
+                  </Text>
+                  <Ionicons 
+                    name={showAllDocuments ? "chevron-up" : "chevron-down"} 
+                    size={20} 
+                    color="#4285F4" 
+                  />
+                </TouchableOpacity>
+              )}
+            </>
+          ) : (
+            <Text style={styles.noDocumentsText}>Nu s-au găsit documente</Text>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Category Selection Modal */}
+      <Modal
+        visible={showCategoryModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCategoryModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Selectează tipul documentului</Text>
+              <TouchableOpacity 
+                style={styles.modalCloseButton}
+                onPress={() => setShowCategoryModal(false)}
+              >
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScrollView}>
+              {documentCategories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.value}
+                  style={[
+                    styles.categoryOption,
+                    category === cat.value && styles.selectedCategoryOption
+                  ]}
+                  onPress={() => selectCategory(cat)}
+                >
+                  <Text style={[
+                    styles.categoryOptionText,
+                    category === cat.value && styles.selectedCategoryOptionText
+                  ]}>
+                    {cat.label}
+                  </Text>
+                  {category === cat.value && (
+                    <Ionicons name="checkmark" size={20} color="#4285F4" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
 };
+
 export default DocumentsScreen;
