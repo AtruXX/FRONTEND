@@ -3,8 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform, SafeAreaVi
 import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from "./styles"; 
+import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL";
+import PageHeader from "../../components/General/Header"; // Import your PageHeader component
 
 const ProfileScreen = () => {
   const navigation = useNavigation();
@@ -37,7 +38,6 @@ const ProfileScreen = () => {
     const phoneUrl = Platform.OS === 'android'
       ? `tel:${dispatcherNumber}`
       : `telprompt:${dispatcherNumber}`;
-
     Linking.canOpenURL(phoneUrl)
       .then(supported => {
         if (supported) {
@@ -52,11 +52,9 @@ const ProfileScreen = () => {
       Alert.alert('Eroare', 'Nu există numărul de telefon al managerului');
       return;
     }
-    
     const phoneUrl = Platform.OS === 'android'
       ? `tel:${profileData.managerContact}`
       : `telprompt:${profileData.managerContact}`;
-
     Linking.canOpenURL(phoneUrl)
       .then(supported => {
         if (supported) {
@@ -95,6 +93,12 @@ const ProfileScreen = () => {
     setRefreshing(false);
   };
 
+  // Handle retry function for the header
+  const handleRetry = async () => {
+    await onRefresh();
+  };
+
+  // ... (all your existing functions remain the same)
   const fetchProfileData = async () => {
     try {
       const authToken = await AsyncStorage.getItem('authToken');
@@ -102,32 +106,24 @@ const ProfileScreen = () => {
         console.error('No auth token found');
         return;
       }
-
       const headers = {
         'Authorization': `Token ${authToken}`,
       };
-
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: headers
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
       const data = await response.json();
-
       const nameParts = data.name.split(' ');
       const initials = nameParts.length > 1
         ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
         : nameParts[0].substring(0, 2);
-
-      // Calculate years in company (assuming you have hire_date in profile data)
-      const yearsInCompany = data.hire_date 
+      const yearsInCompany = data.hire_date
         ? new Date().getFullYear() - new Date(data.hire_date).getFullYear()
         : 0;
-
       setProfileData({
         name: data.name,
         role: "Sofer",
@@ -138,7 +134,6 @@ const ProfileScreen = () => {
         currentLocation: data.current_location || "Necunoscut",
         managerContact: data.manager_phone || ""
       });
-
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -148,31 +143,24 @@ const ProfileScreen = () => {
     try {
       const authToken = await AsyncStorage.getItem('authToken');
       if (!authToken) return;
-
       const headers = {
         'Authorization': `Token ${authToken}`,
       };
-
       const response = await fetch(`${BASE_URL}personal-documents`, {
         method: 'GET',
         headers: headers
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
       const documentsData = await response.json();
       setDocuments(documentsData);
-
-      // Fetch expiration info for each document
       const expirationPromises = documentsData.map(async (doc) => {
         try {
           const expResponse = await fetch(`${BASE_URL}personal-documents/expiration/${doc.id}`, {
             method: 'GET',
             headers: headers
           });
-          
           if (expResponse.ok) {
             const expData = await expResponse.json();
             return { ...doc, days_left: expData.days_left };
@@ -183,25 +171,20 @@ const ProfileScreen = () => {
           return { ...doc, days_left: null };
         }
       });
-
       const documentsWithExpiration = await Promise.all(expirationPromises);
-      
-      // Filter documents that are expiring soon (less than 30 days)
-      const expiring = documentsWithExpiration.filter(doc => 
+      const expiring = documentsWithExpiration.filter(doc =>
         doc.days_left !== null && doc.days_left <= 30
       );
-      
       setExpiringDocuments(expiring);
-
     } catch (error) {
       console.error('Error fetching documents:', error);
     }
   };
 
   const getExpirationColor = (daysLeft) => {
-    if (daysLeft <= 7) return '#FF7285'; // danger
-    if (daysLeft <= 30) return '#FFBD59'; // warning
-    return '#63C6AE'; // success
+    if (daysLeft <= 7) return '#FF7285';
+    if (daysLeft <= 30) return '#FFBD59';
+    return '#63C6AE';
   };
 
   const getExpirationText = (daysLeft) => {
@@ -212,25 +195,22 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      {/* Replace the old header with PageHeader */}
+      <PageHeader
+        title="Profil"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
+      
+      <ScrollView
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <StatusBar barStyle="dark-content" />
-
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#373A56" />
-          </TouchableOpacity>
-        </View>
-
         {/* Profile Info */}
         <View style={styles.profileInfoContainer}>
           <View style={styles.profileContainer}>
@@ -246,25 +226,21 @@ const ProfileScreen = () => {
         {/* Essential Information Section */}
         <View style={styles.dataContainer}>
           <Text style={styles.dataTitle}>Informații Esențiale</Text>
-
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Telefon</Text>
             <Text style={styles.dataDivider}>|</Text>
             <Text style={styles.dataValue}>{profileData.phone}</Text>
           </View>
-
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Ani în firmă</Text>
             <Text style={styles.dataDivider}>|</Text>
             <Text style={styles.dataValue}>{profileData.yearsInCompany} ani</Text>
           </View>
-
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Locația curentă</Text>
             <Text style={styles.dataDivider}>|</Text>
             <Text style={styles.dataValue}>{profileData.currentLocation}</Text>
           </View>
-
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Documente</Text>
             <Text style={styles.dataDivider}>|</Text>
@@ -283,7 +259,7 @@ const ProfileScreen = () => {
               <View key={doc.id} style={styles.alertItem}>
                 <Text style={styles.alertDocTitle}>{doc.title}</Text>
                 <Text style={[
-                  styles.alertExpiration, 
+                  styles.alertExpiration,
                   { color: getExpirationColor(doc.days_left) }
                 ]}>
                   {getExpirationText(doc.days_left)}
@@ -319,7 +295,6 @@ const ProfileScreen = () => {
               color="#6B6F8D"
             />
           </TouchableOpacity>
-
           {documentsExpanded && (
             <View style={styles.dropdownContainer}>
               {documents.length === 0 ? (
@@ -385,7 +360,6 @@ const ProfileScreen = () => {
               color="#6B6F8D"
             />
           </TouchableOpacity>
-
           {contactExpanded && (
             <View style={styles.dropdownContainer}>
               <Text style={styles.dropdownText}>
@@ -408,12 +382,10 @@ const ProfileScreen = () => {
           onPress={async () => {
             try {
               const token = await AsyncStorage.getItem('authToken');
-
               if (!token) {
                 Alert.alert('Eroare', 'Nu s-a găsit token-ul de autentificare.');
                 return;
               }
-
               const response = await fetch(`${BASE_URL}auth/token/logout`, {
                 method: 'POST',
                 headers: {
@@ -421,7 +393,6 @@ const ProfileScreen = () => {
                   'Content-Type': 'application/json',
                 },
               });
-
               if (response.ok) {
                 await AsyncStorage.removeItem('authToken');
                 navigation.reset({
