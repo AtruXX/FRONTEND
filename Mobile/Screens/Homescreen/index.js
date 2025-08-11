@@ -7,10 +7,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from "./styles";
 import TransportMainPage from "../TransportActualMain";
 import { BASE_URL } from "../../utils/BASE_URL";
-import COLORS  from "../../utils/COLORS.js";
-
+import COLORS from "../../utils/COLORS.js";
+import { useLoading } from "../../components/General/loadingSpinner.js";
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const { showLoading, hideLoading } = useLoading();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [transport, setTransport] = useState(null);
+  const [transportLoading, setTransportLoading] = useState(true); // Keep this for transport card only
+  const [error, setError] = useState(null);
   const [profileData, setProfileData] = useState({
     name: "",
     role: "",
@@ -18,7 +23,6 @@ const HomeScreen = () => {
     id: "",
     on_road: false,
   });
-  const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     fetchProfileData();
@@ -52,6 +56,7 @@ const HomeScreen = () => {
 
   const fetchProfileData = async () => {
     try {
+      showLoading(); // Use global loading
       const authToken = await AsyncStorage.getItem('authToken');
       console.log('[DEBUG] Retrieved auth token:', authToken);
 
@@ -97,74 +102,66 @@ const HomeScreen = () => {
 
     } catch (error) {
       console.error('[DEBUG] Caught error in fetchProfileData:', error);
+    } finally {
+      hideLoading(); // Use global loading
     }
   };
-  const [transport, setTransport] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
 
   useEffect(() => {
-  const fetchTransport = async () => {
-    try {
-      setLoading(true);
-      const authToken = await AsyncStorage.getItem('authToken');
-      console.log('[DEBUG] Retrieved auth token:', authToken);
-      
-      if (!authToken) {
-        console.error('[DEBUG] No auth token found. Aborting fetch.');
-        setLoading(false);
-        return;
-      }
+    const fetchTransport = async () => {
+      try {
+        setTransportLoading(true); // Use local loading for transport card
+        const authToken = await AsyncStorage.getItem('authToken');
+        console.log('[DEBUG] Retrieved auth token:', authToken);
 
-      const headers = {
-        'Authorization': `Token ${authToken}`,
-      };
+        if (!authToken) {
+          console.error('[DEBUG] No auth token found. Aborting fetch.');
+          setTransportLoading(false);
+          return;
+        }
 
-      console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${profileData.id}`);
-      const response = await fetch(`${BASE_URL}transports?driver_id=${profileData.id}`, {
-        method: 'GET',
-        headers: headers
-      });
+        const headers = {
+          'Authorization': `Token ${authToken}`,
+        };
 
-      if (!response.ok) {
-        throw new Error(`API request failed with status: ${response.status}`);
-      }
+        console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${profileData.id}`);
+        const response = await fetch(`${BASE_URL}transports?driver_id=${profileData.id}`, {
+          method: 'GET',
+          headers: headers
+        });
 
-      const data = await response.json();
-      console.log('[DEBUG] Received transport data:', data);
+        if (!response.ok) {
+          throw new Error(`API request failed with status: ${response.status}`);
+        }
 
-      if (data.transports && data.transports.length > 0) {
-        // Get the last transport (most recent one)
-        const sortedTransports = [...data.transports].sort((a, b) => b.id - a.id);
-        const lastTransport = sortedTransports[0];
-        setTransport(lastTransport);
-        console.log('[DEBUG] Set last transport:', lastTransport);
-      } else {
-        // No transports found
+        const data = await response.json();
+        console.log('[DEBUG] Received transport data:', data);
+
+        if (data.transports && data.transports.length > 0) {
+          const sortedTransports = [...data.transports].sort((a, b) => b.id - a.id);
+          const lastTransport = sortedTransports[0];
+          setTransport(lastTransport);
+          console.log('[DEBUG] Set last transport:', lastTransport);
+        } else {
+          setTransport(null);
+          console.log('[DEBUG] No transports found for driver');
+        }
+
+      } catch (err) {
+        console.error('[DEBUG] Error fetching transport:', err);
+        setError(err.message);
         setTransport(null);
-        console.log('[DEBUG] No transports found for driver');
+      } finally {
+        setTransportLoading(false); // Use local loading for transport card
       }
+    };
 
-    } catch (err) {
-      console.error('[DEBUG] Error fetching transport:', err);
-      setError(err.message);
-      setTransport(null);
-    } finally {
-      setLoading(false);
+    if (profileData.id) { // Only fetch when we have profile ID
+      fetchTransport();
     }
-  };
-
-  fetchTransport();
-}, [profileData.id]); // Add profileData.id as a dependency
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={ COLORS.primary} />
-        <Text>Se încarcă...</Text>
-      </View>
-    );
-  }
-
+  }, [profileData.id]);
+  
   if (error) {
     return (
       <View style={styles.errorContainer}>
@@ -173,10 +170,10 @@ const HomeScreen = () => {
     );
   }
 
-   const handleStatusChange = async () => {
+  const handleStatusChange = async () => {
     try {
-      setLoading(true);
-      
+      showLoading(); // Use global loading
+
       console.log('🌐 Request URL:', `${BASE_URL}status/`);
       const authToken = await AsyncStorage.getItem('authToken');
 
@@ -187,31 +184,28 @@ const HomeScreen = () => {
           'Content-Type': 'application/json',
         },
       });
-      
+
       console.log('📡 Response status:', response.status);
-      
+
       if (response.ok) {
         const updatedData = await response.json();
         console.log('✅ Response data:', JSON.stringify(updatedData, null, 2));
-        
-        // Update the profile data directly
+
         setProfileData(updatedData);
-        
-        // Show success message with consistent text
+
         const newStatus = updatedData.driver.on_road ? 'La volan' : 'Parcat';
-        
-        
+
       } else {
         const errorText = await response.text();
         console.error('❌ Response error:', response.status, errorText);
         throw new Error(`Failed to update status: ${response.status}`);
       }
-      
+
     } catch (error) {
       console.error('💥 Status update error:', error);
       Alert.alert('Eroare', 'Nu s-a putut actualiza statusul. Încearcă din nou.');
     } finally {
-      setLoading(false);
+      hideLoading(); // Use global loading
     }
   };
 
@@ -245,6 +239,7 @@ const HomeScreen = () => {
           <TouchableOpacity style={styles.logoutButton}
             onPress={async () => {
               try {
+                showLoading(); // Use global loading
                 const authToken = await AsyncStorage.getItem('authToken');
                 console.log('[DEBUG] Retrieved auth token:', authToken);
 
@@ -262,9 +257,6 @@ const HomeScreen = () => {
                 });
 
                 if (response.ok) {
-
-
-                  // Navigate to Login
                   navigation.reset({
                     index: 0,
                     routes: [{ name: 'Login' }],
@@ -277,6 +269,8 @@ const HomeScreen = () => {
               } catch (error) {
                 console.error('Logout error:', error);
                 alert('Something went wrong during logout.');
+              } finally {
+                hideLoading(); // Use global loading
               }
             }}
           >
@@ -326,118 +320,114 @@ const HomeScreen = () => {
           </View>
         </View>
 
-       <View style={styles.statusCard}>
-      {/* Current Status Display */}
-      <View style={[
-        styles.statusDisplay,
-        profileData.driver?.on_road ? styles.driving : styles.parked
-      ]}>
-        <View style={[
-          styles.statusDot,
-          profileData.driver?.on_road ? styles.drivingDot : styles.parkedDot
-        ]} />
-        <Text style={styles.statusText}>
-          {profileData.driver?.on_road ? 'La volan' : 'Parcat'}
-        </Text>
-      </View>
+        <View style={styles.statusCard}>
+          {/* Current Status Display */}
+          <View style={[
+            styles.statusDisplay,
+            profileData.driver?.on_road ? styles.driving : styles.parked
+          ]}>
+            <View style={[
+              styles.statusDot,
+              profileData.driver?.on_road ? styles.drivingDot : styles.parkedDot
+            ]} />
+            <Text style={styles.statusText}>
+              {profileData.driver?.on_road ? 'La volan' : 'Parcat'}
+            </Text>
+          </View>
 
-      {/* Simple Toggle Button */}
-      <TouchableOpacity
-        style={[
-          styles.toggleButton,
-          profileData.driver?.on_road ? styles.parkButton : styles.driveButton,
-          loading && styles.disabled
-        ]}
-        onPress={handleStatusChange}
-        disabled={loading}
-        activeOpacity={0.7}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color={COLORS.card} />
-        ) : (
-          <Text style={styles.buttonText}>
-            {profileData.driver?.on_road ? 'Parcheaza' : 'Pornește'}
-          </Text>
-        )}
-      </TouchableOpacity>
-    </View>
-  
+          {/* Simple Toggle Button */}
+         <TouchableOpacity
+  style={[
+    styles.toggleButton,
+    profileData.driver?.on_road ? styles.parkButton : styles.driveButton
+    // Remove: loading && styles.disabled
+  ]}
+  onPress={handleStatusChange}
+  // Remove: disabled={loading}
+  activeOpacity={0.7}
+>
+  <Text style={styles.buttonText}>
+    {profileData.driver?.on_road ? 'Parcheaza' : 'Pornește'}
+  </Text>
+</TouchableOpacity>
+        </View>
+
 
         {/* Upcoming delivery card */}
-       {loading ? (
-        
- <>
-    <Text style={styles.sectionTitle}>Ultimul transport atribuit</Text>
-    <View style={styles.deliveryCard}>
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.success} />
-        <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
-      </View>
-    </View>
-  </>
-) : transport ? (
-  
-<>
-    <Text style={styles.sectionTitle}>Ultimul transport atribuit:</Text>
-  <View style={styles.deliveryCard}>
-    <View style={styles.deliveryHeader}>
-      <View>
-        <Text style={styles.deliveryTitle}>
-          {transport.origin_city} → {transport.destination_city}
-        </Text>
-        <Text style={styles.deliverySubtitle}>
-          {transport.time_estimation || 'Maine, 14:00'}
-        </Text>
-      </View>
-      <View style={[
-        styles.deliveryBadge,
-        transport.status_transport === 'not started' ? styles.badgeNotStarted :
-        transport.status_transport === 'in progress' ? styles.badgeInProgress :
-        transport.status_transport === 'delayed' ? styles.badgeDelayed :
-        styles.badgeCompleted
-      ]}>
-        <Text style={styles.deliveryBadgeText}>
-          {transport.status_transport === 'not started' ? 'Neînceput' :
-           transport.status_transport === 'in progress' ? 'În desfășurare' :
-           transport.status_transport === 'delayed' ? 'Întârziat' :
-           'Finalizat'}
-        </Text>
-      </View>
-    </View>
-    <View style={styles.deliveryDetails}>
-      <View style={styles.deliveryItem}>
-        <Ionicons name="cube-outline" size={20} color={COLORS.medium} />
-        <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
-      </View>
-      <View style={styles.deliveryItem}>
-        <Ionicons name="navigate-outline" size={20} color={COLORS.medium} />
-        <Text style={styles.deliveryItemText}>
-          {transport.trailer_number || 'CJ12ABC'}
-        </Text>
-      </View>
-    </View>
-    <TouchableOpacity
-      style={styles.deliveryButton}
-      onPress={() => console.log('Transport details:', transport)}
-    >
-      <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
-    </TouchableOpacity>
-  </View>
-  </>
-) : (
-  <View style={styles.deliveryCard}>
-    <View style={styles.noDataContainer}>
-      <Ionicons name="truck-outline" size={48} color={COLORS.light} />
-      <Text style={styles.noDataTitle}>Nu există transporturi înregistrate</Text>
-      <Text style={styles.noDataSubtitle}>
-        Transporturile tale vor apărea aici când vor fi asignate
-      </Text>
-    </View>
-  </View>
-)}
+        {transportLoading ? (
+
+          <>
+            <Text style={styles.sectionTitle}>Ultimul transport atribuit</Text>
+            <View style={styles.deliveryCard}>
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={COLORS.success} />
+                <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
+              </View>
+            </View>
+          </>
+        ) : transport ? (
+
+          <>
+            <Text style={styles.sectionTitle}>Ultimul transport atribuit:</Text>
+            <View style={styles.deliveryCard}>
+              <View style={styles.deliveryHeader}>
+                <View>
+                  <Text style={styles.deliveryTitle}>
+                    {transport.origin_city} → {transport.destination_city}
+                  </Text>
+                  <Text style={styles.deliverySubtitle}>
+                    {transport.time_estimation || 'Maine, 14:00'}
+                  </Text>
+                </View>
+                <View style={[
+                  styles.deliveryBadge,
+                  transport.status_transport === 'not started' ? styles.badgeNotStarted :
+                    transport.status_transport === 'in progress' ? styles.badgeInProgress :
+                      transport.status_transport === 'delayed' ? styles.badgeDelayed :
+                        styles.badgeCompleted
+                ]}>
+                  <Text style={styles.deliveryBadgeText}>
+                    {transport.status_transport === 'not started' ? 'Neînceput' :
+                      transport.status_transport === 'in progress' ? 'În desfășurare' :
+                        transport.status_transport === 'delayed' ? 'Întârziat' :
+                          'Finalizat'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.deliveryDetails}>
+                <View style={styles.deliveryItem}>
+                  <Ionicons name="cube-outline" size={20} color={COLORS.medium} />
+                  <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
+                </View>
+                <View style={styles.deliveryItem}>
+                  <Ionicons name="navigate-outline" size={20} color={COLORS.medium} />
+                  <Text style={styles.deliveryItemText}>
+                    {transport.trailer_number || 'CJ12ABC'}
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.deliveryButton}
+                onPress={() => console.log('Transport details:', transport)}
+              >
+                <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <View style={styles.deliveryCard}>
+            <View style={styles.noDataContainer}>
+              <Ionicons name="truck-outline" size={48} color={COLORS.light} />
+              <Text style={styles.noDataTitle}>Nu există transporturi înregistrate</Text>
+              <Text style={styles.noDataSubtitle}>
+                Transporturile tale vor apărea aici când vor fi asignate
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
-    
+
   );
 };
 

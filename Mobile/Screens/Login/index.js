@@ -4,14 +4,15 @@ import { TextInput, Button, Card, Title } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { styles } from "./styles"; 
+import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL.js";
 import COLORS from "../../utils/COLORS.js";
-
+import { useLoading } from "../../components/General/loadingSpinner.js";
 const LoginScreen = () => {
   const [phone_number, setPhoneNumber] = useState('+40 ');
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
+  const { showLoading, hideLoading } = useLoading();
   const handleForgotPassword = () => {
     Alert.alert(
       'Parola uitata',
@@ -27,61 +28,63 @@ const LoginScreen = () => {
       [{ text: 'OK', style: 'default' }]
     );
   };
-  const fetchUserProfile = async (token) => {
-    try {
-      console.log('Fetching user profile with token');
-      const response = await fetch(
-        `${BASE_URL}profile/`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Token ${token}`
-          }
-          
-        }
-      );
-      console.log("Authorization: ",token);
-      
-      if (response.ok) {
-        const profileData = await response.json();
-        console.log('Profile data received:', profileData);
-        
-        // Store driver id
-        if (profileData.id) {
-          await AsyncStorage.setItem('driverId', profileData.id.toString());
-          console.log('Driver ID stored:', profileData.id);
+ const fetchUserProfile = async (token) => {
+  try {
+    console.log('Fetching user profile with token');
+    const response = await fetch(
+      `${BASE_URL}profile/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${token}`
         }
         
-        // You might want to store other useful info
-        if (profileData.name) {
-          await AsyncStorage.setItem('userName', profileData.name);
-        }
-        
-        if (profileData.company) {
-          await AsyncStorage.setItem('userCompany', profileData.company);
-        }
-        
-        // Store user type (driver/dispatcher)
-        await AsyncStorage.setItem('isDriver', profileData.is_driver.toString());
-        await AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString());
-        
-      } else {
-        const errorText = await response.text();
-        console.error(`Failed to fetch user profile, status: ${response.status}, details:`, errorText);
-        Alert.alert('Error', `Profile fetch failed: ${response.status}`);
-        console.error("Failed to fetch user profile, status:", response.status);
-       
       }
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      // We'll continue with navigation even if profile fetch fails
-      console.log('Continuing to Home despite profile fetch error');
+    );
+    console.log("Authorization: ",token);
+    
+    if (response.ok) {
+      const profileData = await response.json();
+      console.log('Profile data received:', profileData);
+      
+      // Store driver id
+      if (profileData.id) {
+        await AsyncStorage.setItem('driverId', profileData.id.toString());
+        console.log('Driver ID stored:', profileData.id);
+      }
+      
+      // You might want to store other useful info
+      if (profileData.name) {
+        await AsyncStorage.setItem('userName', profileData.name);
+      }
+      
+      if (profileData.company) {
+        await AsyncStorage.setItem('userCompany', profileData.company);
+      }
+      
+      // Store user type (driver/dispatcher)
+      await AsyncStorage.setItem('isDriver', profileData.is_driver.toString());
+      await AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString());
+      
+    } else {
+      const errorText = await response.text();
+      console.error(`Failed to fetch user profile, status: ${response.status}, details:`, errorText);
+      Alert.alert('Error', `Profile fetch failed: ${response.status}`);
+      console.error("Failed to fetch user profile, status:", response.status);
+     
     }
-  };
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    // We'll continue with navigation even if profile fetch fails
+    console.log('Continuing to Home despite profile fetch error');
+    // Note: Don't call hideLoading here since handleLogin will handle it
+  }
+};
   const handleLogin = async () => {
     const loginData = { phone_number, password };
     try {
+      showLoading(); // Start global loading
       console.log('Attempting login with:', phone_number, password, `${BASE_URL}auth/token/login`);
       const response = await fetch(
         `${BASE_URL}auth/token/login`,
@@ -91,12 +94,12 @@ const LoginScreen = () => {
           body: JSON.stringify(loginData),
         }
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         const token = data.auth_token;
         console.log('Login successful, token received');
-        
+
         // Store token in secure storage
         try {
           await AsyncStorage.setItem('authToken', token);
@@ -104,7 +107,7 @@ const LoginScreen = () => {
         } catch (storageError) {
           console.error('Error storing token:', storageError);
         }
-        
+
         // Fetch user profile to get driver_id
         await fetchUserProfile(token);
         navigation.navigate('Main');
@@ -115,6 +118,8 @@ const LoginScreen = () => {
     } catch (error) {
       console.error('Login error:', error);
       Alert.alert('Error', 'An error occurred during login');
+    } finally {
+      hideLoading(); // Stop global loading
     }
   };
 
@@ -125,7 +130,7 @@ const LoginScreen = () => {
         <Text style={styles.headerTitle}>Bine ai venit!</Text>
         <Text style={styles.headerSubtitle}>Logheaza-te pentru a continua</Text>
       </View>
-      
+
       <View style={styles.formCard}>
         <View style={styles.inputWrapper}>
           <Text style={styles.inputLabel}>Numar de telefon</Text>
@@ -159,14 +164,14 @@ const LoginScreen = () => {
         <TouchableOpacity onPress={handleForgotPassword}>
           <Text style={styles.forgotPassword}>Ai uitat parola?</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.submitButton}
           onPress={handleLogin}
         >
           <Text style={styles.submitButtonText}>Logheaza-te</Text>
         </TouchableOpacity>
-        
+
         <Text style={styles.signupText}>
           Nu ai un cont? <Text style={styles.signupLink} onPress={handleCreateAccount}>Creeaza contul</Text>
         </Text>

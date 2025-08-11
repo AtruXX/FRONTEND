@@ -20,16 +20,13 @@ export const NotificationsProvider = ({ children }) => {
   const reconnectTimeout = useRef(null);
   const [userId, setUserId] = useState(null);
 
-  // WebSocket connection setup
   const connectWebSocket = async () => {
     try {
-      // Get user ID from AsyncStorage or wherever you store it
       const storedUserId = await AsyncStorage.getItem('userId');
       if (!storedUserId) return;
       
       setUserId(storedUserId);
       
-      // Replace with your WebSocket server URL
       const wsUrl = `wss://atrux-717ecf763ea.herokuapp.com/ws/notifications-server/`;
       
       ws.current = new WebSocket(wsUrl);
@@ -38,7 +35,6 @@ export const NotificationsProvider = ({ children }) => {
         console.log('WebSocket connected');
         setIsConnected(true);
         
-        // Send user identification to server
         ws.current.send(JSON.stringify({
           type: 'authenticate',
           userId: storedUserId
@@ -58,7 +54,6 @@ export const NotificationsProvider = ({ children }) => {
         console.log('WebSocket disconnected:', event.code, event.reason);
         setIsConnected(false);
         
-        // Attempt to reconnect after 3 seconds
         reconnectTimeout.current = setTimeout(() => {
           connectWebSocket();
         }, 3000);
@@ -73,26 +68,23 @@ export const NotificationsProvider = ({ children }) => {
     }
   };
 
-  // Handle incoming notifications
   const handleIncomingNotification = (data) => {
     const newNotification = {
       id: data.id || Date.now().toString(),
       title: data.title || 'New Notification',
       message: data.message || '',
-      type: data.type || 'info', // info, success, warning, error
+      type: data.type || 'info', 
       timestamp: data.timestamp || new Date().toISOString(),
       read: false,
-      data: data.data || {} // Additional data
+      data: data.data || {} 
     };
     
     setNotifications(prev => [newNotification, ...prev]);
     setUnreadCount(prev => prev + 1);
     
-    // You can also trigger local push notifications here
-    // showLocalNotification(newNotification);
+    
   };
 
-  // Mark notification as read
   const markAsRead = (notificationId) => {
     setNotifications(prev =>
       prev.map(notification =>
@@ -105,7 +97,6 @@ export const NotificationsProvider = ({ children }) => {
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
-  // Mark all notifications as read
   const markAllAsRead = () => {
     setNotifications(prev =>
       prev.map(notification => ({ ...notification, read: true }))
@@ -113,7 +104,6 @@ export const NotificationsProvider = ({ children }) => {
     setUnreadCount(0);
   };
 
-  // Delete notification
   const deleteNotification = (notificationId) => {
     setNotifications(prev => {
       const updated = prev.filter(notification => notification.id !== notificationId);

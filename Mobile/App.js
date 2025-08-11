@@ -23,7 +23,7 @@ import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated'
 
 // Import your notifications context
 import { NotificationsProvider } from './Screens/NotificationsContext/index.js'; // Adjust path as needed
-
+import { LoadingProvider } from './components/General/loadingSpinner.js'; // Adjust path as needed
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -425,9 +425,11 @@ const AppNavigatorContent = () => {
 const AppNavigator = () => {
   return (
     <NotificationsProvider>
-      <NavigationContainer>
-        <AppNavigatorContent />
-      </NavigationContainer>
+      <LoadingProvider>
+        <NavigationContainer>
+          <AppNavigatorContent />
+        </NavigationContainer>
+      </LoadingProvider>
     </NotificationsProvider>
   );
 };
