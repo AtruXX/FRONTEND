@@ -5,11 +5,12 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles } from "./styles"; 
+import { BASE_URL } from "../../utils/BASE_URL.js";
+
 const LoginScreen = () => {
   const [phone_number, setPhoneNumber] = useState('+40 ');
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
   const handleForgotPassword = () => {
     Alert.alert(
       'Parola uitata',
@@ -80,7 +81,7 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     const loginData = { phone_number, password };
     try {
-      console.log('Attempting login with:', phone_number);
+      console.log('Attempting login with:', phone_number, password, `${BASE_URL}auth/token/login`);
       const response = await fetch(
         `${BASE_URL}auth/token/login`,
         {

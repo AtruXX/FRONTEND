@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import { BASE_URL } from "../../utils/BASE_URL";
 
 const DocumentsScreen = ({ navigation, route }) => {
   // Sample recent documents data
@@ -18,7 +19,6 @@ const DocumentsScreen = ({ navigation, route }) => {
   const [category, setCategory] = useState('atestate'); // Default category from your provided data
 
 
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
     // Function to fetch personal documents from the API
     const fetchPersonalDocuments = async () => {
         try {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from "../../utils/BASE_URL";
 
 import { styles } from './styles'; // Import your styles from the styles.js file
 
@@ -9,7 +10,6 @@ const TransportMainPage = ({ navigation }) => {
   const [driverId, setDriverId] = useState(null);
   const [authToken, setAuthToken] = useState(null);
   
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
 
   useEffect(() => {
     const loadAuthToken = async () => {

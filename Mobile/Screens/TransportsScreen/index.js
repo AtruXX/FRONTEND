@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles'; // Import your styles from the styles.js file
+import { BASE_URL } from "../../utils/BASE_URL";
 
 const TransportsScreen = ({ navigation, route }) => {
   const [transports, setTransports] = useState([]);
@@ -33,8 +34,7 @@ const TransportsScreen = ({ navigation, route }) => {
     on_road: false,
   });
 
-  // ADD: Base URL - Update this with your actual API base URL
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
+  
 
   // ADD: fetchDriverProfile function
   const fetchDriverProfile = async (token) => {

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Aler
 import { Ionicons } from '@expo/vector-icons';
 
 import { styles } from './styles'; // Import your styles from the styles.js file
+import { BASE_URL } from "../../utils/BASE_URL";
 
 const CMRDigitalForm = ({ navigation, route }) => {
   const { authToken, driverId } = route.params;
@@ -11,7 +12,6 @@ const CMRDigitalForm = ({ navigation, route }) => {
   const [activeField, setActiveField] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
 
   // Current date for calendar default
   const today = new Date();

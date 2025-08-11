@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ScrollVi
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import { BASE_URL } from "../../utils/BASE_URL";
 
 import { styles } from './styles'; // Import your styles from the styles.js file
 

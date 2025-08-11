@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles'; // Import your styles from the styles.js file
+import { BASE_URL } from "../../utils/BASE_URL";
 
 const TruckDetailsScreen = ({ navigation, route }) => {
   const [truckDetails, setTruckDetails] = useState(null);

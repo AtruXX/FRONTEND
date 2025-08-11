@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles'; // Import your styles from the styles.js file
+import { BASE_URL } from "../../utils/BASE_URL";
+
 const Modify_Page = ({ navigation, route }) => {
     console.log("Route params:", route.params);
   

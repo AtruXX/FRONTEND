@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles } from "./styles";
 import TransportMainPage from "../TransportActualMain";
+import { BASE_URL } from "../../utils/BASE_URL";
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [profileData, setProfileData] = useState({
@@ -16,7 +17,6 @@ const HomeScreen = () => {
     on_road: false,
   });
   const [currentDate, setCurrentDate] = useState(new Date());
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
 
   useEffect(() => {
     fetchProfileData();

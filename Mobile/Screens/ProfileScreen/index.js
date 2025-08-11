@@ -4,6 +4,8 @@ import { Ionicons, Feather, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from "./styles"; 
+import { BASE_URL } from "../../utils/BASE_URL";
+
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const [profileData, setProfileData] = useState({
@@ -15,7 +17,6 @@ const ProfileScreen = () => {
   });
   const [contactExpanded, setContactExpanded] = useState(false);
   const dispatcherNumber = '0745346397';
-  const BASE_URL = "https://atrux-717ecf8763ea.herokuapp.com/api/v0.1/";
 
   const toggleContact = () => {
     setContactExpanded(!contactExpanded);
