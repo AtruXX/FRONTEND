@@ -21,6 +21,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Pressable, View, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
+// Import your notifications context
+import { NotificationsProvider } from './Screens/NotificationsContext/index.js'; // Adjust path as needed
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -103,17 +106,38 @@ const MainTabs = () => {
   );
 };
 
-// Main app navigator
-const AppNavigator = () => {
+// Main app navigator wrapped with NavigationContainer but not NotificationsProvider
+const AppNavigatorContent = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName="Splash"
-        screenOptions={{ headerShown: false }}
-      >
-        <Stack.Screen name="Splash" component={SplashScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} 
+    <Stack.Navigator
+      initialRouteName="Splash"
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} 
+      options={{
+        // Custom transition just for Login screen
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 600, // Slower fade for login
+            },
+          },
+        },
+        cardStyleInterpolator: ({ current }) => ({
+          cardStyle: {
+            opacity: current.progress,
+          },
+        }),
+      }}
+      />
+      <Stack.Screen
+        name="Main"
+        component={MainTabs}
         options={{
+          gestureEnabled: false,
+          headerLeft: null,
           // Custom transition just for Login screen
           transitionSpec: {
             open: {
@@ -129,89 +153,32 @@ const AppNavigator = () => {
             },
           }),
         }}
-        />
-        <Stack.Screen
-          name="Main"
-          component={MainTabs}
-          options={{
-            gestureEnabled: false,
-            headerLeft: null,
-            // Custom transition just for Login screen
-            transitionSpec: {
-              open: {
-                animation: 'timing',
-                config: {
-                  duration: 600, // Slower fade for login
-                },
-              },
-            },
-            cardStyleInterpolator: ({ current }) => ({
-              cardStyle: {
-                opacity: current.progress,
-              },
-            }),
-          }}
-          listeners={({ navigation }) => ({
-            // Prevent going back to Login screen
-            beforeRemove: (e) => {
-              // Check if we're trying to go back to Login
-              if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
-                // Prevent the default behavior
-                e.preventDefault();
-                
-                // Optional: You can show an alert or handle logout here
-                // Alert.alert(
-                //   'Logout',
-                //   'Are you sure you want to logout?',
-                //   [
-                //     { text: 'Cancel', style: 'cancel' },
-                //     { text: 'Logout', onPress: () => navigation.dispatch(e.data.action) }
-                //   ]
-                // );
-              }
-            },
-          })}
-        />
-        
-        {/* Home related screens */}
-        <Stack.Screen 
-          name="Truck" 
-          component={Truck} 
-          options={{
-            gestureEnabled: true,
-            headerShown: false,
-            transitionSpec: {
-              open: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-              close: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-            },
-            cardStyleInterpolator: ({ current, layouts }) => ({
-              cardStyle: {
-                transform: [
-                  {
-                    translateX: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [layouts.screen.width, 0],
-                    }),
-                  },
-                ],
-              },
-            }),
-          }}
-        />
-        
-        {/* Transport related screens */}
-        
-        <Stack.Screen name="Transport_Update" component={Transport_Update}
+        listeners={({ navigation }) => ({
+          // Prevent going back to Login screen
+          beforeRemove: (e) => {
+            // Check if we're trying to go back to Login
+            if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
+              // Prevent the default behavior
+              e.preventDefault();
+              
+              // Optional: You can show an alert or handle logout here
+              // Alert.alert(
+              //   'Logout',
+              //   'Are you sure you want to logout?',
+              //   [
+              //     { text: 'Cancel', style: 'cancel' },
+              //     { text: 'Logout', onPress: () => navigation.dispatch(e.data.action) }
+              //   ]
+              // );
+            }
+          },
+        })}
+      />
+      
+      {/* Home related screens */}
+      <Stack.Screen 
+        name="Truck" 
+        component={Truck} 
         options={{
           gestureEnabled: true,
           headerShown: false,
@@ -242,148 +209,47 @@ const AppNavigator = () => {
             },
           }),
         }}
-        />
+      />
+      
+      {/* Transport related screens */}
+      
+      <Stack.Screen name="Transport_Update" component={Transport_Update}
+      options={{
+        gestureEnabled: true,
+        headerShown: false,
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 300,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 300,
+            },
+          },
+        },
+        cardStyleInterpolator: ({ current, layouts }) => ({
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+          },
+        }),
+      }}
+      />
 
-        {/* NEW: Transport Actual Flow - 4 separate pages */}
-        <Stack.Screen 
-          name="TransportMainPage" 
-          component={TransportMainPage}
-          options={{
-            gestureEnabled: true,
-            headerShown: false,
-            transitionSpec: {
-              open: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-              close: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-            },
-            cardStyleInterpolator: ({ current, layouts }) => ({
-              cardStyle: {
-                transform: [
-                  {
-                    translateX: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [layouts.screen.width, 0],
-                    }),
-                  },
-                ],
-              },
-            }),
-          }}
-        />
-        <Stack.Screen 
-          name="CMRDigitalForm" 
-          component={CMRDigitalForm}
-          options={{
-            gestureEnabled: true,
-            headerShown: false,
-            transitionSpec: {
-              open: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-              close: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-            },
-            cardStyleInterpolator: ({ current, layouts }) => ({
-              cardStyle: {
-                transform: [
-                  {
-                    translateX: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [layouts.screen.width, 0],
-                    }),
-                  },
-                ],
-              },
-            }),
-          }}
-        />
-        <Stack.Screen 
-          name="StatusTransportForm" 
-          component={StatusTransportForm}
-          options={{
-            gestureEnabled: true,
-            headerShown: false,
-            transitionSpec: {
-              open: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-              close: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-            },
-            cardStyleInterpolator: ({ current, layouts }) => ({
-              cardStyle: {
-                transform: [
-                  {
-                    translateX: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [layouts.screen.width, 0],
-                    }),
-                  },
-                ],
-              },
-            }),
-          }}
-        />
-        <Stack.Screen 
-          name="PhotoCMRForm" 
-          component={PhotoCMRForm}
-          options={{
-            gestureEnabled: true,
-            headerShown: false,
-            transitionSpec: {
-              open: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-              close: {
-                animation: 'timing',
-                config: {
-                  duration: 300,
-                },
-              },
-            },
-            cardStyleInterpolator: ({ current, layouts }) => ({
-              cardStyle: {
-                transform: [
-                  {
-                    translateX: current.progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [layouts.screen.width, 0],
-                    }),
-                  },
-                ],
-              },
-            }),
-          }}
-        />
-        
-        {/* Profile related screens */}
-        <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
+      {/* NEW: Transport Actual Flow - 4 separate pages */}
+      <Stack.Screen 
+        name="TransportMainPage" 
+        component={TransportMainPage}
         options={{
           gestureEnabled: true,
           headerShown: false,
@@ -414,9 +280,155 @@ const AppNavigator = () => {
             },
           }),
         }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+      />
+      <Stack.Screen 
+        name="CMRDigitalForm" 
+        component={CMRDigitalForm}
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+          }),
+        }}
+      />
+      <Stack.Screen 
+        name="StatusTransportForm" 
+        component={StatusTransportForm}
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+          }),
+        }}
+      />
+      <Stack.Screen 
+        name="PhotoCMRForm" 
+        component={PhotoCMRForm}
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+            close: {
+              animation: 'timing',
+              config: {
+                duration: 300,
+              },
+            },
+          },
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [layouts.screen.width, 0],
+                  }),
+                },
+              ],
+            },
+          }),
+        }}
+      />
+      
+      {/* Profile related screens */}
+      <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
+      options={{
+        gestureEnabled: true,
+        headerShown: false,
+        transitionSpec: {
+          open: {
+            animation: 'timing',
+            config: {
+              duration: 300,
+            },
+          },
+          close: {
+            animation: 'timing',
+            config: {
+              duration: 300,
+            },
+          },
+        },
+        cardStyleInterpolator: ({ current, layouts }) => ({
+          cardStyle: {
+            transform: [
+              {
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              },
+            ],
+          },
+        }),
+      }}
+      />
+    </Stack.Navigator>
+  );
+};
+
+// Main app navigator - this is the root component
+const AppNavigator = () => {
+  return (
+    <NotificationsProvider>
+      <NavigationContainer>
+        <AppNavigatorContent />
+      </NavigationContainer>
+    </NotificationsProvider>
   );
 };
 
