@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles } from "./styles"; 
 import { BASE_URL } from "../../utils/BASE_URL.js";
+import COLORS from "../../utils/COLORS.js";
 
 const LoginScreen = () => {
   const [phone_number, setPhoneNumber] = useState('+40 ');
@@ -150,7 +151,7 @@ const LoginScreen = () => {
               style={styles.input}
               mode="flat"
               underlineColor="transparent"
-              theme={{ colors: { primary: '#3B82F6' } }}
+              theme={{ colors: { primary: COLORS.primary } }}
             />
           </View>
         </View>

@@ -7,6 +7,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from "./styles";
 import TransportMainPage from "../TransportActualMain";
 import { BASE_URL } from "../../utils/BASE_URL";
+import COLORS  from "../../utils/COLORS.js";
+
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [profileData, setProfileData] = useState({
@@ -157,7 +159,7 @@ const HomeScreen = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={ COLORS.primary} />
         <Text>Se încarcă...</Text>
       </View>
     );
@@ -251,7 +253,7 @@ const HomeScreen = () => {
                   return;
                 }
 
-                const response = await fetch(`${BASE_URL}/api/v0.1/auth/${authToken}/logout`, {
+                const response = await fetch(`${BASE_URL}auth/token/logout`, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Token ${authToken}`,
@@ -280,7 +282,7 @@ const HomeScreen = () => {
           >
 
             <Text style={styles.logoutText}>Deconectare</Text>
-            <Ionicons name="log-out-outline" size={16} color="#3B82F6" />
+            <Ionicons name="log-out-outline" size={16} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
 
@@ -294,30 +296,30 @@ const HomeScreen = () => {
 
           <View style={styles.actionsGrid}>
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Transports')}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#EFF6FF' }]}>
-                <Ionicons name="subway-outline" size={28} color="#3B82F6" />
+              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
+                <Ionicons name="subway-outline" size={28} color={COLORS.primary} />
               </View>
               <Text style={styles.actionLabel}>Transporturi</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('DocumentsGeneral', { screen: 'DocumentsGeneral' })}>
 
-              <View style={[styles.actionIconContainer, { backgroundColor: '#F0F9FF' }]}>
-                <Ionicons name="file-tray-full-outline" size={28} color="#0EA5E9" />
+              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
+                <Ionicons name="file-tray-full-outline" size={28} color={COLORS.secondary} />
               </View>
               <Text style={styles.actionLabel}>Documente</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Truck')}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#FEF2F2' }]}>
-                <Ionicons name="bus-outline" size={28} color="#EF4444" />
+              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
+                <Ionicons name="bus-outline" size={28} color={COLORS.danger} />
               </View>
               <Text style={styles.actionLabel}>Camion</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate(TransportMainPage)}>
-              <View style={[styles.actionIconContainer, { backgroundColor: '#F0FFF4' }]}>
-                <Ionicons name="map-outline" size={28} color="#10B981" />
+              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
+                <Ionicons name="map-outline" size={28} color={COLORS.success} />
               </View>
               <Text style={styles.actionLabel}>Transport actual</Text>
             </TouchableOpacity>
@@ -351,7 +353,7 @@ const HomeScreen = () => {
         activeOpacity={0.7}
       >
         {loading ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={COLORS.card} />
         ) : (
           <Text style={styles.buttonText}>
             {profileData.driver?.on_road ? 'Parcheaza' : 'Pornește'}
@@ -368,7 +370,7 @@ const HomeScreen = () => {
     <Text style={styles.sectionTitle}>Ultimul transport atribuit</Text>
     <View style={styles.deliveryCard}>
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+        <ActivityIndicator size="large" color={COLORS.success} />
         <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
       </View>
     </View>
@@ -404,11 +406,11 @@ const HomeScreen = () => {
     </View>
     <View style={styles.deliveryDetails}>
       <View style={styles.deliveryItem}>
-        <Ionicons name="cube-outline" size={20} color="#666" />
+        <Ionicons name="cube-outline" size={20} color={COLORS.medium} />
         <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
       </View>
       <View style={styles.deliveryItem}>
-        <Ionicons name="navigate-outline" size={20} color="#666" />
+        <Ionicons name="navigate-outline" size={20} color={COLORS.medium} />
         <Text style={styles.deliveryItemText}>
           {transport.trailer_number || 'CJ12ABC'}
         </Text>
@@ -425,7 +427,7 @@ const HomeScreen = () => {
 ) : (
   <View style={styles.deliveryCard}>
     <View style={styles.noDataContainer}>
-      <Ionicons name="truck-outline" size={48} color="#ccc" />
+      <Ionicons name="truck-outline" size={48} color={COLORS.light} />
       <Text style={styles.noDataTitle}>Nu există transporturi înregistrate</Text>
       <Text style={styles.noDataSubtitle}>
         Transporturile tale vor apărea aici când vor fi asignate

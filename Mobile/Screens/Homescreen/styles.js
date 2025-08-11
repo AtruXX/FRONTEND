@@ -1,13 +1,14 @@
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
+import COLORS from "../../utils/COLORS.js";
 
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.background,
   },
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
@@ -16,33 +17,33 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
-    backgroundColor: "white",
+    backgroundColor: COLORS.card,
   },
   welcomeText: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.medium,
   },
   nameText: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#333",
+    color: COLORS.dark,
     marginTop: 2,
   },
   roleText: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.medium,
     marginTop: 2,
   },
   profileContainer: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#6366F1",
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
   },
   profileInitials: {
-    color: "white",
+    color: COLORS.card,
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -50,25 +51,25 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "white",
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: COLORS.border,
   },
   dateNumber: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#6366F1",
+    color: COLORS.primary,
   },
   dateDetails: {
     marginLeft: 10,
   },
   dateMonth: {
     fontSize: 16,
-    color: "#666",
+    color: COLORS.medium,
   },
   dateYear: {
     fontSize: 14,
-    color: "#999",
+    color: COLORS.light,
   },
   logoutButton: {
     flexDirection: "row",
@@ -76,10 +77,10 @@ export const styles = StyleSheet.create({
     marginLeft: "auto",
     padding: 8,
     borderRadius: 8,
-    backgroundColor: "#F0F7FF",
+    backgroundColor: COLORS.background,
   },
   logoutText: {
-    color: "#3B82F6",
+    color: COLORS.primary,
     marginRight: 5,
     fontWeight: "500",
   },
@@ -96,10 +97,10 @@ export const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: COLORS.dark,
   },
   seeAllText: {
-    color: "#3B82F6",
+    color: COLORS.primary,
     fontWeight: "500",
   },
   statsGrid: {
@@ -110,11 +111,11 @@ export const styles = StyleSheet.create({
   },
   statCard: {
     width: "48%",
-    backgroundColor: "white",
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 15,
     marginBottom: 15,
-    shadowColor: "#000",
+    shadowColor: COLORS.dark,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -126,18 +127,18 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#EFF6FF",
+    backgroundColor: COLORS.background,
     marginBottom: 10,
   },
   statLabel: {
     fontSize: 18,
-    color: "#666",
+    color: COLORS.medium,
     marginBottom: 6,
   },
   statValue: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#333",
+    color: COLORS.dark,
   },
   actionsGrid: {
     flexDirection: "row",
@@ -148,12 +149,12 @@ export const styles = StyleSheet.create({
   },
   actionCard: {
     width: "48%",
-    backgroundColor: "white",
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 15,
     marginBottom: 20,
     alignItems: "center",
-    shadowColor: "#000",
+    shadowColor: COLORS.dark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -171,16 +172,16 @@ export const styles = StyleSheet.create({
   actionLabel: {
     fontSize: 20,
     fontWeight: "500",
-    color: "#1E293B",
+    color: COLORS.dark,
     textAlign: "center",
     marginTop: 5,
   },
   statusCard: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 20,
     margin: 16,
-    shadowColor: '#000',
+    shadowColor: COLORS.dark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -198,11 +199,11 @@ export const styles = StyleSheet.create({
   },
   
   driving: {
-    backgroundColor: '#e8f5e8',
+    backgroundColor: COLORS.selected,
   },
   
   parked: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: COLORS.background,
   },
   
   statusDot: {
@@ -213,17 +214,17 @@ export const styles = StyleSheet.create({
   },
   
   drivingDot: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.success,
   },
   
   parkedDot: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.secondary,
   },
   
   statusText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.dark,
   },
   
   toggleButton: {
@@ -235,11 +236,11 @@ export const styles = StyleSheet.create({
   },
   
   driveButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.success,
   },
   
   parkButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: COLORS.secondary,
   },
   
   disabled: {
@@ -247,7 +248,7 @@ export const styles = StyleSheet.create({
   },
   
   buttonText: {
-    color: '#fff',
+    color: COLORS.card,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -267,13 +268,13 @@ export const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: COLORS.card,
     borderRadius: 4,
     marginBottom: 2,
   },
   parkingText: {
     position: 'absolute',
-    color: '#fff',
+    color: COLORS.card,
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -286,7 +287,7 @@ export const styles = StyleSheet.create({
   carBody: {
     width: 40,
     height: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 8,
     position: 'absolute',
     top: 4,
@@ -303,7 +304,7 @@ export const styles = StyleSheet.create({
   carWheel: {
     width: 8,
     height: 8,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     borderRadius: 4,
     position: 'absolute',
     bottom: 0,
@@ -315,7 +316,7 @@ export const styles = StyleSheet.create({
     left: 2,
   },
   actionText: {
-    color: '#fff',
+    color: COLORS.card,
     fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -327,18 +328,18 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   helperText: {
-    color: '#7f8c8d',
+    color: COLORS.light,
     fontSize: 14,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   
   drivingText: {
-    color: '#2E7D32',
+    color: COLORS.success,
   },
   
   parkedText: {
-    color: '#1565C0',
+    color: COLORS.secondary,
   },
   
   changeInstructions: {
@@ -347,7 +348,7 @@ export const styles = StyleSheet.create({
   
   instructionText: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.medium,
     textAlign: 'center',
     marginBottom: 4,
   },
@@ -355,16 +356,16 @@ export const styles = StyleSheet.create({
   nextStatusText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#888',
+    color: COLORS.light,
   },
 
   deliveryCard: {
-    backgroundColor: "white",
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     marginHorizontal: 20,
     marginVertical: 20,
     padding: 15,
-    shadowColor: "#000",
+    shadowColor: COLORS.dark,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
@@ -379,21 +380,21 @@ export const styles = StyleSheet.create({
   deliveryTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: COLORS.dark,
   },
   deliverySubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: COLORS.medium,
     marginTop: 2,
   },
   deliveryBadge: {
-    backgroundColor: "#10B981",
+    backgroundColor: COLORS.success,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 20,
   },
   deliveryBadgeText: {
-    color: "white",
+    color: COLORS.card,
     fontWeight: "bold",
     fontSize: 12,
   },
@@ -408,16 +409,16 @@ export const styles = StyleSheet.create({
   deliveryItemText: {
     marginLeft: 10,
     fontSize: 14,
-    color: "#555",
+    color: COLORS.medium,
   },
   deliveryButton: {
-    backgroundColor: "#3B82F6",
+    backgroundColor: COLORS.primary,
     padding: 12,
     borderRadius: 10,
     alignItems: "center",
   },
   deliveryButtonText: {
-    color: "white",
+    color: COLORS.card,
     fontWeight: "bold",
     fontSize: 16,
   },
@@ -429,7 +430,7 @@ export const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: COLORS.medium,
   },
   noDataContainer: {
     alignItems: 'center',
@@ -440,13 +441,13 @@ export const styles = StyleSheet.create({
   noDataTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.dark,
     marginTop: 16,
     textAlign: 'center',
   },
   noDataSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: COLORS.medium,
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 20,
@@ -454,9 +455,36 @@ export const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#2c3e50',
+    color: COLORS.dark,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 8,
+  },
+  
+  // Badge status styles for different transport statuses
+  badgeNotStarted: {
+    backgroundColor: COLORS.light,
+  },
+  badgeInProgress: {
+    backgroundColor: COLORS.primary,
+  },
+  badgeDelayed: {
+    backgroundColor: COLORS.warning,
+  },
+  badgeCompleted: {
+    backgroundColor: COLORS.success,
+  },
+  
+  // Error container styles
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  errorText: {
+    fontSize: 16,
+    color: COLORS.danger,
+    textAlign: 'center',
   },
 });
