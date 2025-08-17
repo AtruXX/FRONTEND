@@ -141,7 +141,7 @@ export const useUploadGoodsPhotosMutation = () => {
       
       // Add photos to form data
       photos.forEach((photo, index) => {
-        formData.append('photos', {
+        formData.append('goods_photos', {
           uri: photo.uri,
           type: photo.type || 'image/jpeg',
           name: photo.name || `goods_photo_${index}.jpg`,
@@ -153,7 +153,6 @@ export const useUploadGoodsPhotosMutation = () => {
         method: 'POST',
         headers: {
           'Authorization': `Token ${token}`,
-          'Content-Type': 'multipart/form-data',
         },
         body: formData,
       });

@@ -152,7 +152,7 @@ export const useUpdateUserProfileMutation = () => {
       }
 
       console.log('Updating user profile with:', profileData);
-      const response = await fetch(`${BASE_URL}profile/`, {
+      const response = await fetch(`${BASE_URL}profile`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Token ${token}`,
