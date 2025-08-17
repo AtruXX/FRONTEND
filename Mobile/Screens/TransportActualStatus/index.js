@@ -9,6 +9,7 @@ import {
   useUploadGoodsPhotosMutation,
   useGetGoodsPhotosQuery 
 } from '../../services/statusService';
+import { styles } from './styles';
 
 const TransportStatusPage = ({ navigation }) => {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -360,7 +361,7 @@ const handleSubmit = async () => {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Selectați o opțiune</Text>
             <TouchableOpacity onPress={() => setShowOptionsModal(false)}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color="#373A56" />
             </TouchableOpacity>
           </View>
           
@@ -392,7 +393,7 @@ const handleSubmit = async () => {
           <Text style={statusFormData[field.key] ? styles.selectInputText : styles.selectInputPlaceholder}>
             {statusFormData[field.key] || field.placeholder}
           </Text>
-          <Ionicons name="chevron-down" size={20} color="#6B7280" />
+          <Ionicons name="chevron-down" size={20} color="#A0A4C1" />
         </TouchableOpacity>
       );
     } else if (field.type === 'camera') {
@@ -412,7 +413,7 @@ const handleSubmit = async () => {
             </View>
           ) : (
             <View style={styles.cameraButtonContent}>
-              <Ionicons name="camera" size={24} color="#3B82F6" />
+              <Ionicons name="camera" size={24} color="#5A5BDE" />
               <Text style={styles.cameraButtonText}>{field.placeholder}</Text>
             </View>
           )}
@@ -425,7 +426,7 @@ const handleSubmit = async () => {
           value={String(statusFormData[field.key] || '')}
           onChangeText={(text) => setFormData(field.key, text)}
           placeholder={field.placeholder}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#A0A4C1"
           keyboardType={field.key === 'delay_estimation' ? 'numeric' : 'default'}
         />
       );
@@ -436,7 +437,7 @@ const handleSubmit = async () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Ionicons name="hourglass-outline" size={40} color="#6366F1" />
+          <Ionicons name="hourglass-outline" size={40} color="#5A5BDE" />
           <Text style={styles.loadingText}>Se încarcă datele transportului...</Text>
         </View>
       </SafeAreaView>
@@ -447,7 +448,7 @@ const handleSubmit = async () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
+          <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
           <Text style={styles.emptyTitle}>Niciun transport activ</Text>
           <Text style={styles.emptyText}>Nu aveți un transport activ pentru a actualiza statusul.</Text>
           <TouchableOpacity
@@ -469,7 +470,7 @@ const handleSubmit = async () => {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={handlePrevious} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color="#373A56" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Status Transport</Text>
           <View style={{ width: 24 }} />
@@ -484,7 +485,9 @@ const handleSubmit = async () => {
               ]} 
             />
           </View>
-          <Text style={styles.progressText}>Pagina {currentPage} din {totalPages}</Text>
+          <Text style={styles.progressText} numberOfLines={1} adjustsFontSizeToFit>
+            Pasul {currentPage} din {totalPages}
+          </Text>
         </View>
 
         <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
@@ -546,246 +549,5 @@ const handleSubmit = async () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    padding: 8,
-    minWidth: 44,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  progressContainer: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#6366F1',
-    borderRadius: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  formContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    color: '#1F2937',
-  },
-  selectInput: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  selectInputText: {
-    fontSize: 16,
-    color: '#1F2937',
-  },
-  selectInputPlaceholder: {
-    fontSize: 16,
-    color: '#9CA3AF',
-  },
-  cameraButton: {
-    borderWidth: 2,
-    borderColor: '#3B82F6',
-    borderStyle: 'dashed',
-    borderRadius: 8,
-    padding: 20,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
-  },
-  cameraButtonContent: {
-    alignItems: 'center',
-  },
-  cameraButtonText: {
-    fontSize: 16,
-    color: '#3B82F6',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  photoPreviewContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  photoPreview: {
-    width: 80,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 8,
-  },
-  photoTakenText: {
-    fontSize: 14,
-    color: '#10B981',
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  prevButton: {
-    backgroundColor: '#6B7280',
-  },
-  submitNowButton: {
-    backgroundColor: '#10B981',
-  },
-  nextButton: {
-    backgroundColor: '#6366F1',
-  },
-  disabledButton: {
-    backgroundColor: '#D1D5DB',
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginHorizontal: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  optionItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  optionText: {
-    fontSize: 16,
-    color: '#374151',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#374151',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  backToHomeButton: {
-    backgroundColor: '#6366F1',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-  },
-  backToHomeText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
 
 export default TransportStatusPage;
