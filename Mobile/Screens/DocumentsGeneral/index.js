@@ -2,37 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TouchableOpacity, ScrollView, Image, Platform, Linking, Modal } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import {styles} from './styles'; // Import your styles from the styles.js file
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { BASE_URL } from "../../utils/BASE_URL";
 import PageHeader from '../../components/General/Header';
-const DocumentsScreen = ({ navigation, route }) => {
-  // Document categories
-  const documentCategories = [
-    { value: 'permis_de_conducere', label: 'Permis de conducere' },
-    { value: 'atestate', label: 'Atestat profesional' },
-    { value: 'certificat_medical', label: 'Certificat medical' },
-    { value: 'aviz_psihologic', label: 'Aviz psihologic' },
-    { value: 'buletin', label: 'Carte de identitate' },
-    { value: 'fisa_postului', label: 'Fișa postului' },
-    { value: 'contract_munca', label: 'Contract individual de muncă' },
-    { value: 'adeverinta_angajator', label: 'Adeverință angajator' },
-    { value: 'formular_eu', label: 'Formular A1/Portable Document A1 (UE)' },
-    { value: 'cereri_de_concediu', label: 'Cereri concediu' },
-    { value: 'alte_documente_personale', label: 'Alte documente' }
-  ];
+import { 
+  useGetPersonalDocumentsQuery, 
+  useUploadPersonalDocumentMutation,
+  useDeletePersonalDocumentMutation,
+  DOCUMENT_CATEGORIES 
+} from '../../services/documentsService';
 
-  // Sample recent documents data
-  const [recentDocuments, setRecentDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const DocumentsScreen = ({ navigation, route }) => {
+  // Local state
   const [selectedFile, setSelectedFile] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [category, setCategory] = useState(''); // No default category
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showAllDocuments, setShowAllDocuments] = useState(false);
+
+  // Use the documents service hooks
+  const {
+    data: documents,
+    isLoading: documentsLoading,
+    isFetching: documentsFetching,
+    error: documentsError,
+    refetch: refetchDocuments
+  } = useGetPersonalDocumentsQuery();
+
+  const [uploadDocumentMutation, { isLoading: isUploading }] = useUploadPersonalDocumentMutation();
+  const [deleteDocumentMutation, { isLoading: isDeleting }] = useDeletePersonalDocumentMutation();
+
+  // Extract data from hooks
+  const recentDocuments = documents || [];
+  const loading = documentsLoading;
+  const error = documentsError;
 
   // Get documents to display (limit to 3 if showAllDocuments is false)
   const getDocumentsToDisplay = () => {
@@ -50,75 +53,13 @@ const DocumentsScreen = ({ navigation, route }) => {
   // Get document title based on selected category
   const getDocumentTitle = () => {
     if (!category) return 'Selectează tipul documentului';
-    const selectedCategory = documentCategories.find(cat => cat.value === category);
+    const selectedCategory = DOCUMENT_CATEGORIES.find(cat => cat.value === category);
     return selectedCategory ? selectedCategory.label : 'Document';
   };
 
-  // Function to fetch personal documents from the API
-  const fetchPersonalDocuments = async () => {
-    try {
-      // Get the authentication token from AsyncStorage
-      const authToken = await AsyncStorage.getItem('authToken');
-      
-      if (!authToken) {
-        throw new Error('Authentication token not found');
-      }
-      
-      // Set up the request with the authentication token in the header
-      const response = await fetch(`${BASE_URL}personal-documents/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Token ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
-      }
-      
-      // Parse the JSON response
-      const data = await response.json();
-      
-      // Map the API response to match the document format in your state
-      const formattedDocuments = data.map((doc) => ({
-        id: doc.id,
-        name: doc.title,
-        type: getFileExtension(doc.document),
-        size: '1.0 MB', // Placeholder size since not provided by API
-        date: new Date().toLocaleDateString(), // Current date as placeholder
-        status: getCategoryStatus(doc.category), // Map category to a status
-        url: doc.document,
-        category: doc.category
-      }));
-      
-      return formattedDocuments;
-    } catch (error) {
-      console.error('Error fetching personal documents:', error);
-      throw error;
-    }
-  };
-
-  // Helper function to extract file extension from URL
-  const getFileExtension = (url) => {
-    if (!url) return '';
-    
-    // Extract filename from URL
-    const filename = url.split('?')[0]; // Remove query parameters
-    const extension = filename.split('.').pop().toUpperCase();
-    
-    return extension || '';
-  };
-
-  // Map document category to status for display
-  const getCategoryStatus = (category) => {
-    const statusMap = {
-      'carnet_de_sofer': 'approved',
-      'atestate': 'approved',
-      // Add more category to status mappings as needed
-    };
-    
-    return statusMap[category] || 'pending';
+  // Handle retry function for refresh button
+  const handleRetry = async () => {
+    await refetchDocuments();
   };
 
   // Get file icon based on document type
@@ -207,6 +148,11 @@ const DocumentsScreen = ({ navigation, route }) => {
           onPress: () => downloadDocument(document)
         },
         {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => confirmDeleteDocument(document)
+        },
+        {
           text: 'Cancel',
           style: 'cancel'
         }
@@ -225,30 +171,35 @@ const DocumentsScreen = ({ navigation, route }) => {
     Alert.alert('Download', `Downloading ${document.name} functionality would be implemented here`);
   };
 
-  // Function to load documents
-  const loadDocuments = async () => {
-    setLoading(true);
-    setError(null);
+  const confirmDeleteDocument = (document) => {
+    Alert.alert(
+      'Delete Document',
+      `Are you sure you want to delete "${document.name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteDocument(document.id)
+        }
+      ]
+    );
+  };
+
+  const deleteDocument = async (documentId) => {
     try {
-      const documents = await fetchPersonalDocuments();
-      setRecentDocuments(documents);
-      setError(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      await deleteDocumentMutation(documentId).unwrap();
+      Alert.alert('Success', 'Document deleted successfully!');
+      // Refresh the documents list
+      await refetchDocuments();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      Alert.alert('Error', 'Failed to delete the document. Please try again.');
     }
   };
-
-  // Handle retry function for refresh button
-  const handleRetry = async () => {
-    await loadDocuments();
-  };
-
-  // Load documents when component mounts
-  useEffect(() => {
-    loadDocuments();
-  }, []);
 
   useEffect(() => {
     (async () => {
@@ -341,10 +292,6 @@ const DocumentsScreen = ({ navigation, route }) => {
     }
   };
 
-  const getFileExtensionUp = (uri) => {
-    return uri.split('.').pop().toLowerCase();
-  };
-
   const getFileName = (uri) => {
     return uri.split('/').pop();
   };
@@ -360,66 +307,24 @@ const DocumentsScreen = ({ navigation, route }) => {
       return;
     }
 
-    setIsUploading(true);
-
     try {
-      // Get the auth token from AsyncStorage
-      const authToken = await AsyncStorage.getItem('authToken');
-      
-      if (!authToken) {
-        Alert.alert('Authentication Error', 'Please log in to upload documents.');
-        setIsUploading(false);
-        return;
-      }
+      await uploadDocumentMutation({
+        document: selectedFile,
+        title: getDocumentTitle(),
+        category: category
+      }).unwrap();
 
-      // Prepare file information
-      const fileUri = selectedFile.uri;
-      const fileName = getFileName(fileUri);
-      const fileExtension = getFileExtensionUp(fileUri);
-      const fileType = selectedFile.mimeType || `application/${fileExtension}`;
+      Alert.alert('Success', 'Document uploaded successfully!');
       
-      // Create form data
-      const formData = new FormData();
+      // Reset the form
+      setSelectedFile(null);
+      setCategory('');
       
-      // Add the file
-      formData.append('document', {
-        uri: fileUri,
-        name: fileName,
-        type: fileType,
-      });
-      
-      // Add other required fields
-      formData.append('title', getDocumentTitle());
-      formData.append('category', category);
-
-      // Make the API request
-      const response = await fetch(`${BASE_URL}personal-documents/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${authToken}`,
-          // Add any other headers needed from AsyncStorage
-        },
-        body: formData,
-      });
-
-      const responseData = await response.json();
-
-      if (response.ok) {
-        Alert.alert('Success', 'Document uploaded successfully!');
-        // Reset the form
-        setSelectedFile(null);
-        setCategory('');
-        // Refresh the documents list
-        await loadDocuments();
-      } else {
-        console.error('Upload failed:', responseData);
-        Alert.alert('Upload Failed', responseData.message || 'An error occurred while uploading the document.');
-      }
+      // Refresh the documents list
+      await refetchDocuments();
     } catch (error) {
       console.error('Error uploading document:', error);
-      Alert.alert('Error', 'An error occurred while uploading the document. Please try again.');
-    } finally {
-      setIsUploading(false);
+      Alert.alert('Error', error.message || 'An error occurred while uploading the document. Please try again.');
     }
   };
 
@@ -527,9 +432,9 @@ const DocumentsScreen = ({ navigation, route }) => {
             <TouchableOpacity 
               style={styles.refreshButton}
               onPress={handleRetry}
-              disabled={loading}
+              disabled={loading || documentsFetching}
             >
-              {loading ? (
+              {loading || documentsFetching ? (
                 <ActivityIndicator size="small" color="#4285F4" />
               ) : (
                 <Ionicons name="refresh" size={20} color="#4285F4" />
@@ -539,7 +444,7 @@ const DocumentsScreen = ({ navigation, route }) => {
           
           {error ? (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Eroare la încărcarea documentelor: {error}</Text>
+              <Text style={styles.errorText}>Eroare la încărcarea documentelor: {error.message || error.toString()}</Text>
               <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
                 <Text style={styles.retryButtonText}>Încearcă din nou</Text>
               </TouchableOpacity>
@@ -575,8 +480,13 @@ const DocumentsScreen = ({ navigation, route }) => {
                       e.stopPropagation(); // Prevent triggering the parent onPress
                       showDocumentOptions(doc);
                     }}
+                    disabled={isDeleting}
                   >
-                    <MaterialIcons name="more-vert" size={20} color="#777" />
+                    {isDeleting ? (
+                      <ActivityIndicator size="small" color="#777" />
+                    ) : (
+                      <MaterialIcons name="more-vert" size={20} color="#777" />
+                    )}
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
@@ -625,7 +535,7 @@ const DocumentsScreen = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalScrollView}>
-              {documentCategories.map((cat) => (
+              {DOCUMENT_CATEGORIES.map((cat) => (
                 <TouchableOpacity
                   key={cat.value}
                   style={[
