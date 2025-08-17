@@ -1,32 +1,41 @@
+// screens/HomeScreen.js - Fixed and simplified version
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Alert, RefreshControl } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles } from "./styles";
-import TransportMainPage from "../TransportActualMain";
-import { BASE_URL } from "../../utils/BASE_URL";
 import COLORS from "../../utils/COLORS.js";
 import { useLoading } from "../../components/General/loadingSpinner.js";
+
+// RTK Query imports
+import { 
+  useGetProfileQuery, 
+  useLogoutMutation,
+  useUpdateProfileMutation 
+} from "../../services/authService";
+
 const HomeScreen = () => {
   const navigation = useNavigation();
   const { showLoading, hideLoading } = useLoading();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [transport, setTransport] = useState(null);
-  const [transportLoading, setTransportLoading] = useState(true); // Keep this for transport card only
-  const [error, setError] = useState(null);
-  const [profileData, setProfileData] = useState({
-    name: "",
-    role: "",
-    initials: "",
-    id: "",
-    on_road: false,
+
+  // RTK Query hooks
+  const {
+    data: profileData,
+    error: profileError,
+    isLoading: isProfileLoading,
+    isFetching: isProfileFetching,
+    refetch: refetchProfile,
+  } = useGetProfileQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
 
-  useEffect(() => {
-    fetchProfileData();
-  }, []);
+  const [updateProfile] = useUpdateProfileMutation();
+  const [logout, { isLoading: isLogoutLoading }] = useLogoutMutation();
+
+  // Date update effect
   useEffect(() => {
     const intervalId = setInterval(() => {
       setCurrentDate(new Date());
@@ -34,6 +43,15 @@ const HomeScreen = () => {
 
     return () => clearInterval(intervalId);
   }, []);
+
+  // Update global loading based on profile loading
+  useEffect(() => {
+    if (isProfileLoading) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [isProfileLoading, showLoading, hideLoading]);
 
   // Format day number
   const day = currentDate.getDate();
@@ -47,182 +65,99 @@ const HomeScreen = () => {
     ];
     return months[month];
   };
-  //adaugare alagere curse
-  //curse atribuite sofer? 
-  //preluare id transport - insusire poate in get driver 
 
   const monthName = getMonthNameRomanian(currentDate.getMonth());
   const year = currentDate.getFullYear();
 
-  const fetchProfileData = async () => {
-    try {
-      showLoading(); // Use global loading
-      const authToken = await AsyncStorage.getItem('authToken');
-      console.log('[DEBUG] Retrieved auth token:', authToken);
-
-      if (!authToken) {
-        console.error('[DEBUG] No auth token found. Aborting fetch.');
-        return;
-      }
-
-      const headers = {
-        'Authorization': `Token ${authToken}`,
-      };
-
-      console.log('[DEBUG] Sending GET request to /get_profile with headers:', headers);
-
-      const response = await fetch(`${BASE_URL}profile/`, {
-        method: 'GET',
-        headers: headers
-      });
-
-      console.log('[DEBUG] Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[DEBUG] Server responded with error:', errorText);
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('[DEBUG] Received profile data:', data);
-
-      const nameParts = data.name.split(' ');
-      const initials = nameParts.length > 1
-        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
-        : nameParts[0].substring(0, 2);
-
-      setProfileData({
-        name: data.name,
-        role: "Sofer",
-        initials: initials.toUpperCase(),
-        id: data.id,
-        on_road: data.on_road,
-      });
-
-    } catch (error) {
-      console.error('[DEBUG] Caught error in fetchProfileData:', error);
-    } finally {
-      hideLoading(); // Use global loading
-    }
-  };
-
-
-  useEffect(() => {
-    const fetchTransport = async () => {
-      try {
-        setTransportLoading(true); // Use local loading for transport card
-        const authToken = await AsyncStorage.getItem('authToken');
-        console.log('[DEBUG] Retrieved auth token:', authToken);
-
-        if (!authToken) {
-          console.error('[DEBUG] No auth token found. Aborting fetch.');
-          setTransportLoading(false);
-          return;
-        }
-
-        const headers = {
-          'Authorization': `Token ${authToken}`,
-        };
-
-        console.log(`[DEBUG] Sending GET request to ${BASE_URL}transports?driver_id=${profileData.id}`);
-        const response = await fetch(`${BASE_URL}transports?driver_id=${profileData.id}`, {
-          method: 'GET',
-          headers: headers
-        });
-
-        if (!response.ok) {
-          throw new Error(`API request failed with status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('[DEBUG] Received transport data:', data);
-
-        if (data.transports && data.transports.length > 0) {
-          const sortedTransports = [...data.transports].sort((a, b) => b.id - a.id);
-          const lastTransport = sortedTransports[0];
-          setTransport(lastTransport);
-          console.log('[DEBUG] Set last transport:', lastTransport);
-        } else {
-          setTransport(null);
-          console.log('[DEBUG] No transports found for driver');
-        }
-
-      } catch (err) {
-        console.error('[DEBUG] Error fetching transport:', err);
-        setError(err.message);
-        setTransport(null);
-      } finally {
-        setTransportLoading(false); // Use local loading for transport card
-      }
-    };
-
-    
-  }, [profileData.id]);
-  
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Eroare: {error}</Text>
-      </View>
-    );
-  }
-
+  // Handle status change using RTK Query
   const handleStatusChange = async () => {
     try {
-      showLoading(); // Use global loading
+      showLoading();
+      
+      // Toggle the on_road status
+      const newOnRoadStatus = !profileData?.on_road;
+      
+      await updateProfile({ 
+        on_road: newOnRoadStatus 
+      }).unwrap();
 
-      console.log('🌐 Request URL:', `${BASE_URL}status/`);
-      const authToken = await AsyncStorage.getItem('authToken');
-
-      const response = await fetch(`${BASE_URL}status/`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Token ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('📡 Response status:', response.status);
-
-      if (response.ok) {
-        const updatedData = await response.json();
-        console.log('✅ Response data:', JSON.stringify(updatedData, null, 2));
-
-        setProfileData(updatedData);
-
-        const newStatus = updatedData.driver.on_road ? 'La volan' : 'Parcat';
-
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Response error:', response.status, errorText);
-        throw new Error(`Failed to update status: ${response.status}`);
-      }
-
+      console.log('✅ Status updated successfully');
+      
     } catch (error) {
       console.error('💥 Status update error:', error);
       Alert.alert('Eroare', 'Nu s-a putut actualiza statusul. Încearcă din nou.');
     } finally {
-      hideLoading(); // Use global loading
+      hideLoading();
     }
   };
 
-  // Fixed: access nested driver.on_road for current and next status
-  const currentStatus = profileData.driver?.on_road === true ? 'La volan' : 'Staționare';
-  const nextStatus = profileData.driver?.on_road === true ? 'Staționare' : 'La volan';
+  // Handle logout using RTK Query
+  const handleLogout = async () => {
+    try {
+      await logout().unwrap();
+      console.log('Logout successful');
+      
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Eroare', 'A aparut o eroare la deconectare.');
+    }
+  };
+
+  // Generate initials from name
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    const nameParts = name.split(' ');
+    const initials = nameParts.length > 1
+      ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
+      : nameParts[0].substring(0, 2);
+    return initials.toUpperCase();
+  };
+
+  // Error handling
+  if (profileError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>
+          Eroare la încărcarea profilului
+        </Text>
+        <TouchableOpacity 
+          style={styles.retryButton} 
+          onPress={refetchProfile}
+        >
+          <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const initials = getInitials(profileData?.name);
+  const currentStatus = profileData?.on_road === true ? 'La volan' : 'Parcat';
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={isProfileFetching && !isProfileLoading}
+            onRefresh={refetchProfile}
+            colors={[COLORS.primary]}
+          />
+        }
+      >
         {/* Header with profile */}
         <View style={styles.header}>
           <View>
             <Text style={styles.welcomeText}>Bun venit,</Text>
-            <Text style={styles.nameText}>{profileData.name}</Text>
-            <Text style={styles.roleText}>{profileData.role}</Text>
+            <Text style={styles.nameText}>{profileData?.name || 'Utilizator'}</Text>
+            <Text style={styles.roleText}>Sofer</Text>
           </View>
           <View style={styles.profileContainer}>
-            <Text style={styles.profileInitials}>{profileData.initials}</Text>
+            <Text style={styles.profileInitials}>{initials}</Text>
           </View>
         </View>
 
@@ -234,82 +169,62 @@ const HomeScreen = () => {
             <Text style={styles.dateYear}>{year}</Text>
           </View>
 
-          <TouchableOpacity style={styles.logoutButton}
-            onPress={async () => {
-              try {
-                showLoading(); // Use global loading
-                const authToken = await AsyncStorage.getItem('authToken');
-                console.log('[DEBUG] Retrieved auth token:', authToken);
-
-                if (!authToken) {
-                  console.error('[DEBUG] No auth token found. Aborting fetch.');
-                  return;
-                }
-
-                const response = await fetch(`${BASE_URL}auth/token/logout`, {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Token ${authToken}`,
-                    'Content-Type': 'application/json',
-                  },
-                });
-
-                if (response.ok) {
-                  navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'Login' }],
-                  });
-                } else {
-                  const err = await response.json();
-                  console.error('Logout failed:', err);
-                  alert('Logout failed.');
-                }
-              } catch (error) {
-                console.error('Logout error:', error);
-                alert('Something went wrong during logout.');
-              } finally {
-                hideLoading(); // Use global loading
-              }
-            }}
+          <TouchableOpacity 
+            style={[
+              styles.logoutButton,
+              isLogoutLoading && { opacity: 0.6 }
+            ]}
+            onPress={handleLogout}
+            disabled={isLogoutLoading}
           >
-
-            <Text style={styles.logoutText}>Deconectare</Text>
+            <Text style={styles.logoutText}>
+              {isLogoutLoading ? 'Se deconectează...' : 'Deconectare'}
+            </Text>
             <Ionicons name="log-out-outline" size={16} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
-
 
         {/* Quick Actions Section */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Acțiuni rapide</Text>
-
           </View>
 
           <View style={styles.actionsGrid}>
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Transports')}>
+            <TouchableOpacity 
+              style={styles.actionCard} 
+              onPress={() => navigation.navigate('Transports')}
+            >
               <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
                 <Ionicons name="subway-outline" size={28} color={COLORS.primary} />
               </View>
               <Text style={styles.actionLabel}>Transporturi</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('DocumentsGeneral', { screen: 'DocumentsGeneral' })}>
-
+            <TouchableOpacity 
+              style={styles.actionCard} 
+              onPress={() => navigation.navigate('DocumentsGeneral', { screen: 'DocumentsGeneral' })}
+            >
               <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
                 <Ionicons name="file-tray-full-outline" size={28} color={COLORS.secondary} />
               </View>
               <Text style={styles.actionLabel}>Documente</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate('Truck')}>
+            <TouchableOpacity 
+              style={styles.actionCard} 
+              onPress={() => navigation.navigate('Truck')}
+            >
               <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
                 <Ionicons name="bus-outline" size={28} color={COLORS.danger} />
               </View>
               <Text style={styles.actionLabel}>Camion</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard} onPress={() => navigation.navigate(TransportMainPage)}>
+            <TouchableOpacity 
+              style={styles.actionCard} 
+              onPress={() => navigation.navigate('TransportMainPage')}
+            >
               <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
                 <Ionicons name="map-outline" size={28} color={COLORS.success} />
               </View>
@@ -318,46 +233,47 @@ const HomeScreen = () => {
           </View>
         </View>
 
+        {/* Status Card */}
         <View style={styles.statusCard}>
           {/* Current Status Display */}
           <View style={[
             styles.statusDisplay,
-            profileData.driver?.on_road ? styles.driving : styles.parked
+            profileData?.on_road ? styles.driving : styles.parked
           ]}>
             <View style={[
               styles.statusDot,
-              profileData.driver?.on_road ? styles.drivingDot : styles.parkedDot
+              profileData?.on_road ? styles.drivingDot : styles.parkedDot
             ]} />
-            <Text style={styles.statusText}>
-              {profileData.driver?.on_road ? 'La volan' : 'Parcat'}
-            </Text>
+            <Text style={styles.statusText}>{currentStatus}</Text>
           </View>
 
-          {/* Simple Toggle Button */}
-         <TouchableOpacity
-  style={[
-    styles.toggleButton,
-    profileData.driver?.on_road ? styles.parkButton : styles.driveButton
-    // Remove: loading && styles.disabled
-  ]}
-  onPress={handleStatusChange}
-  // Remove: disabled={loading}
-  activeOpacity={0.7}
->
-  <Text style={styles.buttonText}>
-    {profileData.driver?.on_road ? 'Parcheaza' : 'Pornește'}
-  </Text>
-</TouchableOpacity>
+          {/* Toggle Button */}
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              profileData?.on_road ? styles.parkButton : styles.driveButton
+            ]}
+            onPress={handleStatusChange}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.buttonText}>
+              {profileData?.on_road ? 'Parcheaza' : 'Pornește'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-
-        {/* Upcoming delivery card */}
-       
+        {/* Debug Info - Remove this in production */}
+        {__DEV__ && (
+          <View style={{padding: 16, backgroundColor: '#f0f0f0', margin: 16}}>
+            <Text style={{fontSize: 12}}>Debug Info:</Text>
+            <Text style={{fontSize: 10}}>Profile ID: {profileData?.id}</Text>
+            <Text style={{fontSize: 10}}>On Road: {profileData?.on_road?.toString()}</Text>
+            <Text style={{fontSize: 10}}>Loading: {isProfileLoading.toString()}</Text>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
-
   );
 };
-
 
 export default HomeScreen;

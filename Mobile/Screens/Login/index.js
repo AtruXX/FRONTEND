@@ -1,18 +1,25 @@
+// screens/LoginScreen.js - Updated with better error handling
 import React, { useState } from "react";
-import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
-import { TextInput, Button, Card, Title } from "react-native-paper";
+import { View, Alert, Text, TouchableOpacity, Image } from "react-native";
+import { TextInput } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { styles } from "./styles";
-import { BASE_URL } from "../../utils/BASE_URL.js";
 import COLORS from "../../utils/COLORS.js";
 import { useLoading } from "../../components/General/loadingSpinner.js";
+
+// Import the hooks from authService
+import { useLoginMutation } from "../../services/authService";
+
 const LoginScreen = () => {
   const [phone_number, setPhoneNumber] = useState('+40 ');
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
   const { showLoading, hideLoading } = useLoading();
+  
+  // RTK Query mutation hook
+  const [login, { isLoading: isLoginLoading, error: loginError }] = useLoginMutation();
+
   const handleForgotPassword = () => {
     Alert.alert(
       'Parola uitata',
@@ -28,100 +35,71 @@ const LoginScreen = () => {
       [{ text: 'OK', style: 'default' }]
     );
   };
- const fetchUserProfile = async (token) => {
-  try {
-    console.log('Fetching user profile with token');
-    const response = await fetch(
-      `${BASE_URL}profile/`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Token ${token}`
-        }
-        
-      }
-    );
-    console.log("Authorization: ",token);
-    
-    if (response.ok) {
-      const profileData = await response.json();
-      console.log('Profile data received:', profileData);
-      
-      // Store driver id
-      if (profileData.id) {
-        await AsyncStorage.setItem('driverId', profileData.id.toString());
-        console.log('Driver ID stored:', profileData.id);
-      }
-      
-      // You might want to store other useful info
-      if (profileData.name) {
-        await AsyncStorage.setItem('userName', profileData.name);
-      }
-      
-      if (profileData.company) {
-        await AsyncStorage.setItem('userCompany', profileData.company);
-      }
-      
-      // Store user type (driver/dispatcher)
-      await AsyncStorage.setItem('isDriver', profileData.is_driver.toString());
-      await AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString());
-      
-    } else {
-      const errorText = await response.text();
-      console.error(`Failed to fetch user profile, status: ${response.status}, details:`, errorText);
-      Alert.alert('Error', `Profile fetch failed: ${response.status}`);
-      console.error("Failed to fetch user profile, status:", response.status);
-     
-    }
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
-    // We'll continue with navigation even if profile fetch fails
-    console.log('Continuing to Home despite profile fetch error');
-    // Note: Don't call hideLoading here since handleLogin will handle it
-  }
-};
+
   const handleLogin = async () => {
-    const loginData = { phone_number, password };
+    // Validation
+    if (!phone_number.trim() || !password.trim()) {
+      Alert.alert('Error', 'Te rugam sa completezi toate campurile.');
+      return;
+    }
+
+    // Additional validation for phone number format
+    const cleanPhoneNumber = phone_number.trim();
+    if (cleanPhoneNumber.length < 10) {
+      Alert.alert('Error', 'Te rugam sa introduci un numar de telefon valid.');
+      return;
+    }
+
     try {
-      showLoading(); // Start global loading
-      console.log('Attempting login with:', phone_number, password, `${BASE_URL}auth/token/login`);
-      const response = await fetch(
-        `${BASE_URL}auth/token/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(loginData),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        const token = data.auth_token;
-        console.log('Login successful, token received');
-
-        // Store token in secure storage
-        try {
-          await AsyncStorage.setItem('authToken', token);
-          console.log('Token stored successfully in AsyncStorage');
-        } catch (storageError) {
-          console.error('Error storing token:', storageError);
-        }
-
-        // Fetch user profile to get driver_id
-        await fetchUserProfile(token);
-        navigation.navigate('Main');
-      } else {
-        console.error('Login response not OK:', response.status);
-        Alert.alert('Error', 'Login failed. Please check your credentials.');
-      }
+      console.log('Attempting login with phone:', cleanPhoneNumber);
+      
+      // Call the login mutation
+      const result = await login({ 
+        phone_number: cleanPhoneNumber, 
+        password: password.trim() 
+      }).unwrap();
+      
+      console.log('Login successful:', result);
+      
+      // Navigate to main app
+      navigation.navigate('Main');
+      
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Error', 'An error occurred during login');
-    } finally {
-      hideLoading(); // Stop global loading
+      
+      // Handle different error types with user-friendly messages
+      let errorMessage = 'A aparut o eroare in timpul autentificarii. Te rugam sa incerci din nou.';
+      
+      // Parse the error message
+      if (error.message) {
+        if (error.message.includes('400')) {
+          // Check if it's the specific "Unable to log in" error
+          if (error.message.includes('Unable to log in with provided credentials')) {
+            errorMessage = 'Numarul de telefon sau parola sunt incorecte. Te rugam sa verifici datele introduse.';
+          } else {
+            errorMessage = 'Datele introduse nu sunt valide. Te rugam sa verifici formatul numarului de telefon si parola.';
+          }
+        } else if (error.message.includes('401')) {
+          errorMessage = 'Credentiale invalide. Te rugam sa verifici numarul de telefon si parola.';
+        } else if (error.message.includes('FETCH_ERROR') || error.message.includes('Network')) {
+          errorMessage = 'Probleme de conectare. Te rugam sa verifici conexiunea la internet.';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Probleme cu serverul. Te rugam sa incerci din nou mai tarziu.';
+        }
+      }
+      
+      Alert.alert('Eroare autentificare', errorMessage);
     }
   };
+
+  // Update global loading state based on RTK Query loading state
+  React.useEffect(() => {
+    if (isLoginLoading) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [isLoginLoading, showLoading, hideLoading]);
 
   return (
     <View style={styles.container}>
@@ -142,6 +120,8 @@ const LoginScreen = () => {
               autoCapitalize="none"
               style={styles.input}
               mode="flat"
+              disabled={isLoginLoading}
+              placeholder="Ex: +40123456789"
             />
           </View>
         </View>
@@ -157,31 +137,57 @@ const LoginScreen = () => {
               mode="flat"
               underlineColor="transparent"
               theme={{ colors: { primary: COLORS.primary } }}
+              disabled={isLoginLoading}
+              placeholder="Introdu parola"
             />
           </View>
         </View>
 
-        <TouchableOpacity onPress={handleForgotPassword}>
+        <TouchableOpacity onPress={handleForgotPassword} disabled={isLoginLoading}>
           <Text style={styles.forgotPassword}>Ai uitat parola?</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.submitButton}
+          style={[
+            styles.submitButton,
+            isLoginLoading && { opacity: 0.6 }
+          ]}
           onPress={handleLogin}
+          disabled={isLoginLoading}
         >
-          <Text style={styles.submitButtonText}>Logheaza-te</Text>
+          <Text style={styles.submitButtonText}>
+            {isLoginLoading ? 'Se proceseaza...' : 'Logheaza-te'}
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.signupText}>
-          Nu ai un cont? <Text style={styles.signupLink} onPress={handleCreateAccount}>Creeaza contul</Text>
+          Nu ai un cont?{' '}
+          <Text 
+            style={[
+              styles.signupLink,
+              isLoginLoading && { opacity: 0.6 }
+            ]} 
+            onPress={isLoginLoading ? null : handleCreateAccount}
+          >
+            Creeaza contul
+          </Text>
         </Text>
 
+        {/* Debug info - Remove this in production */}
+        {__DEV__ && (
+          <View style={{ marginTop: 20, padding: 10, backgroundColor: '#f0f0f0' }}>
+            <Text style={{ fontSize: 12, color: '#666' }}>Debug Info:</Text>
+            <Text style={{ fontSize: 10, color: '#666' }}>Phone: {phone_number}</Text>
+            <Text style={{ fontSize: 10, color: '#666' }}>Password length: {password.length}</Text>
+            <Text style={{ fontSize: 10, color: '#666' }}>Loading: {isLoginLoading.toString()}</Text>
+            {loginError && (
+              <Text style={{ fontSize: 10, color: 'red' }}>Error: {loginError.message}</Text>
+            )}
+          </View>
+        )}
       </View>
     </View>
   );
 };
-
-
-
 
 export default LoginScreen;

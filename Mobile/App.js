@@ -2,6 +2,10 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
+// Remove Redux imports for now
+// import { Provider } from 'react-redux';
+// import { store } from './store';
+
 import LoginScreen from "./Screens/Login";
 import HomeScreen from "./Screens/Homescreen";
 import Transports from "./Screens/TransportsScreen";
@@ -23,8 +27,8 @@ import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import your notifications context
-import { NotificationsProvider } from './Screens/NotificationsContext/index.js'; // Adjust path as needed
-import { LoadingProvider } from './components/General/loadingSpinner.js'; // Adjust path as needed
+import { NotificationsProvider } from './Screens/NotificationsContext/index.js';
+import { LoadingProvider } from './components/General/loadingSpinner.js';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -110,7 +114,7 @@ const MainTabs = () => {
   );
 };
 
-// Main app navigator wrapped with NavigationContainer but not NotificationsProvider
+// Main app navigator wrapped with NavigationContainer but not Redux
 const AppNavigatorContent = () => {
   return (
     <Stack.Navigator
@@ -120,12 +124,11 @@ const AppNavigatorContent = () => {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} 
       options={{
-        // Custom transition just for Login screen
         transitionSpec: {
           open: {
             animation: 'timing',
             config: {
-              duration: 600, // Slower fade for login
+              duration: 600,
             },
           },
         },
@@ -142,12 +145,11 @@ const AppNavigatorContent = () => {
         options={{
           gestureEnabled: false,
           headerLeft: null,
-          // Custom transition just for Login screen
           transitionSpec: {
             open: {
               animation: 'timing',
               config: {
-                duration: 600, // Slower fade for login
+                duration: 600,
               },
             },
           },
@@ -158,274 +160,166 @@ const AppNavigatorContent = () => {
           }),
         }}
         listeners={({ navigation }) => ({
-          // Prevent going back to Login screen
           beforeRemove: (e) => {
-            // Check if we're trying to go back to Login
             if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
-              // Prevent the default behavior
               e.preventDefault();
-              
-              // Optional: You can show an alert or handle logout here
-              // Alert.alert(
-              //   'Logout',
-              //   'Are you sure you want to logout?',
-              //   [
-              //     { text: 'Cancel', style: 'cancel' },
-              //     { text: 'Logout', onPress: () => navigation.dispatch(e.data.action) }
-              //   ]
-              // );
             }
           },
         })}
       />
       
-      {/* Home related screens */}
-      <Stack.Screen 
-        name="Truck" 
-        component={Truck} 
+      {/* All your other screens remain the same */}
+      <Stack.Screen name="Truck" component={Truck} 
         options={{
           gestureEnabled: true,
           headerShown: false,
           transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-            close: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
+            open: { animation: 'timing', config: { duration: 300 } },
+            close: { animation: 'timing', config: { duration: 300 } },
           },
           cardStyleInterpolator: ({ current, layouts }) => ({
             cardStyle: {
-              transform: [
-                {
-                  translateX: current.progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [layouts.screen.width, 0],
-                  }),
-                },
-              ],
+              transform: [{
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              }],
             },
           }),
         }}
       />
-      
-      {/* Transport related screens */}
       
       <Stack.Screen name="Transport_Update" component={Transport_Update}
-      options={{
-        gestureEnabled: true,
-        headerShown: false,
-        transitionSpec: {
-          open: {
-            animation: 'timing',
-            config: {
-              duration: 300,
-            },
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 300 } },
+            close: { animation: 'timing', config: { duration: 300 } },
           },
-          close: {
-            animation: 'timing',
-            config: {
-              duration: 300,
-            },
-          },
-        },
-        cardStyleInterpolator: ({ current, layouts }) => ({
-          cardStyle: {
-            transform: [
-              {
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [{
                 translateX: current.progress.interpolate({
                   inputRange: [0, 1],
                   outputRange: [layouts.screen.width, 0],
                 }),
-              },
-            ],
-          },
-        }),
-      }}
+              }],
+            },
+          }),
+        }}
       />
 
-      {/* NEW: Transport Actual Flow - 4 separate pages */}
-      <Stack.Screen 
-        name="TransportMainPage" 
-        component={TransportMainPage}
+      <Stack.Screen name="TransportMainPage" component={TransportMainPage}
         options={{
           gestureEnabled: true,
           headerShown: false,
           transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-            close: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
+            open: { animation: 'timing', config: { duration: 300 } },
+            close: { animation: 'timing', config: { duration: 300 } },
           },
           cardStyleInterpolator: ({ current, layouts }) => ({
             cardStyle: {
-              transform: [
-                {
-                  translateX: current.progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [layouts.screen.width, 0],
-                  }),
-                },
-              ],
-            },
-          }),
-        }}
-      />
-      <Stack.Screen 
-        name="CMRDigitalForm" 
-        component={CMRDigitalForm}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-            close: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [
-                {
-                  translateX: current.progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [layouts.screen.width, 0],
-                  }),
-                },
-              ],
-            },
-          }),
-        }}
-      />
-      <Stack.Screen 
-        name="StatusTransportForm" 
-        component={StatusTransportForm}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-            close: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [
-                {
-                  translateX: current.progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [layouts.screen.width, 0],
-                  }),
-                },
-              ],
-            },
-          }),
-        }}
-      />
-      <Stack.Screen 
-        name="PhotoCMRForm" 
-        component={PhotoCMRForm}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-            close: {
-              animation: 'timing',
-              config: {
-                duration: 300,
-              },
-            },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [
-                {
-                  translateX: current.progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [layouts.screen.width, 0],
-                  }),
-                },
-              ],
+              transform: [{
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              }],
             },
           }),
         }}
       />
       
-      {/* Profile related screens */}
-      <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
-      options={{
-        gestureEnabled: true,
-        headerShown: false,
-        transitionSpec: {
-          open: {
-            animation: 'timing',
-            config: {
-              duration: 300,
-            },
+      <Stack.Screen name="CMRDigitalForm" component={CMRDigitalForm}
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 300 } },
+            close: { animation: 'timing', config: { duration: 300 } },
           },
-          close: {
-            animation: 'timing',
-            config: {
-              duration: 300,
-            },
-          },
-        },
-        cardStyleInterpolator: ({ current, layouts }) => ({
-          cardStyle: {
-            transform: [
-              {
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [{
                 translateX: current.progress.interpolate({
                   inputRange: [0, 1],
                   outputRange: [layouts.screen.width, 0],
                 }),
-              },
-            ],
+              }],
+            },
+          }),
+        }}
+      />
+      
+      <Stack.Screen name="StatusTransportForm" component={StatusTransportForm}
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 300 } },
+            close: { animation: 'timing', config: { duration: 300 } },
           },
-        }),
-      }}
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [{
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              }],
+            },
+          }),
+        }}
+      />
+      
+      <Stack.Screen name="PhotoCMRForm" component={PhotoCMRForm}
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 300 } },
+            close: { animation: 'timing', config: { duration: 300 } },
+          },
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [{
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              }],
+            },
+          }),
+        }}
+      />
+      
+      <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
+        options={{
+          gestureEnabled: true,
+          headerShown: false,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 300 } },
+            close: { animation: 'timing', config: { duration: 300 } },
+          },
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              transform: [{
+                translateX: current.progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [layouts.screen.width, 0],
+                }),
+              }],
+            },
+          }),
+        }}
       />
     </Stack.Navigator>
   );
 };
 
-// Main app navigator - this is the root component
+// Main app navigator - Remove Redux Provider for now
 const AppNavigator = () => {
   return (
     <SafeAreaProvider>
@@ -440,7 +334,6 @@ const AppNavigator = () => {
   );
 };
 
-// Updated styles for the fluid tab bar with safe area support
 const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
@@ -455,7 +348,6 @@ const styles = StyleSheet.create({
     elevation: 5,
     paddingHorizontal: 10,
     paddingTop: 10,
-    // Ensure the tab bar is above system navigation
     position: 'relative',
     zIndex: 1000,
   },

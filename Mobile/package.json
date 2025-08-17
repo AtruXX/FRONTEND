@@ -15,6 +15,7 @@
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "@react-navigation/stack": "^7.1.1",
+    "@reduxjs/toolkit": "^2.8.2",
     "enhanced-fluid-bottom-navigation-bar": "github:huzaifaaak/Enhanced-Fluid-Bottom-Navigation-Bar",
     "expo": "~53.0.7",
     "expo-document-picker": "^13.1.5",
@@ -31,7 +32,8 @@
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.10.0",
     "react-native-vector-icons": "^10.2.0",
-    "react-navigation": "^5.0.0"
+    "react-navigation": "^5.0.0",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
