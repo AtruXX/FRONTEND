@@ -1,46 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Modal, FlatList, ScrollView, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { BASE_URL } from "../../utils/BASE_URL";
+import { useGetUserProfileQuery } from '../../services/profileService';
+import { 
+  useGetActiveTransportStatusQuery, 
+  useUpdateTransportStatusMutation,
+  useUploadGoodsPhotosMutation,
+  useGetGoodsPhotosQuery 
+} from '../../services/statusService';
 
-import { styles } from './styles'; // Import your styles from the styles.js file
-
-const StatusTransportForm = ({ navigation, route }) => {
-  const { authToken, driverId } = route.params;
+const TransportStatusPage = ({ navigation }) => {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [modalOptions, setModalOptions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [capturedImage, setCapturedImage] = useState(null);
+  const [capturedPhotos, setCapturedPhotos] = useState([]);
 
-  // Status form data
+  // Get user profile to get active transport ID
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile
+  } = useGetUserProfileQuery();
+
+  const activeTransportId = profileData?.active_transport;
+
+  // Get current transport status
+  const {
+    data: transportStatus,
+    isLoading: statusLoading,
+    error: statusError,
+    refetch: refetchStatus
+  } = useGetActiveTransportStatusQuery(activeTransportId);
+
+  // Get existing goods photos
+  const {
+    data: goodsPhotos,
+    isLoading: photosLoading,
+    refetch: refetchPhotos
+  } = useGetGoodsPhotosQuery(activeTransportId);
+
+  // Mutations
+  const [updateTransportStatus, { isLoading: isUpdating }] = useUpdateTransportStatusMutation();
+  const [uploadGoodsPhotos, { isLoading: isUploading }] = useUploadGoodsPhotosMutation();
+
+  // Status form data - initialize with API data
   const [statusFormData, setStatusFormData] = useState({
+    is_finished: false,
     status_truck: "",
     status_truck_problems: "",
     status_goods: "",
-    goods_photo: null,
-    truck_combination: "",
     status_coupling: "",
-    trailer_type: "",
-    trailer_number: "",
-    status_trailer_wagon: "",
-    status_trailer_wagon_description: "",
+    status_trailer: "",
+    status_trailer_description: "",
     status_loaded_truck: "",
     status_transport: "",
-    delay_estimation: ""
+    delay_estimation: null
   });
 
-  // Define Status fields with the new options structure
+  // Update form data when API data is loaded
+  useEffect(() => {
+    if (transportStatus) {
+      setStatusFormData({
+        is_finished: transportStatus.is_finished || false,
+        status_truck: transportStatus.status_truck || "",
+        status_truck_problems: transportStatus.status_truck_problems || "",
+        status_goods: transportStatus.status_goods || "",
+        status_coupling: transportStatus.status_coupling || "",
+        status_trailer: transportStatus.status_trailer || "",
+        status_trailer_description: transportStatus.status_trailer_description || "",
+        status_loaded_truck: transportStatus.status_loaded_truck || "",
+        status_transport: transportStatus.status_transport || "",
+        delay_estimation: transportStatus.delay_estimation || null
+      });
+    }
+  }, [transportStatus]);
+
+  // Define Status fields with Romanian options
   const statusFields = [
     { 
       key: 'status_truck', 
       label: 'Stare Camion', 
       placeholder: 'Selectați starea camionului', 
       type: 'options',
-      options: ['OK', 'Not OK'],
+      options: ['În regulă', 'Nu este în regulă'],
       linkedField: 'status_truck_problems',
-      linkedFieldVisible: (value) => value === 'Not OK'
+      linkedFieldVisible: (value) => value === 'Nu este în regulă'
     },
     { 
       key: 'status_truck_problems', 
@@ -54,57 +101,37 @@ const StatusTransportForm = ({ navigation, route }) => {
       label: 'Stare Marfă', 
       placeholder: 'Selectați starea mărfii', 
       type: 'options',
-      options: ['OK', 'Not OK'],
+      options: ['În regulă', 'Nu este în regulă'],
       linkedField: 'goods_photo',
-      linkedFieldVisible: (value) => value === 'Not OK'
+      linkedFieldVisible: (value) => value === 'Nu este în regulă'
     },
     { 
       key: 'goods_photo', 
-      label: 'Faceți o poză', 
+      label: 'Faceți o poză mărfii', 
       placeholder: 'Apăsați pentru a face o poză', 
       type: 'camera',
       conditionalDisplay: true
-    },
-    { 
-      key: 'truck_combination', 
-      label: 'Combinație Camion', 
-      placeholder: 'Selectați combinația camionului', 
-      type: 'options',
-      options: ['Semi-remorcă', 'Prelată', 'Frigorific', 'Platforme', 'Transport containere']
     },
     { 
       key: 'status_coupling', 
       label: 'Stare Cuplare', 
       placeholder: 'Selectați starea cuplării', 
       type: 'options',
-      options: ['Cuplat', 'Decuplat']
+      options: ['Cuplat', 'Decuplat', 'Probleme la cuplare']
     },
     { 
-      key: 'trailer_type', 
-      label: 'Tip Remorcă', 
-      placeholder: 'Selectați tipul remorcii', 
+      key: 'status_trailer', 
+      label: 'Stare Remorcă', 
+      placeholder: 'Selectați starea remorcii', 
       type: 'options',
-      options: ['Prelată', 'Frigorific', 'Platforme']
+      options: ['În regulă', 'Nu este în regulă'],
+      linkedField: 'status_trailer_description',
+      linkedFieldVisible: (value) => value === 'Nu este în regulă'
     },
     { 
-      key: 'trailer_number', 
-      label: 'Număr Remorcă', 
-      placeholder: 'Introduceți numărul remorcii', 
-      type: 'text'
-    },
-    { 
-      key: 'status_trailer_wagon', 
-      label: 'Stare Vagon', 
-      placeholder: 'Selectați starea vagonului', 
-      type: 'options',
-      options: ['OK', 'Not OK'],
-      linkedField: 'status_trailer_wagon_description',
-      linkedFieldVisible: (value) => value === 'Not OK'
-    },
-    { 
-      key: 'status_trailer_wagon_description', 
-      label: 'Scrieți o descriere', 
-      placeholder: 'Descrieți problema vagonului', 
+      key: 'status_trailer_description', 
+      label: 'Descriere problemă remorcă', 
+      placeholder: 'Descrieți problema remorcii', 
       type: 'text',
       conditionalDisplay: true
     },
@@ -113,21 +140,21 @@ const StatusTransportForm = ({ navigation, route }) => {
       label: 'Stare Încărcare', 
       placeholder: 'Selectați starea încărcării', 
       type: 'options',
-      options: ['Încărcat', 'Descărcat']
+      options: ['Încărcat complet', 'Încărcat parțial', 'Descărcat', 'În curs de încărcare', 'În curs de descărcare']
     },
     { 
       key: 'status_transport', 
       label: 'Stare Transport', 
       placeholder: 'Selectați starea transportului', 
       type: 'options',
-      options: ['Punctual', 'Întârziat'],
+      options: ['La timp', 'Întârziat', 'Început', 'În curs', 'Finalizat'],
       linkedField: 'delay_estimation',
       linkedFieldVisible: (value) => value === 'Întârziat'
     },
     { 
       key: 'delay_estimation', 
-      label: 'Ce întârziere aproximativă?', 
-      placeholder: 'Estimați întârzierea', 
+      label: 'Estimare întârziere (ore)', 
+      placeholder: 'Introduceți numărul de ore întârziere', 
       type: 'text',
       conditionalDisplay: true
     }
@@ -135,17 +162,15 @@ const StatusTransportForm = ({ navigation, route }) => {
 
   // Get current fields (showing 2 at a time, filtering conditional fields)
   const getCurrentFields = () => {
-    const allFields = statusFields.slice(currentIndex, currentIndex + 4); // Get more fields to accommodate conditional ones
+    const allFields = statusFields.slice(currentIndex, currentIndex + 4);
     return allFields.filter(field => {
       if (!field.conditionalDisplay) return true;
       
-      // Find the field that controls this conditional field
       const controllingField = statusFields.find(f => f.linkedField === field.key);
       if (!controllingField) return false;
       
-      // Check if the condition is met
       return controllingField.linkedFieldVisible(statusFormData[controllingField.key]);
-    }).slice(0, 2); // Only show 2 at a time
+    }).slice(0, 2);
   };
 
   // Update form data
@@ -154,18 +179,6 @@ const StatusTransportForm = ({ navigation, route }) => {
       ...statusFormData,
       [key]: value
     });
-
-    // Find the field definition
-    const field = statusFields.find(f => f.key === key);
-    
-    // If this field has a linked field, check if we need to show/hide it
-    if (field && field.linkedField) {
-      const shouldShowLinked = field.linkedFieldVisible(value);
-      if (shouldShowLinked) {
-        // If we need to show the linked field, update current fields
-        // This will be handled by getCurrentFields() filtering
-      }
-    }
   };
 
   // Calculate total pages
@@ -177,7 +190,6 @@ const StatusTransportForm = ({ navigation, route }) => {
       if (!field.conditionalDisplay) {
         visibleFieldCount++;
       } else {
-        // Find the field that controls this conditional field
         const controllingField = statusFields.find(f => f.linkedField === field.key);
         if (controllingField && controllingField.linkedFieldVisible(statusFormData[controllingField.key])) {
           visibleFieldCount++;
@@ -200,7 +212,7 @@ const StatusTransportForm = ({ navigation, route }) => {
     }
   };
 
-  // Handle camera
+  // Handle camera capture
   const handleCameraCapture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
@@ -216,8 +228,12 @@ const StatusTransportForm = ({ navigation, route }) => {
     });
     
     if (!result.canceled) {
-      setCapturedImage(result.assets[0].uri);
-      setFormData('goods_photo', result.assets[0].uri);
+      const newPhoto = {
+        uri: result.assets[0].uri,
+        type: 'image/jpeg',
+        name: `goods_photo_${Date.now()}.jpg`
+      };
+      setCapturedPhotos([...capturedPhotos, newPhoto]);
     }
   };
 
@@ -237,10 +253,7 @@ const StatusTransportForm = ({ navigation, route }) => {
     const currentFields = getCurrentFields();
     
     return currentFields.every(field => {
-      // Special case for camera type, it's optional
       if (field.type === 'camera') return true;
-      
-      // For all other fields, ensure they have a value
       return statusFormData[field.key] !== undefined && statusFormData[field.key] !== "";
     });
   };
@@ -254,14 +267,11 @@ const StatusTransportForm = ({ navigation, route }) => {
 
     let newIndex = currentIndex + 2;
     
-    // Skip conditional fields that shouldn't be displayed
     while (newIndex < statusFields.length) {
       const field = statusFields[newIndex];
       if (field.conditionalDisplay) {
-        // Find the field that controls this conditional field
         const controllingField = statusFields.find(f => f.linkedField === field.key);
         if (!controllingField || !controllingField.linkedFieldVisible(statusFormData[controllingField.key])) {
-          // Skip this field
           newIndex++;
           continue;
         }
@@ -272,7 +282,6 @@ const StatusTransportForm = ({ navigation, route }) => {
     if (newIndex < statusFields.length) {
       setCurrentIndex(newIndex);
     } else {
-      // Form is complete
       handleSubmit();
     }
   };
@@ -286,31 +295,34 @@ const StatusTransportForm = ({ navigation, route }) => {
     }
   };
 
-  // Prepare data for submission
-  const prepareFormDataForSubmission = () => {
-    const preparedData = { ...statusFormData };
-    
-    statusFields.forEach(field => {
-      if (preparedData[field.key] === '' || preparedData[field.key] === undefined) {
-        preparedData[field.key] = null;
-      }
-    });
-    
-    return preparedData;
-  };
-
   // Handle form submission
-  const handleSubmit = async () => {
-    const dataToSubmit = prepareFormDataForSubmission();
-    
-    console.log('STATUS Form submitted:', dataToSubmit);
-    // Add your API call for status form here
+  // Handle form submission
+const handleSubmit = async () => {
+  try {
+    // First upload photos if any
+    if (capturedPhotos.length > 0) {
+      await uploadGoodsPhotos({ 
+        activeTransportId, 
+        photos: capturedPhotos 
+      }).unwrap();
+    }
+
+    // Then update transport status - FIXED: Pass activeTransportId
+    await updateTransportStatus({ 
+      statusData: statusFormData, 
+      activeTransportId: activeTransportId 
+    }).unwrap();
+
     Alert.alert(
-      'Transport Salvat',
-      'Datele STATUS au fost salvate cu succes!',
-      [{ text: 'OK', onPress: () => navigation.navigate('TransportMainPage') }]
+      'Status Actualizat',
+      'Statusul transportului a fost actualizat cu succes!',
+      [{ text: 'OK', onPress: () => navigation.goBack() }]
     );
-  };
+  } catch (error) {
+    console.error('Submit error:', error);
+    Alert.alert('Eroare', 'Nu s-a putut actualiza statusul transportului.');
+  }
+};
 
   // Handle submit now (bypass validation)
   const handleSubmitNow = async () => {
@@ -389,10 +401,14 @@ const StatusTransportForm = ({ navigation, route }) => {
           style={styles.cameraButton}
           onPress={() => handleFieldTouch(field)}
         >
-          {statusFormData[field.key] ? (
+          {capturedPhotos.length > 0 ? (
             <View style={styles.photoPreviewContainer}>
-              <Image source={{ uri: statusFormData[field.key] }} style={styles.photoPreview} />
-              <Text style={styles.photoTakenText}>Poză realizată</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {capturedPhotos.map((photo, index) => (
+                  <Image key={index} source={{ uri: photo.uri }} style={styles.photoPreview} />
+                ))}
+              </ScrollView>
+              <Text style={styles.photoTakenText}>{capturedPhotos.length} poze realizate</Text>
             </View>
           ) : (
             <View style={styles.cameraButtonContent}>
@@ -406,14 +422,44 @@ const StatusTransportForm = ({ navigation, route }) => {
       return (
         <TextInput
           style={styles.input}
-          value={String(statusFormData[field.key])}
+          value={String(statusFormData[field.key] || '')}
           onChangeText={(text) => setFormData(field.key, text)}
           placeholder={field.placeholder}
           placeholderTextColor="#9CA3AF"
+          keyboardType={field.key === 'delay_estimation' ? 'numeric' : 'default'}
         />
       );
     }
   };
+
+  if (profileLoading || statusLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="hourglass-outline" size={40} color="#6366F1" />
+          <Text style={styles.loadingText}>Se încarcă datele transportului...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!activeTransportId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
+          <Text style={styles.emptyTitle}>Niciun transport activ</Text>
+          <Text style={styles.emptyText}>Nu aveți un transport activ pentru a actualiza statusul.</Text>
+          <TouchableOpacity
+            style={styles.backToHomeButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.backToHomeText}>Înapoi la pagina principală</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -441,7 +487,7 @@ const StatusTransportForm = ({ navigation, route }) => {
           <Text style={styles.progressText}>Pagina {currentPage} din {totalPages}</Text>
         </View>
 
-        <ScrollView style={styles.formContainer}>
+        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
           {getCurrentFields().map((field) => (
             <View key={field.key} style={styles.inputContainer}>
               <Text style={styles.label}>{field.label}</Text>
@@ -458,17 +504,26 @@ const StatusTransportForm = ({ navigation, route }) => {
             <Ionicons name="arrow-back" size={20} color="white" />
             <Text style={styles.buttonText}>Înapoi</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity 
-            style={[styles.button, styles.prevButton]} 
+            style={[styles.button, styles.submitNowButton]} 
             onPress={handleSubmitNow}
+            disabled={isUpdating || isUploading}
           >
-            <Ionicons name="checkmark" size={20} color="white" />
-            <Text style={styles.buttonText}>Trimite acum</Text>
+            {isUpdating || isUploading ? (
+              <Ionicons name="hourglass-outline" size={20} color="white" />
+            ) : (
+              <Ionicons name="checkmark" size={20} color="white" />
+            )}
+            <Text style={styles.buttonText}>
+              {isUpdating || isUploading ? 'Se salvează...' : 'Trimite acum'}
+            </Text>
           </TouchableOpacity>
+          
           <TouchableOpacity 
             style={[
               styles.button, 
-              styles.prevButton,
+              styles.nextButton,
               !areCurrentFieldsValid() && styles.disabledButton
             ]} 
             onPress={handleNext}
@@ -491,4 +546,246 @@ const StatusTransportForm = ({ navigation, route }) => {
   );
 };
 
-export default StatusTransportForm;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  backButton: {
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  progressContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#6366F1',
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  formContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    color: '#1F2937',
+  },
+  selectInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  selectInputText: {
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  selectInputPlaceholder: {
+    fontSize: 16,
+    color: '#9CA3AF',
+  },
+  cameraButton: {
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    borderStyle: 'dashed',
+    borderRadius: 8,
+    padding: 20,
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
+  },
+  cameraButtonContent: {
+    alignItems: 'center',
+  },
+  cameraButtonText: {
+    fontSize: 16,
+    color: '#3B82F6',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  photoPreviewContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  photoPreview: {
+    width: 80,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  photoTakenText: {
+    fontSize: 14,
+    color: '#10B981',
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  prevButton: {
+    backgroundColor: '#6B7280',
+  },
+  submitNowButton: {
+    backgroundColor: '#10B981',
+  },
+  nextButton: {
+    backgroundColor: '#6366F1',
+  },
+  disabledButton: {
+    backgroundColor: '#D1D5DB',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginHorizontal: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  optionItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#374151',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  backToHomeButton: {
+    backgroundColor: '#6366F1',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  backToHomeText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
+
+export default TransportStatusPage;
