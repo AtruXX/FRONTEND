@@ -157,9 +157,7 @@ const HomeScreen = () => {
       }
     };
 
-    if (profileData.id) { // Only fetch when we have profile ID
-      fetchTransport();
-    }
+    
   }, [profileData.id]);
   
   if (error) {
@@ -354,77 +352,7 @@ const HomeScreen = () => {
 
 
         {/* Upcoming delivery card */}
-        {transportLoading ? (
-
-          <>
-            <Text style={styles.sectionTitle}>Ultimul transport atribuit</Text>
-            <View style={styles.deliveryCard}>
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={COLORS.success} />
-                <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
-              </View>
-            </View>
-          </>
-        ) : transport ? (
-
-          <>
-            <Text style={styles.sectionTitle}>Ultimul transport atribuit:</Text>
-            <View style={styles.deliveryCard}>
-              <View style={styles.deliveryHeader}>
-                <View>
-                  <Text style={styles.deliveryTitle}>
-                    {transport.origin_city} → {transport.destination_city}
-                  </Text>
-                  <Text style={styles.deliverySubtitle}>
-                    {transport.time_estimation || 'Maine, 14:00'}
-                  </Text>
-                </View>
-                <View style={[
-                  styles.deliveryBadge,
-                  transport.status_transport === 'not started' ? styles.badgeNotStarted :
-                    transport.status_transport === 'in progress' ? styles.badgeInProgress :
-                      transport.status_transport === 'delayed' ? styles.badgeDelayed :
-                        styles.badgeCompleted
-                ]}>
-                  <Text style={styles.deliveryBadgeText}>
-                    {transport.status_transport === 'not started' ? 'Neînceput' :
-                      transport.status_transport === 'in progress' ? 'În desfășurare' :
-                        transport.status_transport === 'delayed' ? 'Întârziat' :
-                          'Finalizat'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.deliveryDetails}>
-                <View style={styles.deliveryItem}>
-                  <Ionicons name="cube-outline" size={20} color={COLORS.medium} />
-                  <Text style={styles.deliveryItemText}>{transport.goods_type}</Text>
-                </View>
-                <View style={styles.deliveryItem}>
-                  <Ionicons name="navigate-outline" size={20} color={COLORS.medium} />
-                  <Text style={styles.deliveryItemText}>
-                    {transport.trailer_number || 'CJ12ABC'}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.deliveryButton}
-                onPress={() => console.log('Transport details:', transport)}
-              >
-                <Text style={styles.deliveryButtonText}>Vezi detalii</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <View style={styles.deliveryCard}>
-            <View style={styles.noDataContainer}>
-              <Ionicons name="truck-outline" size={48} color={COLORS.light} />
-              <Text style={styles.noDataTitle}>Nu există transporturi înregistrate</Text>
-              <Text style={styles.noDataSubtitle}>
-                Transporturile tale vor apărea aici când vor fi asignate
-              </Text>
-            </View>
-          </View>
-        )}
+       
       </ScrollView>
     </SafeAreaView>
 

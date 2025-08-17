@@ -22,10 +22,9 @@ const TransportsScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [authToken, setAuthToken] = useState(null);
-  const [driverId, setDriverId] = useState(route.params?.driverId || 1);
   const [error, setError] = useState(null);
-  const [activeTransportId, setActiveTransportId] = useState(null); // Track active transport
-  const [startingTransport, setStartingTransport] = useState(null); // Track which transport is being started
+  const [activeTransportId, setActiveTransportId] = useState(null);
+  const [startingTransport, setStartingTransport] = useState(null);
   const [profileData, setProfileData] = useState({
     name: "",
     role: "",
@@ -34,9 +33,7 @@ const TransportsScreen = ({ navigation, route }) => {
     on_road: false,
   });
 
-  
-
-  // ADD: fetchDriverProfile function
+  // Fetch driver profile
   const fetchDriverProfile = async (token) => {
     try {
       const response = await fetch(`${BASE_URL}auth/users/me`, {
@@ -59,13 +56,19 @@ const TransportsScreen = ({ navigation, route }) => {
         role: data.is_driver ? "Driver" : (data.is_dispatcher ? "Dispatcher" : "User"),
         initials: data.name.split(' ').map(n => n[0]).join('').toUpperCase(),
         id: data.id,
-        on_road: false, // You can update this based on your logic
+        on_road: data.driver?.on_road || false,
       });
       
-      // Set the driver ID from the API response
-      setDriverId(data.id);
+      // Set active transport from profile
+      const activeTransport = data.driver?.active_transport;
+      if (activeTransport) {
+        setActiveTransportId(activeTransport);
+      } else {
+        setActiveTransportId(null);
+      }
       
       console.log('Driver profile loaded:', data.name, 'ID:', data.id);
+      console.log('Active transport:', activeTransport);
       return data;
     } catch (error) {
       console.error('Error fetching driver profile:', error);
@@ -73,36 +76,13 @@ const TransportsScreen = ({ navigation, route }) => {
     }
   };
 
-  // ADD: Load active transport from storage
-  const loadActiveTransport = async () => {
-    try {
-      const activeId = await AsyncStorage.getItem('activeTransportId');
-      if (activeId) {
-        setActiveTransportId(parseInt(activeId));
-      }
-    } catch (error) {
-      console.error("Error loading active transport:", error);
-    }
-  };
-
-  // ADD: Save active transport to storage
-  const saveActiveTransport = async (transportId) => {
-    try {
-      await AsyncStorage.setItem('activeTransportId', transportId.toString());
-    } catch (error) {
-      console.error("Error saving active transport:", error);
-    }
-  };
-  
-  // FIXED: fetchTransports function with proper URL
-  const fetchTransports = async (token, driverId) => {
+  // Fetch transports
+  const fetchTransports = async (token) => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching transports for driver ID:', driverId);
-      const url = `${BASE_URL}transports?status=atribuit&driver=${driverId}`;
       
-      const response = await fetch(url, {
+      const response = await fetch(`${BASE_URL}transports`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -115,32 +95,41 @@ const TransportsScreen = ({ navigation, route }) => {
       }
       
       const data = await response.json();
+      console.log('Transports data:', data);
       
-      // Transform the API data to match your existing component structure
-      const transformedTransports = data.transports.map(transport => ({
+      // Filter only assigned transports ("atribuit" status)
+      const assignedTransports = data.transports.filter(transport => 
+        transport.status === 'atribuit' && !transport.is_finished
+      );
+      
+      // Transform the API data to match the component structure
+      const transformedTransports = assignedTransports.map(transport => ({
         id: transport.id,
-        truck_combination: transport.truck_combination,
-        destination: `${transport.origin_city} → ${transport.destination_city}`,
-        status_truck: transport.status_truck,
-        status_goods: transport.status_goods,
-        status_trailer_wagon: transport.status_trailer_wagon,
-        status_transport: transport.status_transport,
-        departure_time: transport.time_estimation ? 
-          new Date(transport.time_estimation).toLocaleTimeString('ro-RO', {
-            hour: '2-digit',
-            minute: '2-digit'
-          }) : 'N/A',
-        arrival_time: 'N/A', // Not provided in API response
-        distance: 'N/A', // Not provided in API response
-        // Additional fields from API that might be useful
-        goods_type: transport.goods_type,
-        trailer_type: transport.trailer_type,
-        trailer_number: transport.trailer_number,
-        delay_estimation: transport.delay_estimation,
+        truck_combination: `Truck #${transport.truck} + Trailer #${transport.trailer}`,
+        destination: transport.email_destinatar || 'N/A',
+        status_truck: transport.status_truck || 'not started',
+        status_goods: transport.status_goods || 'not started',
+        status_trailer_wagon: transport.status_trailer || 'not started',
+        status_transport: transport.status_transport || 'not started',
+        status_coupling: transport.status_coupling || 'not started',
+        status_loaded_truck: transport.status_loaded_truck || 'not started',
+        departure_time: 'N/A', // Not provided in API
+        arrival_time: 'N/A',   // Not provided in API
+        distance: 'N/A',       // Not provided in API
+        // Additional fields from API
+        email_expeditor: transport.email_expeditor,
+        email_destinatar: transport.email_destinatar,
+        status: transport.status,
         is_finished: transport.is_finished,
+        status_truck_problems: transport.status_truck_problems,
+        status_trailer_description: transport.status_trailer_description,
+        delay_estimation: transport.delay_estimation,
         company: transport.company,
         dispatcher: transport.dispatcher,
-        goods_photos: transport.goods_photos
+        driver: transport.driver,
+        truck: transport.truck,
+        trailer: transport.trailer,
+        route: transport.route
       }));
       
       setTransports(transformedTransports);
@@ -155,96 +144,147 @@ const TransportsScreen = ({ navigation, route }) => {
     }
   };
 
-  // FIXED: useEffect to properly pass token and driverId
-  useEffect(() => {
-    const loadAuthToken = async () => {
-      try {
-        console.log('Attempting to load auth token from AsyncStorage');
-        const token = await AsyncStorage.getItem('authToken');
-        console.log('Token from AsyncStorage:', token ? 'Token exists' : 'No token found');
-        if (token) {
-          setAuthToken(token);
-          console.log('Auth token loaded and set in state');
-          
-          // Load active transport
-          await loadActiveTransport();
-          
-          // Fetch the profile to get driverId
-          const profileData = await fetchDriverProfile(token);
-          
-          // Fetch transports with token and driverId
-          const driverIdToUse = profileData?.id || driverId;
-          await fetchTransports(token, driverIdToUse);
-        } else {
-          console.error("No auth token found in AsyncStorage");
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error loading auth token:", error);
-        setLoading(false);
+  // Set active transport
+  const setActiveTransport = async (transportId) => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (!authToken) {
+        throw new Error('No authentication token found');
       }
-    };
-    loadAuthToken();
-  }, []);
 
-  // FIXED: onRefresh function
-  const onRefresh = () => {
-    setRefreshing(true);
-    if (authToken && driverId) {
-      fetchTransports(authToken, driverId);
-    } else {
-      // Fallback - try to reload everything
-      const loadAndRefresh = async () => {
-        const token = await AsyncStorage.getItem('authToken');
-        if (token) {
-          const profileData = await fetchDriverProfile(token);
-          const driverIdToUse = profileData?.id || driverId;
-          await fetchTransports(token, driverIdToUse);
-        } else {
-          setRefreshing(false);
-        }
-      };
-      loadAndRefresh();
+      const response = await fetch(`${BASE_URL}set-active-transport/${transportId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Token ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Active transport set successfully:', data);
+      
+      // Update local state
+      setActiveTransportId(transportId);
+      
+      return true;
+    } catch (error) {
+      console.error('Error setting active transport:', error);
+      Alert.alert(
+        'Eroare',
+        'Nu s-a putut începe transportul. Încearcă din nou.',
+        [{ text: 'OK' }]
+      );
+      return false;
     }
   };
 
-  // ADD: Handle starting a transport
-  const handleStartTransport = async (transport) => {
-    setStartingTransport(transport.id);
+  // Initialize data loading
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('Loading auth token and data...');
+        const token = await AsyncStorage.getItem('authToken');
+        
+        if (token) {
+          setAuthToken(token);
+          
+          // Fetch profile first to get active transport
+          await fetchDriverProfile(token);
+          
+          // Then fetch transports
+          await fetchTransports(token);
+        } else {
+          console.error("No auth token found in AsyncStorage");
+          setError("Authentication token not found");
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+        setError("Error loading data");
+        setLoading(false);
+      }
+    };
     
-    // Simulate a short delay for better UX
-    setTimeout(() => {
-      // Set this transport as active
-      setActiveTransportId(transport.id);
-      saveActiveTransport(transport.id);
-      
-      // Show success alert
+    loadData();
+  }, []);
+
+  // Refresh data
+  const onRefresh = async () => {
+    setRefreshing(true);
+    
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      if (authToken) {
+        // Refresh profile first, then transports
+        await fetchDriverProfile(authToken);
+        await fetchTransports(authToken);
+      } else {
+        setError("Authentication token not found");
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      setError("Error refreshing data");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Handle starting a transport
+  const handleStartTransport = async (transport) => {
+    // Prevent starting if there's already an active transport
+    if (activeTransportId && activeTransportId !== transport.id) {
       Alert.alert(
-        'Succes!',
-        'TI-AI ÎNSUȘIT CURSA CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
+        'Atenție',
+        'Ai deja un transport activ. Nu poți începe un nou transport până nu finalizezi cel curent.',
         [{ text: 'OK' }]
       );
+      return;
+    }
+
+    setStartingTransport(transport.id);
+    
+    try {
+      const success = await setActiveTransport(transport.id);
       
+      if (success) {
+        Alert.alert(
+          'Succes!',
+          'TRANSPORT ÎNCEPUT CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error starting transport:', error);
+    } finally {
       setStartingTransport(null);
-    }, 1000);
+    }
   };
 
-  // ADD: Handle view details
+  // Handle view details
   const handleViewDetails = (transport) => {
-    // Navigate to details or implement details view
     console.log('View details for transport:', transport.id);
-    // You can navigate to a details screen here
+    // TODO: Navigate to details screen when implemented
     // navigation.navigate('TransportDetails', { transport });
+    
+    Alert.alert(
+      'Info',
+      `Detalii pentru transportul #${transport.id}\n\nFuncționalitatea va fi implementată în curând.`,
+      [{ text: 'OK' }]
+    );
   };
 
-  // ADD: Get status color
+  // Get status color
   const getStatusColor = (status) => {
     if (status === 'ok') return '#10B981'; // Green
     if (status === 'probleme' || status === 'not started') return '#F59E0B'; // Orange/amber
     return '#EF4444'; // Red for errors
   };
 
-  // ADD: Get status icon
+  // Get status icon
   const getStatusIcon = (status) => {
     if (status === 'ok') return 'checkmark-circle';
     if (status === 'probleme') return 'warning';
@@ -252,7 +292,7 @@ const TransportsScreen = ({ navigation, route }) => {
     return 'alert-circle';
   };
 
-  // FIXED: Error handling component
+  // Error handling component
   const renderError = () => {
     if (!error) return null;
     
@@ -277,18 +317,25 @@ const TransportsScreen = ({ navigation, route }) => {
   const renderTransportItem = ({ item }) => {
     const isActive = activeTransportId === item.id;
     const isStarting = startingTransport === item.id;
-    const isDisabled = activeTransportId !== null && !isActive;
+    const hasActiveTransport = activeTransportId !== null;
+    const canStartTransport = !hasActiveTransport || isActive;
 
     return (
-      <View style={[styles.transportCard, isDisabled && styles.disabledCard]}>
+      <View style={[styles.transportCard, !canStartTransport && styles.disabledCard]}>
         <View style={styles.transportHeader}>
           <View>
             <Text style={styles.transportTitle}>Transport #{item.id}</Text>
-            <Text style={styles.transportSubtitle}>{item.truck_combination || 'N/A'}</Text>
+            <Text style={styles.transportSubtitle}>{item.truck_combination}</Text>
             {item.destination && (
               <Text style={styles.destinationText}>
-                <Ionicons name="location-outline" size={14} color="#666" />
+                <Ionicons name="mail-outline" size={14} color="#666" />
                 {' '}{item.destination}
+              </Text>
+            )}
+            {item.company && (
+              <Text style={styles.destinationText}>
+                <Ionicons name="business-outline" size={14} color="#666" />
+                {' '}{item.company}
               </Text>
             )}
           </View>
@@ -313,7 +360,9 @@ const TransportsScreen = ({ navigation, route }) => {
                 <Text style={styles.detailLabel}>Status camion</Text>
                 <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_truck)}15`}]}>
                   <Ionicons name={getStatusIcon(item.status_truck)} size={16} color={getStatusColor(item.status_truck)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>{item.status_truck || 'N/A'}</Text>
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>
+                    {item.status_truck === 'not started' ? 'Neînceput' : item.status_truck || 'Neînceput'}
+                  </Text>
                 </View>
               </View>
               
@@ -321,7 +370,9 @@ const TransportsScreen = ({ navigation, route }) => {
                 <Text style={styles.detailLabel}>Status marfă</Text>
                 <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_goods)}15`}]}>
                   <Ionicons name={getStatusIcon(item.status_goods)} size={16} color={getStatusColor(item.status_goods)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>{item.status_goods || 'N/A'}</Text>
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>
+                    {item.status_goods === 'not started' ? 'Neînceput' : item.status_goods || 'Neînceput'}
+                  </Text>
                 </View>
               </View>
               
@@ -329,7 +380,29 @@ const TransportsScreen = ({ navigation, route }) => {
                 <Text style={styles.detailLabel}>Status remorcă</Text>
                 <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_trailer_wagon)}15`}]}>
                   <Ionicons name={getStatusIcon(item.status_trailer_wagon)} size={16} color={getStatusColor(item.status_trailer_wagon)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>{item.status_trailer_wagon || 'N/A'}</Text>
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>
+                    {item.status_trailer_wagon === 'not started' ? 'Neînceput' : item.status_trailer_wagon || 'Neînceput'}
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Status cuplare</Text>
+                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_coupling)}15`}]}>
+                  <Ionicons name={getStatusIcon(item.status_coupling)} size={16} color={getStatusColor(item.status_coupling)} style={styles.statusIcon} />
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_coupling)}]}>
+                    {item.status_coupling === 'not started' ? 'Neînceput' : item.status_coupling || 'Neînceput'}
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Status încărcare</Text>
+                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_loaded_truck)}15`}]}>
+                  <Ionicons name={getStatusIcon(item.status_loaded_truck)} size={16} color={getStatusColor(item.status_loaded_truck)} style={styles.statusIcon} />
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_loaded_truck)}]}>
+                    {item.status_loaded_truck === 'not started' ? 'Neînceput' : item.status_loaded_truck || 'Neînceput'}
+                  </Text>
                 </View>
               </View>
               
@@ -337,40 +410,43 @@ const TransportsScreen = ({ navigation, route }) => {
                 <Text style={styles.detailLabel}>Status transport</Text>
                 <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_transport)}15`}]}>
                   <Ionicons name={getStatusIcon(item.status_transport)} size={16} color={getStatusColor(item.status_transport)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>{item.status_transport === 'not started' ? 'Neînceput' : item.status_transport || 'N/A'}</Text>
+                  <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>
+                    {item.status_transport === 'not started' ? 'Neînceput' : item.status_transport || 'Neînceput'}
+                  </Text>
                 </View>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Start Transport Button */}
+        {/* Transport Action Button */}
         <View style={styles.actionSection}>
-          <TouchableOpacity
-            style={[
-              styles.startButton,
-              isActive && styles.activeButton,
-              isDisabled && styles.disabledButton
-            ]}
-            onPress={() => handleStartTransport(item)}
-            disabled={isDisabled || isStarting}
-          >
-            {isStarting ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <>
-                <Ionicons 
-                  name={isActive ? "checkmark-circle" : "play-circle"} 
-                  size={20} 
-                  color="white" 
-                  style={styles.buttonIcon} 
-                />
-                <Text style={styles.startButtonText}>
-                  {isActive ? "CURSA ACTUALĂ" : "ÎNCEPE"}
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+          {isActive ? (
+            <View style={[styles.startButton, styles.activeButton]}>
+              <Ionicons name="checkmark-circle" size={20} color="white" style={styles.buttonIcon} />
+              <Text style={styles.startButtonText}>TRANSPORT ACTIV</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.startButton,
+                !canStartTransport && styles.disabledButton
+              ]}
+              onPress={() => handleStartTransport(item)}
+              disabled={!canStartTransport || isStarting}
+            >
+              {isStarting ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <>
+                  <Ionicons name="play-circle" size={20} color="white" style={styles.buttonIcon} />
+                  <Text style={styles.startButtonText}>
+                    {canStartTransport ? "ÎNCEPE ACEST TRANSPORT" : "TRANSPORT BLOCAT"}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -397,7 +473,7 @@ const TransportsScreen = ({ navigation, route }) => {
           >
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Transporturile Mele</Text>
+          <Text style={styles.headerTitle}>Transporturile Atribuite</Text>
           <TouchableOpacity 
             style={styles.refreshIconButton}
             onPress={onRefresh}
@@ -426,8 +502,8 @@ const TransportsScreen = ({ navigation, route }) => {
               <View style={styles.emptyIconContainer}>
                 <Ionicons name="car-outline" size={40} color="#6366F1" />
               </View>
-              <Text style={styles.emptyTitle}>Niciun transport găsit</Text>
-              <Text style={styles.emptyText}>Nu există transporturi disponibile în acest moment</Text>
+              <Text style={styles.emptyTitle}>Niciun transport atribuit</Text>
+              <Text style={styles.emptyText}>Nu există transporturi atribuite în acest moment</Text>
               <TouchableOpacity
                 style={styles.refreshButton}
                 onPress={onRefresh}

@@ -19,6 +19,7 @@ export const styles = StyleSheet.create({
       marginTop: 12,
       fontSize: 16,
       color: '#666',
+      textAlign: 'center',
     },
     header: {
       flexDirection: 'row',
@@ -184,17 +185,12 @@ export const styles = StyleSheet.create({
       fontWeight: 'bold',
       fontSize: 16,
     },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#fff' // Or whatever background color you prefer
-    },
     actionSection: {
       marginTop: 16,
       paddingTop: 16,
       borderTopWidth: 1,
       borderTopColor: '#E5E7EB',
+      paddingHorizontal: 16,
     },
   
     // Start transport button
@@ -216,7 +212,7 @@ export const styles = StyleSheet.create({
       shadowRadius: 3,
     },
   
-    // Active button state (CURSA ACTUALĂ)
+    // Active button state (TRANSPORT ACTIV)
     activeButton: {
       backgroundColor: '#10B981', // Green color
     },
@@ -255,14 +251,6 @@ export const styles = StyleSheet.create({
       alignItems: 'center',
     },
   
-    // Loading text
-    loadingText: {
-      marginTop: 12,
-      fontSize: 16,
-      color: '#666',
-      textAlign: 'center',
-    },
-  
     // Transport info section
     transportInfoSection: {
       backgroundColor: '#F8FAFC',
@@ -284,5 +272,55 @@ export const styles = StyleSheet.create({
       color: '#374151',
       marginLeft: 8,
       fontWeight: '500',
+    },
+
+    // Error handling styles
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+      backgroundColor: '#f8f9fa',
+    },
+
+    errorIconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: '#FEF2F2',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+
+    errorTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: '#DC2626',
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+
+    errorText: {
+      fontSize: 16,
+      color: '#666',
+      marginBottom: 24,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+
+    retryButton: {
+      flexDirection: 'row',
+      backgroundColor: '#DC2626',
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+
+    retryButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+      fontSize: 16,
     },
   });
