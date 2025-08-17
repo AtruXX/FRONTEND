@@ -23,7 +23,7 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
       }
 
       console.log('Fetching CMR data for transport:', activeTransportId);
-      const response = await fetch(`${BASE_URL}cmr/active_transport`, {
+      const response = await fetch(`${BASE_URL}transport-cmr/${activeTransportId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -71,7 +71,7 @@ export const useUpdateCMRDataMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const updateCMRData = useCallback(async (cmrData) => {
+  const updateCMRData = useCallback(async ({ activeTransportId, cmrData }) => {
     setIsLoading(true);
     setError(null);
 
@@ -82,7 +82,7 @@ export const useUpdateCMRDataMutation = () => {
       }
 
       console.log('Updating CMR data with:', cmrData);
-      const response = await fetch(`${BASE_URL}cmr/active_transport`, {
+      const response = await fetch(`${BASE_URL}transport-cmr/${activeTransportId}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Token ${token}`,
