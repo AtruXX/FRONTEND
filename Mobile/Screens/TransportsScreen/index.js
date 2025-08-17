@@ -13,223 +13,51 @@ import {
   Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles'; // Import your styles from the styles.js file
-import { BASE_URL } from "../../utils/BASE_URL";
+import { 
+  useGetTransportsQuery, 
+  useSetActiveTransportMutation 
+} from '../../services/transportService';
+import { useGetUserProfileQuery } from '../../services/profileService';
 
 const TransportsScreen = ({ navigation, route }) => {
-  const [transports, setTransports] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [authToken, setAuthToken] = useState(null);
-  const [error, setError] = useState(null);
-  const [activeTransportId, setActiveTransportId] = useState(null);
   const [startingTransport, setStartingTransport] = useState(null);
-  const [profileData, setProfileData] = useState({
-    name: "",
-    role: "",
-    initials: "",
-    id: "",
-    on_road: false,
-  });
 
-  // Fetch driver profile
-  const fetchDriverProfile = async (token) => {
-    try {
-      const response = await fetch(`${BASE_URL}auth/users/me`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+  // Use the transport service hooks
+  const {
+    data: transportsData,
+    isLoading: transportsLoading,
+    isFetching: transportsFetching,
+    error: transportsError,
+    refetch: refetchTransports
+  } = useGetTransportsQuery();
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    isFetching: profileFetching,
+    error: profileError,
+    refetch: refetchProfile
+  } = useGetUserProfileQuery();
 
-      const data = await response.json();
-      
-      // Update profile data state
-      setProfileData({
-        name: data.name,
-        role: data.is_driver ? "Driver" : (data.is_dispatcher ? "Dispatcher" : "User"),
-        initials: data.name.split(' ').map(n => n[0]).join('').toUpperCase(),
-        id: data.id,
-        on_road: data.driver?.on_road || false,
-      });
-      
-      // Set active transport from profile
-      const activeTransport = data.driver?.active_transport;
-      if (activeTransport) {
-        setActiveTransportId(activeTransport);
-      } else {
-        setActiveTransportId(null);
-      }
-      
-      console.log('Driver profile loaded:', data.name, 'ID:', data.id);
-      console.log('Active transport:', activeTransport);
-      return data;
-    } catch (error) {
-      console.error('Error fetching driver profile:', error);
-      return null;
-    }
-  };
+  const [setActiveTransportMutation, { isLoading: isSettingActive }] = useSetActiveTransportMutation();
 
-  // Fetch transports
-  const fetchTransports = async (token) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch(`${BASE_URL}transports`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('Transports data:', data);
-      
-      // Filter only assigned transports ("atribuit" status)
-      const assignedTransports = data.transports.filter(transport => 
-        transport.status === 'atribuit' && !transport.is_finished
-      );
-      
-      // Transform the API data to match the component structure
-      const transformedTransports = assignedTransports.map(transport => ({
-        id: transport.id,
-        truck_combination: `Truck #${transport.truck} + Trailer #${transport.trailer}`,
-        destination: transport.email_destinatar || 'N/A',
-        status_truck: transport.status_truck || 'not started',
-        status_goods: transport.status_goods || 'not started',
-        status_trailer_wagon: transport.status_trailer || 'not started',
-        status_transport: transport.status_transport || 'not started',
-        status_coupling: transport.status_coupling || 'not started',
-        status_loaded_truck: transport.status_loaded_truck || 'not started',
-        departure_time: 'N/A', // Not provided in API
-        arrival_time: 'N/A',   // Not provided in API
-        distance: 'N/A',       // Not provided in API
-        // Additional fields from API
-        email_expeditor: transport.email_expeditor,
-        email_destinatar: transport.email_destinatar,
-        status: transport.status,
-        is_finished: transport.is_finished,
-        status_truck_problems: transport.status_truck_problems,
-        status_trailer_description: transport.status_trailer_description,
-        delay_estimation: transport.delay_estimation,
-        company: transport.company,
-        dispatcher: transport.dispatcher,
-        driver: transport.driver,
-        truck: transport.truck,
-        trailer: transport.trailer,
-        route: transport.route
-      }));
-      
-      setTransports(transformedTransports);
-      setLoading(false);
-      setRefreshing(false);
-      
-    } catch (err) {
-      console.error('[DEBUG] Error fetching transports:', err);
-      setError(err.message || 'Failed to fetch transports');
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  // Set active transport
-  const setActiveTransport = async (transportId) => {
-    try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      if (!authToken) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await fetch(`${BASE_URL}set-active-transport/${transportId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Token ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Active transport set successfully:', data);
-      
-      // Update local state
-      setActiveTransportId(transportId);
-      
-      return true;
-    } catch (error) {
-      console.error('Error setting active transport:', error);
-      Alert.alert(
-        'Eroare',
-        'Nu s-a putut începe transportul. Încearcă din nou.',
-        [{ text: 'OK' }]
-      );
-      return false;
-    }
-  };
-
-  // Initialize data loading
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        console.log('Loading auth token and data...');
-        const token = await AsyncStorage.getItem('authToken');
-        
-        if (token) {
-          setAuthToken(token);
-          
-          // Fetch profile first to get active transport
-          await fetchDriverProfile(token);
-          
-          // Then fetch transports
-          await fetchTransports(token);
-        } else {
-          console.error("No auth token found in AsyncStorage");
-          setError("Authentication token not found");
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error loading data:", error);
-        setError("Error loading data");
-        setLoading(false);
-      }
-    };
-    
-    loadData();
-  }, []);
+  // Extract data from hooks
+  const transports = transportsData?.transports || [];
+  const activeTransportId = profileData?.active_transport || null;
+  const loading = transportsLoading || profileLoading;
+  const refreshing = transportsFetching || profileFetching;
+  const error = transportsError || profileError;
 
   // Refresh data
   const onRefresh = async () => {
-    setRefreshing(true);
-    
     try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      if (authToken) {
-        // Refresh profile first, then transports
-        await fetchDriverProfile(authToken);
-        await fetchTransports(authToken);
-      } else {
-        setError("Authentication token not found");
-      }
+      await Promise.all([
+        refetchProfile(),
+        refetchTransports()
+      ]);
     } catch (error) {
       console.error('Error refreshing data:', error);
-      setError("Error refreshing data");
-    } finally {
-      setRefreshing(false);
     }
   };
 
@@ -248,17 +76,23 @@ const TransportsScreen = ({ navigation, route }) => {
     setStartingTransport(transport.id);
     
     try {
-      const success = await setActiveTransport(transport.id);
+      await setActiveTransportMutation(transport.id).unwrap();
       
-      if (success) {
-        Alert.alert(
-          'Succes!',
-          'TRANSPORT ÎNCEPUT CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
-          [{ text: 'OK' }]
-        );
-      }
+      Alert.alert(
+        'Succes!',
+        'TRANSPORT ÎNCEPUT CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
+        [{ text: 'OK' }]
+      );
+
+      // Refresh data to get updated active transport
+      await onRefresh();
     } catch (error) {
       console.error('Error starting transport:', error);
+      Alert.alert(
+        'Eroare',
+        'Nu s-a putut începe transportul. Încearcă din nou.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setStartingTransport(null);
     }
@@ -302,7 +136,7 @@ const TransportsScreen = ({ navigation, route }) => {
           <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
         </View>
         <Text style={styles.errorTitle}>Eroare la încărcarea transporturilor</Text>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>{error.message || error.toString()}</Text>
         <TouchableOpacity
           style={styles.retryButton}
           onPress={onRefresh}
@@ -433,9 +267,9 @@ const TransportsScreen = ({ navigation, route }) => {
                 !canStartTransport && styles.disabledButton
               ]}
               onPress={() => handleStartTransport(item)}
-              disabled={!canStartTransport || isStarting}
+              disabled={!canStartTransport || isStarting || isSettingActive}
             >
-              {isStarting ? (
+              {isStarting || isSettingActive ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <>
@@ -477,6 +311,7 @@ const TransportsScreen = ({ navigation, route }) => {
           <TouchableOpacity 
             style={styles.refreshIconButton}
             onPress={onRefresh}
+            disabled={refreshing}
           >
             <Ionicons name="refresh" size={22} color="#6366F1" />
           </TouchableOpacity>
@@ -507,6 +342,7 @@ const TransportsScreen = ({ navigation, route }) => {
               <TouchableOpacity
                 style={styles.refreshButton}
                 onPress={onRefresh}
+                disabled={refreshing}
               >
                 <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
                 <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
