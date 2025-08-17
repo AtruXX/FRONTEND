@@ -101,9 +101,6 @@ export const useGetTransportsQuery = (options = {}) => {
   };
 };
 
-// Note: Driver profile functionality moved to profileService.js
-// Use useGetUserProfileQuery from profileService instead
-
 // Custom hook for set active transport mutation
 export const useSetActiveTransportMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -157,4 +154,59 @@ export const useSetActiveTransportMutation = () => {
   }, [setActiveTransport]);
 
   return [setActiveTransportMutation, { isLoading, error }];
+};
+
+// Custom hook for finalizing transport
+export const useFinalizeTransportMutation = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const finalizeTransport = useCallback(async (activeTransportId) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      console.log('Finalizing transport:', activeTransportId);
+      const response = await fetch(`${BASE_URL}finish-transport/${activeTransportId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Finalize transport response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.log('Finalize transport error response:', errorData);
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const data = await response.json();
+      console.log('Transport finalized successfully:', data);
+
+      setIsLoading(false);
+      return data;
+    } catch (err) {
+      console.error('Finalize transport error:', err);
+      setIsLoading(false);
+      setError(err);
+      throw err;
+    }
+  }, []);
+
+  // Return the mutation function with unwrap method
+  const finalizeTransportMutation = useCallback((variables) => {
+    const promise = finalizeTransport(variables);
+    promise.unwrap = () => promise;
+    return promise;
+  }, [finalizeTransport]);
+
+  return [finalizeTransportMutation, { isLoading, error }];
 };

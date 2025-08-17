@@ -1,87 +1,140 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BASE_URL } from "../../utils/BASE_URL";
-
+import { useGetUserProfileQuery } from '../../services/profileService';
+import { useFinalizeTransportMutation } from '../../services/transportService';
+import { useDownloadCMRDocumentMutation } from '../../services/CMRService';
 import { styles } from './styles'; // Import your styles from the styles.js file
 
 const TransportMainPage = ({ navigation }) => {
-  const [driverId, setDriverId] = useState(null);
-  const [authToken, setAuthToken] = useState(null);
-  
+  // Get user profile to access active transport data
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile
+  } = useGetUserProfileQuery();
 
-  useEffect(() => {
-    const loadAuthToken = async () => {
-      try {
-        console.log('Attempting to load auth token from AsyncStorage');
-        const token = await AsyncStorage.getItem('authToken');
-        console.log('Token from AsyncStorage:', token ? 'Token exists' : 'No token found');
-        
-        if (token) {
-          setAuthToken(token);
-          console.log('Auth token loaded and set in state');
-          // Once we have the token, fetch the profile to get driverId
-          fetchDriverProfile(token);
-        } else {
-          console.error("No auth token found in AsyncStorage");
-          Alert.alert('Eroare', 'Sesiune expirată. Vă rugăm să vă autentificați din nou.');
-        }
-      } catch (error) {
-        console.error("Error loading auth token:", error);
-        Alert.alert('Eroare', 'Nu s-a putut încărca token-ul de autentificare.');
-      }
-    };
-    
-    loadAuthToken();
-  }, []);
+  // Mutations
+  const [finalizeTransport, { isLoading: isFinalizing }] = useFinalizeTransportMutation();
+  const [downloadCMR, { isLoading: isDownloading }] = useDownloadCMRDocumentMutation();
 
-  const fetchDriverProfile = async (token) => {
+  const activeTransportId = profileData?.active_transport;
+
+  const handleDownloadCMR = async () => {
+    if (!activeTransportId) {
+      Alert.alert('Eroare', 'Nu există un transport activ pentru descărcare.');
+      return;
+    }
+
     try {
-      const response = await fetch(
-        `${BASE_URL}profile/`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Token ${token}`
-          }
-        }
+      await downloadCMR(activeTransportId).unwrap();
+      Alert.alert(
+        'Descărcare CMR',
+        'Descărcarea documentului CMR a început.',
+        [{ text: 'OK' }]
       );
-      
-      if (response.ok) {
-        const profileData = await response.json();
-        setDriverId(profileData.id);
-        console.log("Driver ID set:", profileData.id);
-      } else {
-        console.error("Failed to fetch driver profile");
-        Alert.alert('Eroare', 'Nu s-a putut obține profilul șoferului.');
-      }
     } catch (error) {
-      console.error("Error fetching driver profile:", error);
-      Alert.alert('Eroare', 'Verificați conexiunea la internet.');
+      console.error('Download CMR error:', error);
+      Alert.alert('Eroare', 'Nu s-a putut descărca documentul CMR.');
     }
   };
 
-  const handleDownloadCMR = () => {
+  const handleFinalizeTransport = async () => {
+    if (!activeTransportId) {
+      Alert.alert('Eroare', 'Nu există un transport activ pentru finalizare.');
+      return;
+    }
+
     Alert.alert(
-      'Descărcare CMR',
-      'Descărcarea documentului CMR a început.',
-      [{ text: 'OK' }]
+      'Finalizare Transport',
+      'Sunteți sigur că doriți să finalizați transportul? Această acțiune nu poate fi anulată.',
+      [
+        {
+          text: 'Anulează',
+          style: 'cancel'
+        },
+        {
+          text: 'Finalizează',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await finalizeTransport(activeTransportId).unwrap();
+              Alert.alert(
+                'Transport Finalizat',
+                'Transportul a fost finalizat cu succes!',
+                [{ 
+                  text: 'OK', 
+                  onPress: () => {
+                    refetchProfile(); // Refresh profile to update active transport
+                    navigation.navigate('Home');
+                  }
+                }]
+              );
+            } catch (error) {
+              console.error('Finalize transport error:', error);
+              Alert.alert('Eroare', 'Nu s-a putut finaliza transportul.');
+            }
+          }
+        }
+      ]
     );
   };
 
   const navigateTo = (screenName) => {
-    navigation.navigate(screenName, {
-      authToken: authToken,
-      driverId: driverId
-    });
+    navigation.navigate(screenName);
   };
+
+  // Generate UIT code based on active transport or profile data
+  const generateUitCode = () => {
+    if (activeTransportId) {
+      return `TR-${activeTransportId}-RO`;
+    }
+    return `TR-${profileData?.id || '0000'}-RO`;
+  };
+
+  if (profileLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="hourglass-outline" size={40} color="#5A5BDE" />
+          <Text style={styles.loadingText}>Se încarcă datele transportului...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!activeTransportId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#373A56" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Transport actual</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        
+        <View style={styles.emptyContainer}>
+          <Ionicons name="truck-outline" size={60} color="#5A5BDE" />
+          <Text style={styles.emptyTitle}>Niciun transport activ</Text>
+          <Text style={styles.emptyText}>Nu aveți un transport activ asignat în acest moment</Text>
+          <TouchableOpacity
+            style={styles.backToHomeButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.backToHomeText}>Înapoi la pagina principală</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color="#373A56" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Transport actual</Text>
         <View style={{ width: 24 }} />
@@ -94,7 +147,7 @@ const TransportMainPage = ({ navigation }) => {
         {/* UIT Code Information */}
         <View style={styles.uitCodeContainer}>
           <Text style={styles.uitLabel}>COD UIT:</Text>
-          <Text style={styles.uitCode}>TR-8529-RO</Text>
+          <Text style={styles.uitCode}>{generateUitCode()}</Text>
         </View>
         
         <View style={styles.selectionContainer}>
@@ -150,9 +203,9 @@ const TransportMainPage = ({ navigation }) => {
             <View style={styles.iconCircle}>
               <Ionicons name="camera-outline" size={32} color="#FFFFFF" />
             </View>
-            <Text style={styles.selectionButtonText}>Fotografiaza CMR-UL</Text>
+            <Text style={styles.selectionButtonText}>Fotografiază CMR-ul</Text>
             <Text style={styles.selectionDescription}>
-              Incarca o fotografie cu CMR-ul in format fizic
+              Încarcă o fotografie cu CMR-ul în format fizic
             </Text>
           </TouchableOpacity>
 
@@ -160,9 +213,32 @@ const TransportMainPage = ({ navigation }) => {
           <TouchableOpacity 
             style={styles.downloadButton} 
             onPress={handleDownloadCMR}
+            disabled={isDownloading}
           >
-            <Ionicons name="cloud-download-outline" size={24} color="#FFFFFF" />
-            <Text style={styles.downloadButtonText}>Descarcă acum CMR-ul</Text>
+            {isDownloading ? (
+              <Ionicons name="hourglass-outline" size={24} color="#FFFFFF" />
+            ) : (
+              <Ionicons name="cloud-download-outline" size={24} color="#FFFFFF" />
+            )}
+            <Text style={styles.downloadButtonText}>
+              {isDownloading ? 'Se descarcă...' : 'Descarcă acum CMR-ul'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Finalize Transport Button */}
+          <TouchableOpacity 
+            style={styles.finalizeButton} 
+            onPress={handleFinalizeTransport}
+            disabled={isFinalizing}
+          >
+            {isFinalizing ? (
+              <Ionicons name="hourglass-outline" size={24} color="#FFFFFF" />
+            ) : (
+              <Ionicons name="checkmark-circle-outline" size={24} color="#FFFFFF" />
+            )}
+            <Text style={styles.finalizeButtonText}>
+              {isFinalizing ? 'Se finalizează...' : 'FINALIZEAZĂ TRANSPORT'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
