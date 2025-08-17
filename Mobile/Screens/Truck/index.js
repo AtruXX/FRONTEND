@@ -9,282 +9,113 @@ import {
   Alert,
   ScrollView,
   RefreshControl,
-  Image
+  Image,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { styles } from './styles'; // Import your styles from the styles.js file
-import { BASE_URL } from "../../utils/BASE_URL";
+import { useGetUserProfileQuery } from '../../services/profileService';
+import { 
+  useGetActiveTransportQuery, 
+  useGetTruckQuery, 
+  useGetTruckDocumentsQuery 
+} from '../../services/vehicleService';
 
-const TruckDetailsScreen = ({ navigation, route }) => {
-  const [truckDetails, setTruckDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
+const TruckPageScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
-  const [authToken, setAuthToken] = useState(null);
-  const [driverId, setDriverId] = useState(route.params?.driverId || 1);
 
-  // Load auth token on component mount
-  useEffect(() => {
-    const loadAuthToken = async () => {
-      try {
-        console.log('Attempting to load auth token from AsyncStorage');
-        const token = await AsyncStorage.getItem('authToken');
-        console.log('Token from AsyncStorage:', token ? 'Token exists' : 'No token found');
-        
-        if (token) {
-          setAuthToken(token);
-          console.log('Auth token loaded and set in state');
-          // Once we have the token, fetch driver profile or use driverId from route params
-          if (!route.params?.driverId) {
-            fetchDriverProfile(token);
-          } else {
-            fetchTruckDetails(token, route.params.driverId);
-          }
-        } else {
-          console.error("No auth token found in AsyncStorage");
-          setLoading(false);
-          Alert.alert('Eroare', 'Sesiune expirată. Vă rugăm să vă autentificați din nou.');
-        }
-      } catch (error) {
-        console.error("Error loading auth token:", error);
-        setLoading(false);
-        Alert.alert('Eroare', 'Nu s-a putut încărca token-ul de autentificare.');
-      }
-    };
-    
-    loadAuthToken();
-  }, []);
+  // Get user profile
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile
+  } = useGetUserProfileQuery();
 
-  const fetchDriverProfile = async (token) => {
-    try {
-      const response = await fetch('https://atrux-717ecf8763ea.herokuapp.com/api/driver/profile/', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Token ${token}`
-        }
-      });
+  // Get active transport using the transport ID from profile
+  const activeTransportId = profileData?.active_transport;
+  const {
+    data: activeTransport,
+    isLoading: transportLoading,
+    error: transportError,
+    refetch: refetchTransport
+  } = useGetActiveTransportQuery(activeTransportId);
 
-      if (response.ok) {
-        const profileData = await response.json();
-        setDriverId(profileData.id);
-        fetchTruckDetails(token, profileData.id);
-      } else {
-        console.error("Failed to fetch driver profile");
-        setLoading(false);
-        Alert.alert('Eroare', 'Nu s-a putut încărca profilul șoferului.');
-      }
-    } catch (error) {
-      console.error("Error fetching driver profile:", error);
-      setLoading(false);
-      Alert.alert('Eroare', 'Verificați conexiunea la internet.');
-    }
-  };
+  // Get truck details using truck ID from active transport
+  const {
+    data: truckData,
+    isLoading: truckLoading,
+    error: truckError,
+    refetch: refetchTruck
+  } = useGetTruckQuery(activeTransport?.truck);
 
-  const fetchTruckDetails = async (token, driverId) => {
-    setLoading(true);
-    try {
-      // This is a placeholder URL. Replace with your actual API endpoint
-      const url = `https://atrux-717ecf8763ea.herokuapp.com/api/truck/details/${driverId}/`;
-      console.log("Fetching URL:", url);
+  // Get truck documents
+  const {
+    data: truckDocuments,
+    isLoading: documentsLoading,
+    error: documentsError,
+    refetch: refetchDocuments
+  } = useGetTruckDocumentsQuery(activeTransport?.truck);
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Authorization": `Token ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const truckData = await response.json();
-        console.log("Truck data received:", truckData);
-        setTruckDetails(truckData);
-      } else {
-        console.error("Fetch failed with status:", response.status);
-        // For demo purposes, set mock data if API doesn't exist
-        setTruckDetails({
-          id: 'T-1234',
-          number: 'BV-99-TRK',
-          model: 'Volvo FH16',
-          last_revision_date: '2025-03-15',
-          next_revision_date: '2025-09-15',
-          expirations: [
-            {
-              id: 1,
-              document_type: 'Asigurare RCA',
-              expiry_date: '2025-08-10',
-              status: 'valid' // valid, warning, expired
-            },
-            {
-              id: 2,
-              document_type: 'Verificare tehnică',
-              expiry_date: '2025-05-22',
-              status: 'warning' // less than 30 days
-            },
-            {
-              id: 3,
-              document_type: 'Licență transport',
-              expiry_date: '2025-12-31',
-              status: 'valid'
-            },
-            {
-              id: 4,
-              document_type: 'Tahograf',
-              expiry_date: '2025-04-01',
-              status: 'expired'
-            }
-          ],
-          specifications: {
-            engine: 'D16K 750 CP',
-            fuel_tank: '700 litri',
-            transmission: 'I-Shift',
-            max_weight: '44 tone'
-          },
-          maintenance_history: [
-            {
-              id: 1,
-              date: '2025-03-15',
-              type: 'Revizie completă',
-              description: 'Schimb ulei, filtre, verificare sisteme',
-              mileage: '125000 km'
-            },
-            {
-              id: 2,
-              date: '2024-11-10',
-              type: 'Reparație',
-              description: 'Înlocuire plăcuțe frână',
-              mileage: '110000 km'
-            }
-          ]
-        });
-        Alert.alert('Notă', 'Se folosesc date demonstrative pentru camion.');
-      }
-    } catch (error) {
-      console.error("Truck details fetch error:", error);
-      Alert.alert('Eroare', 'Verificați conexiunea la internet.');
-      
-      // Set mock data for demo purposes
-      setTruckDetails({
-        id: 'T-1234',
-        number: 'BV-99-TRK',
-        model: 'Volvo FH16',
-        last_revision_date: '2025-03-15',
-        next_revision_date: '2025-09-15',
-        expirations: [
-          {
-            id: 1,
-            document_type: 'Asigurare RCA',
-            expiry_date: '2025-08-10',
-            status: 'valid' // valid, warning, expired
-          },
-          {
-            id: 2,
-            document_type: 'Verificare tehnică',
-            expiry_date: '2025-05-22',
-            status: 'warning' // less than 30 days
-          },
-          {
-            id: 3,
-            document_type: 'Licență transport',
-            expiry_date: '2025-12-31',
-            status: 'valid'
-          },
-          {
-            id: 4,
-            document_type: 'Tahograf',
-            expiry_date: '2025-04-01',
-            status: 'expired'
-          }
-        ],
-        specifications: {
-          engine: 'D16K 750 CP',
-          fuel_tank: '700 litri',
-          transmission: 'I-Shift',
-          max_weight: '44 tone'
-        },
-        maintenance_history: [
-          {
-            id: 1,
-            date: '2025-03-15',
-            type: 'Revizie completă',
-            description: 'Schimb ulei, filtre, verificare sisteme',
-            mileage: '125000 km'
-          },
-          {
-            id: 2,
-            date: '2024-11-10',
-            type: 'Reparație',
-            description: 'Înlocuire plăcuțe frână',
-            mileage: '110000 km'
-          }
-        ]
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  const onRefresh = () => {
+  const onRefresh = async () => {
     setRefreshing(true);
-    if (authToken && driverId) {
-      fetchTruckDetails(authToken, driverId);
-    } else {
+    try {
+      await Promise.all([
+        refetchProfile(),
+        refetchTransport(),
+        refetchTruck(),
+        refetchDocuments()
+      ]);
+    } catch (error) {
+      console.error('Refresh error:', error);
+    } finally {
       setRefreshing(false);
     }
   };
 
-  // FIXED: Improved back button handler with multiple fallback options
   const handleBackPress = () => {
-    try {
-      // Method 1: Try to go back if possible
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        // Method 2: Navigate to a specific screen if can't go back
-        navigation.navigate('Home'); // Replace 'Home' with your main screen name
-        // Alternative: navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
-      }
-    } catch (error) {
-      console.error('Navigation error:', error);
-      // Method 3: Fallback - try to pop to top
-      try {
-        navigation.popToTop();
-      } catch (fallbackError) {
-        console.error('Fallback navigation error:', fallbackError);
-        // Method 4: Last resort - reset navigation stack
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Home' }], // Replace with your main screen
-        });
-      }
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('Home');
     }
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('ro-RO', options);
   };
 
-  const getDaysUntilExpiry = (dateString) => {
-    const expiryDate = new Date(dateString);
-    const today = new Date();
-    const diffTime = expiryDate - today;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const getDocumentStatusColor = (status, expirationDate) => {
+    if (status === 'expired' || (expirationDate && new Date(expirationDate) < new Date())) {
+      return '#EF4444'; // Red
+    }
+    if (expirationDate) {
+      const daysUntilExpiry = Math.ceil((new Date(expirationDate) - new Date()) / (1000 * 60 * 60 * 24));
+      if (daysUntilExpiry <= 30) {
+        return '#F59E0B'; // Orange
+      }
+    }
+    return '#10B981'; // Green
   };
 
-  const getExpiryStatusColor = (status) => {
-    if (status === 'valid') return '#10B981'; // Green
-    if (status === 'warning') return '#F59E0B'; // Orange/amber
-    return '#EF4444'; // Red for expired
+  const openDocument = async (documentUrl) => {
+    try {
+      const supported = await Linking.canOpenURL(documentUrl);
+      if (supported) {
+        await Linking.openURL(documentUrl);
+      } else {
+        Alert.alert('Eroare', 'Nu se poate deschide documentul');
+      }
+    } catch (error) {
+      console.error('Error opening document:', error);
+      Alert.alert('Eroare', 'Nu se poate deschide documentul');
+    }
   };
 
-  const getExpiryStatusText = (status, daysLeft) => {
-    if (status === 'expired') return 'Expirat';
-    if (status === 'warning') return `Expiră în ${daysLeft} zile`;
-    return 'Valid';
-  };
+  const isLoading = profileLoading || transportLoading || truckLoading || documentsLoading;
 
-  if (loading && !refreshing) {
+  if (isLoading && !refreshing) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.loadingContainer}>
@@ -295,150 +126,106 @@ const TruckDetailsScreen = ({ navigation, route }) => {
     );
   }
 
+  if (!activeTransportId || !activeTransport) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Camionul Meu</Text>
+            <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+              <Ionicons name="refresh" size={22} color="#6366F1" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.emptyContainer}>
+            <Ionicons name="truck-outline" size={60} color="#6366F1" />
+            <Text style={styles.emptyTitle}>Niciun transport activ</Text>
+            <Text style={styles.emptyText}>Nu aveți un transport activ asignat în acest moment</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={[styles.backButton, { 
-              // FIXED: Ensure proper touch target size and styling
-              minWidth: 44, 
-              minHeight: 44, 
-              justifyContent: 'center', 
-              alignItems: 'center' 
-            }]}
-            onPress={handleBackPress}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Increase touch area
-          >
+          <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Detalii Camion</Text>
-          <TouchableOpacity 
-            style={[styles.refreshIconButton, {
-              minWidth: 44,
-              minHeight: 44,
-              justifyContent: 'center',
-              alignItems: 'center'
-            }]}
-            onPress={onRefresh}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
+          <Text style={styles.headerTitle}>Camionul Meu</Text>
+          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
             <Ionicons name="refresh" size={22} color="#6366F1" />
           </TouchableOpacity>
         </View>
 
-        {truckDetails ? (
-          <ScrollView 
-            contentContainerStyle={styles.scrollContainer}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={['#6366F1']}
-              />
-            }
-          >
-            {/* Truck Overview Card */}
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#6366F1']}
+            />
+          }
+        >
+          {/* Truck Overview Card */}
+          {truckData && (
             <View style={styles.truckOverviewCard}>
               <View style={styles.truckImageContainer}>
-                {/* Placeholder for truck image */}
                 <View style={styles.truckIconContainer}>
                   <Ionicons name="truck" size={48} color="#6366F1" />
                 </View>
               </View>
               <View style={styles.truckInfoContainer}>
-                <Text style={styles.truckModel}>{truckDetails.model}</Text>
-                <Text style={styles.truckNumber}>{truckDetails.number}</Text>
+                <Text style={styles.truckModel}>{truckData.make} {truckData.model}</Text>
+                <Text style={styles.truckNumber}>{truckData.license_plate}</Text>
                 <View style={styles.truckIdContainer}>
                   <Ionicons name="barcode-outline" size={16} color="#666" />
-                  <Text style={styles.truckIdText}>ID: {truckDetails.id}</Text>
+                  <Text style={styles.truckIdText}>VIN: {truckData.vin}</Text>
+                </View>
+                <View style={styles.truckIdContainer}>
+                  <Ionicons name="calendar-outline" size={16} color="#666" />
+                  <Text style={styles.truckIdText}>An: {truckData.year}</Text>
                 </View>
               </View>
             </View>
+          )}
 
-            {/* Revizii Card */}
-            <View style={styles.detailCard}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="calendar" size={20} color="#6366F1" />
-                <Text style={styles.cardTitle}>Ultima Revizie</Text>
+          {/* Transport Info Card */}
+          <View style={styles.detailCard}>
+            <View style={styles.cardHeader}>
+              <Ionicons name="location" size={20} color="#6366F1" />
+              <Text style={styles.cardTitle}>Transport Activ</Text>
+            </View>
+            <View style={styles.cardContent}>
+              <View style={styles.transportDetail}>
+                <Text style={styles.transportLabel}>Destinatar:</Text>
+                <Text style={styles.transportValue}>{activeTransport.email_destinatar || 'N/A'}</Text>
               </View>
-              <View style={styles.cardContent}>
-                <View style={styles.revisionDetails}>
-                  <View style={styles.dateCircle}>
-                    <Text style={styles.dateDay}>
-                      {new Date(truckDetails.last_revision_date).getDate()}
-                    </Text>
-                    <Text style={styles.dateMonth}>
-                      {new Date(truckDetails.last_revision_date).toLocaleString('ro-RO', { month: 'short' })}
-                    </Text>
-                  </View>
-                  <View style={styles.revisionInfo}>
-                    <Text style={styles.revisionDate}>
-                      {formatDate(truckDetails.last_revision_date)}
-                    </Text>
-                    {truckDetails.maintenance_history && truckDetails.maintenance_history.length > 0 && (
-                      <>
-                        <Text style={styles.revisionType}>
-                          {truckDetails.maintenance_history[0].type}
-                        </Text>
-                        <Text style={styles.revisionMileage}>
-                          Kilometraj: {truckDetails.maintenance_history[0].mileage}
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                </View>
-                <View style={styles.divider}></View>
-                <View style={styles.nextRevisionContainer}>
-                  <Text style={styles.nextRevisionLabel}>Următoarea revizie:</Text>
-                  <Text style={styles.nextRevisionDate}>
-                    {formatDate(truckDetails.next_revision_date)}
-                  </Text>
-                </View>
+              <View style={styles.transportDetail}>
+                <Text style={styles.transportLabel}>Status:</Text>
+                <Text style={[styles.transportValue, { color: '#6366F1', fontWeight: '600' }]}>
+                  {activeTransport.status}
+                </Text>
+              </View>
+              <View style={styles.transportDetail}>
+                <Text style={styles.transportLabel}>Dispatcher:</Text>
+                <Text style={styles.transportValue}>{activeTransport.dispatcher || 'N/A'}</Text>
+              </View>
+              <View style={styles.transportDetail}>
+                <Text style={styles.transportLabel}>Trailer:</Text>
+                <Text style={styles.transportValue}>#{activeTransport.trailer}</Text>
               </View>
             </View>
+          </View>
 
-            {/* Important Expiration Dates */}
-            <View style={styles.detailCard}>
-              <View style={styles.cardHeader}>
-                <Ionicons name="alert-circle" size={20} color="#6366F1" />
-                <Text style={styles.cardTitle}>Date Importante Expirare</Text>
-              </View>
-              <View style={styles.cardContent}>
-                {truckDetails.expirations && truckDetails.expirations.map((item) => {
-                  const daysLeft = getDaysUntilExpiry(item.expiry_date);
-                  return (
-                    <View key={item.id} style={styles.expirationItem}>
-                      <View style={styles.expirationDetails}>
-                        <Text style={styles.expirationTitle}>{item.document_type}</Text>
-                        <Text style={styles.expirationDate}>
-                          Expiră la: {formatDate(item.expiry_date)}
-                        </Text>
-                      </View>
-                      <View 
-                        style={[
-                          styles.expirationStatus, 
-                          {backgroundColor: `${getExpiryStatusColor(item.status)}15`}
-                        ]}
-                      >
-                        <Text 
-                          style={[
-                            styles.expirationStatusText, 
-                            {color: getExpiryStatusColor(item.status)}
-                          ]}
-                        >
-                          {getExpiryStatusText(item.status, daysLeft)}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Technical Specifications */}
+          {/* Technical Specifications */}
+          {truckData && (
             <View style={styles.detailCard}>
               <View style={styles.cardHeader}>
                 <Ionicons name="construct" size={20} color="#6366F1" />
@@ -446,64 +233,416 @@ const TruckDetailsScreen = ({ navigation, route }) => {
               </View>
               <View style={styles.cardContent}>
                 <View style={styles.specificationsGrid}>
-                  {truckDetails.specifications && Object.entries(truckDetails.specifications).map(([key, value], index) => (
-                    <View key={index} style={styles.specificationItem}>
-                      <Text style={styles.specificationLabel}>
-                        {key === 'engine' ? 'Motor' : 
-                         key === 'fuel_tank' ? 'Rezervor' : 
-                         key === 'transmission' ? 'Transmisie' : 
-                         key === 'max_weight' ? 'Greutate Max' : key}
-                      </Text>
-                      <Text style={styles.specificationValue}>{value}</Text>
-                    </View>
-                  ))}
+                  <View style={styles.specificationItem}>
+                    <Text style={styles.specificationLabel}>Motor</Text>
+                    <Text style={styles.specificationValue}>
+                      {truckData.engine?.type} - {truckData.engine?.horsepower} HP
+                    </Text>
+                  </View>
+                  <View style={styles.specificationItem}>
+                    <Text style={styles.specificationLabel}>Greutate Maximă</Text>
+                    <Text style={styles.specificationValue}>
+                      {truckData.weight?.gross_weight} {truckData.weight?.unit}
+                    </Text>
+                  </View>
+                  <View style={styles.specificationItem}>
+                    <Text style={styles.specificationLabel}>Dimensiuni</Text>
+                    <Text style={styles.specificationValue}>
+                      {truckData.dimensions?.length}"L x {truckData.dimensions?.width}"W x {truckData.dimensions?.height}"H
+                    </Text>
+                  </View>
+                  <View style={styles.specificationItem}>
+                    <Text style={styles.specificationLabel}>Tip Încărcare</Text>
+                    <Text style={styles.specificationValue}>
+                      {truckData.load?.load_type}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
+          )}
 
-            {/* Maintenance History */}
+          {/* Legal & Safety Information */}
+          {truckData?.legal_condition && (
             <View style={styles.detailCard}>
               <View style={styles.cardHeader}>
-                <Ionicons name="time" size={20} color="#6366F1" />
-                <Text style={styles.cardTitle}>Istoric Mentenanță</Text>
+                <Ionicons name="shield-checkmark" size={20} color="#6366F1" />
+                <Text style={styles.cardTitle}>Informații Legale</Text>
               </View>
               <View style={styles.cardContent}>
-                {truckDetails.maintenance_history && truckDetails.maintenance_history.map((item) => (
-                  <View key={item.id} style={styles.maintenanceItem}>
-                    <View style={styles.maintenanceDate}>
-                      <Text style={styles.maintenanceDateText}>
-                        {formatDate(item.date)}
-                      </Text>
+                <View style={styles.legalItem}>
+                  <Text style={styles.legalLabel}>Rating Siguranță:</Text>
+                  <Text style={[styles.legalValue, { color: '#10B981' }]}>
+                    {truckData.legal_condition.safety_rating}
+                  </Text>
+                </View>
+                <View style={styles.legalItem}>
+                  <Text style={styles.legalLabel}>Ultima Inspecție DOT:</Text>
+                  <Text style={styles.legalValue}>
+                    {formatDate(truckData.legal_condition.dot_inspection)}
+                  </Text>
+                </View>
+                <View style={styles.legalItem}>
+                  <Text style={styles.legalLabel}>Polița Asigurare:</Text>
+                  <Text style={styles.legalValue}>
+                    {truckData.legal_condition.insurance_policy}
+                  </Text>
+                </View>
+                <View style={styles.legalItem}>
+                  <Text style={styles.legalLabel}>Expirare Înregistrare:</Text>
+                  <Text style={styles.legalValue}>
+                    {formatDate(truckData.legal_condition.registration_expiry)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Documents Card */}
+          {truckDocuments && truckDocuments.documents && truckDocuments.documents.length > 0 && (
+            <View style={styles.detailCard}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="document-text" size={20} color="#6366F1" />
+                <Text style={styles.cardTitle}>Documente ({truckDocuments.number_of_documents})</Text>
+              </View>
+              <View style={styles.cardContent}>
+                {truckDocuments.documents.map((doc) => (
+                  <TouchableOpacity
+                    key={doc.id}
+                    style={styles.documentItem}
+                    onPress={() => openDocument(doc.document)}
+                  >
+                    <View style={styles.documentInfo}>
+                      <Text style={styles.documentTitle}>{doc.title}</Text>
+                      <Text style={styles.documentCategory}>Categorie: {doc.category}</Text>
+                      {doc.expiration_date && (
+                        <Text style={styles.documentExpiry}>
+                          Expiră: {formatDate(doc.expiration_date)}
+                        </Text>
+                      )}
+                      {doc.description && (
+                        <Text style={styles.documentDescription}>{doc.description}</Text>
+                      )}
                     </View>
-                    <View style={styles.maintenanceDetails}>
-                      <Text style={styles.maintenanceType}>{item.type}</Text>
-                      <Text style={styles.maintenanceDescription}>{item.description}</Text>
-                      <Text style={styles.maintenanceMileage}>Kilometraj: {item.mileage}</Text>
+                    <View style={styles.documentActions}>
+                      <View
+                        style={[
+                          styles.documentStatus,
+                          { backgroundColor: `${getDocumentStatusColor(doc.status, doc.expiration_date)}15` }
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.documentStatusText,
+                            { color: getDocumentStatusColor(doc.status, doc.expiration_date) }
+                          ]}
+                        >
+                          {doc.status}
+                        </Text>
+                      </View>
+                      <Ionicons name="download-outline" size={20} color="#6366F1" />
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
-          </ScrollView>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <Ionicons name="truck-outline" size={40} color="#6366F1" />
+          )}
+
+          {/* Maintenance Card */}
+          {truckData?.last_service_date && (
+            <View style={styles.detailCard}>
+              <View style={styles.cardHeader}>
+                <Ionicons name="build" size={20} color="#6366F1" />
+                <Text style={styles.cardTitle}>Mentenanță</Text>
+              </View>
+              <View style={styles.cardContent}>
+                <View style={styles.maintenanceItem}>
+                  <Text style={styles.maintenanceLabel}>Ultima Revizie:</Text>
+                  <Text style={styles.maintenanceValue}>
+                    {formatDate(truckData.last_service_date)}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.emptyTitle}>Nicio informație găsită</Text>
-            <Text style={styles.emptyText}>Nu există detalii disponibile pentru acest camion</Text>
-            <TouchableOpacity
-              style={styles.refreshButton}
-              onPress={onRefresh}
-            >
-              <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
-              <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
-            </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
 };
 
-export default TruckDetailsScreen;
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  backButton: {
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  refreshButton: {
+    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  scrollContainer: {
+    padding: 16,
+  },
+  truckOverviewCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  truckImageContainer: {
+    marginRight: 16,
+  },
+  truckIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  truckInfoContainer: {
+    flex: 1,
+  },
+  truckModel: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  truckNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6366F1',
+    marginBottom: 8,
+  },
+  truckIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  truckIdText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 6,
+  },
+  detailCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 8,
+  },
+  cardContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  transportDetail: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  transportLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  transportValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '600',
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: 12,
+  },
+  specificationsGrid: {
+    gap: 12,
+  },
+  specificationItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  specificationLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  specificationValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '600',
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: 12,
+  },
+  legalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  legalLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  legalValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '600',
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: 12,
+  },
+  documentItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  documentInfo: {
+    flex: 1,
+  },
+  documentTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  documentCategory: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  documentExpiry: {
+    fontSize: 12,
+    color: '#F59E0B',
+    marginBottom: 2,
+  },
+  documentDescription: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
+  documentActions: {
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  documentStatus: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  documentStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  maintenanceItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  maintenanceLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  maintenanceValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '600',
+  },
+});
+
+export default TruckPageScreen;
