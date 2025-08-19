@@ -1,5 +1,16 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Linking, Platform, SafeAreaView, ScrollView, RefreshControl, Alert } from 'react-native';
+// ProfileScreen/index.js - Optimized version
+import React, { useState, useCallback, useMemo } from "react";
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Linking, 
+  Platform, 
+  SafeAreaView, 
+  ScrollView, 
+  RefreshControl, 
+  Alert 
+} from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -8,7 +19,125 @@ import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL";
 import PageHeader from "../../components/General/Header";
 
-const ProfileScreen = () => {
+// Memoized components for better performance
+const ProfileInfo = React.memo(({ profileData }) => {
+  const initials = useMemo(() => 
+    profileData?.initials || 'N/A'
+  , [profileData?.initials]);
+
+  const role = useMemo(() => 
+    profileData?.is_driver ? 'Șofer' : 
+    profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator'
+  , [profileData?.is_driver, profileData?.is_dispatcher]);
+
+  return (
+    <View style={styles.profileInfoContainer}>
+      <View style={styles.profileContainer}>
+        <Text style={styles.profileInitials}>{initials}</Text>
+      </View>
+      <View style={styles.profileTextContainer}>
+        <Text style={styles.profileName}>{profileData?.name || 'Nume necunoscut'}</Text>
+        <Text style={styles.profileRole}>{role}</Text>
+        <Text style={styles.profileCompany}>{profileData?.company || 'Companie necunoscută'}</Text>
+      </View>
+    </View>
+  );
+});
+
+const DataRow = React.memo(({ label, value, valueStyle }) => (
+  <View style={styles.dataRow}>
+    <Text style={styles.dataLabel}>{label}</Text>
+    <Text style={styles.dataDivider}>|</Text>
+    <Text style={[styles.dataValue, valueStyle]}>{value}</Text>
+  </View>
+));
+
+const DataSection = React.memo(({ title, children }) => (
+  <View style={styles.dataContainer}>
+    <Text style={styles.dataTitle}>{title}</Text>
+    {children}
+  </View>
+));
+
+const SettingItem = React.memo(({ 
+  iconName, 
+  title, 
+  subtitle, 
+  onPress, 
+  showChevron = true,
+  badge,
+  expandable = false,
+  expanded = false
+}) => (
+  <TouchableOpacity
+    style={styles.settingContainer}
+    onPress={onPress}
+    activeOpacity={0.7}
+  >
+    <View style={styles.settingIconContainer}>
+      <Feather name={iconName} size={20} color="#6B6F8D" />
+    </View>
+    <View style={styles.settingTextContainer}>
+      <Text style={styles.settingTitle}>{title}</Text>
+      <Text style={styles.settingSubtitle}>{subtitle}</Text>
+    </View>
+    {badge && (
+      <View style={styles.badgeContainer}>
+        <Text style={styles.badgeText}>{badge}</Text>
+      </View>
+    )}
+    {showChevron && (
+      <Ionicons
+        name={expandable ? (expanded ? "chevron-up" : "chevron-down") : "chevron-forward"}
+        size={24}
+        color="#6B6F8D"
+      />
+    )}
+  </TouchableOpacity>
+));
+
+const DocumentItem = React.memo(({ doc, onPress }) => (
+  <TouchableOpacity
+    style={styles.documentItem}
+    onPress={() => onPress(doc.document)}
+  >
+    <View style={styles.documentInfo}>
+      <Text style={styles.documentTitle}>{doc.title}</Text>
+      <Text style={styles.documentExpiration}>
+        Expiră: {new Date(doc.expiration_date).toLocaleDateString('ro-RO')}
+      </Text>
+    </View>
+    <Ionicons name="download-outline" size={20} color="#5A5BDE" />
+  </TouchableOpacity>
+));
+
+const AlertItem = React.memo(({ doc }) => {
+  const getExpirationColor = useCallback((daysLeft) => {
+    if (daysLeft <= 7) return '#FF7285';
+    if (daysLeft <= 30) return '#FFBD59';
+    return '#63C6AE';
+  }, []);
+
+  const getExpirationText = useCallback((daysLeft) => {
+    if (daysLeft <= 0) return 'EXPIRAT';
+    if (daysLeft === 1) return '1 zi';
+    return `${daysLeft} zile`;
+  }, []);
+
+  return (
+    <View style={styles.alertItem}>
+      <Text style={styles.alertDocTitle}>{doc.title}</Text>
+      <Text style={[
+        styles.alertExpiration,
+        { color: getExpirationColor(doc.days_left) }
+      ]}>
+        {getExpirationText(doc.days_left)}
+      </Text>
+    </View>
+  );
+});
+
+const ProfileScreen = React.memo(() => {
   const navigation = useNavigation();
   
   // Get user profile using the service
@@ -27,90 +156,103 @@ const ProfileScreen = () => {
   
   const dispatcherNumber = '0745346397';
 
-  // Calculate years and months since hire date
-  const calculateTimeInCompany = (hireDate) => {
-    if (!hireDate) return 'N/A';
-    
-    const hired = new Date(hireDate);
-    const now = new Date();
-    
-    let years = now.getFullYear() - hired.getFullYear();
-    let months = now.getMonth() - hired.getMonth();
-    
-    if (months < 0) {
-      years--;
-      months += 12;
-    }
-    
-    if (years === 0) {
-      return months === 1 ? '1 lună' : `${months} luni`;
-    } else if (months === 0) {
-      return years === 1 ? '1 an' : `${years} ani`;
-    } else {
-      return `${years} ${years === 1 ? 'an' : 'ani'} și ${months} ${months === 1 ? 'lună' : 'luni'}`;
-    }
-  };
+  // Memoized calculations
+  const profileCalculations = useMemo(() => {
+    if (!profileData) return {};
 
-  // Calculate age from date of birth
-  const calculateAge = (dateOfBirth) => {
-    if (!dateOfBirth) return 'N/A';
-    
-    const birth = new Date(dateOfBirth);
-    const now = new Date();
-    
-    let years = now.getFullYear() - birth.getFullYear();
-    let months = now.getMonth() - birth.getMonth();
-    
-    if (months < 0 || (months === 0 && now.getDate() < birth.getDate())) {
-      years--;
-      months += 12;
-    }
-    
-    if (now.getDate() < birth.getDate()) {
-      months--;
-    }
-    
-    if (years === 0) {
-      return months === 1 ? '1 lună' : `${months} luni`;
-    } else if (months === 0) {
-      return years === 1 ? '1 an' : `${years} ani`;
-    } else {
-      return `${years} ${years === 1 ? 'an' : 'ani'} și ${months} ${months === 1 ? 'lună' : 'luni'}`;
-    }
-  };
+    const calculateTimeInCompany = (hireDate) => {
+      if (!hireDate) return 'N/A';
+      
+      const hired = new Date(hireDate);
+      const now = new Date();
+      
+      let years = now.getFullYear() - hired.getFullYear();
+      let months = now.getMonth() - hired.getMonth();
+      
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      
+      if (years === 0) {
+        return months === 1 ? '1 lună' : `${months} luni`;
+      } else if (months === 0) {
+        return years === 1 ? '1 an' : `${years} ani`;
+      } else {
+        return `${years} ${years === 1 ? 'an' : 'ani'} și ${months} ${months === 1 ? 'lună' : 'luni'}`;
+      }
+    };
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('ro-RO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+    const calculateAge = (dateOfBirth) => {
+      if (!dateOfBirth) return 'N/A';
+      
+      const birth = new Date(dateOfBirth);
+      const now = new Date();
+      
+      let years = now.getFullYear() - birth.getFullYear();
+      let months = now.getMonth() - birth.getMonth();
+      
+      if (months < 0 || (months === 0 && now.getDate() < birth.getDate())) {
+        years--;
+        months += 12;
+      }
+      
+      if (now.getDate() < birth.getDate()) {
+        months--;
+      }
+      
+      if (years === 0) {
+        return months === 1 ? '1 lună' : `${months} luni`;
+      } else if (months === 0) {
+        return years === 1 ? '1 an' : `${years} ani`;
+      } else {
+        return `${years} ${years === 1 ? 'an' : 'ani'} și ${months} ${months === 1 ? 'lună' : 'luni'}`;
+      }
+    };
 
-  // Get driver status text
-  const getDriverStatus = () => {
-    if (!profileData?.driver) return 'Inactiv';
-    return profileData.driver.on_road ? 'Pe drum' : 'În depou';
-  };
+    const formatDate = (dateString) => {
+      if (!dateString) return 'N/A';
+      return new Date(dateString).toLocaleDateString('ro-RO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    };
 
-  // Get driver rating display
-  const getDriverRating = () => {
-    if (!profileData?.driver) return 'N/A';
-    const rating = profileData.driver.average_rating;
-    return rating > 0 ? `${rating.toFixed(1)}/5.0` : 'Fără evaluare';
-  };
+    const getDriverStatus = () => {
+      if (!profileData?.driver) return 'Inactiv';
+      return profileData.driver.on_road ? 'Pe drum' : 'În depou';
+    };
 
-  const toggleContact = () => {
+    const getDriverRating = () => {
+      if (!profileData?.driver) return 'N/A';
+      const rating = profileData.driver.average_rating;
+      return rating > 0 ? `${rating.toFixed(1)}/5.0` : 'Fără evaluare';
+    };
+
+    return {
+      timeInCompany: calculateTimeInCompany(profileData.hire_date),
+      age: calculateAge(profileData.dob),
+      formattedLastLogin: profileData?.last_login ? new Date(profileData.last_login).toLocaleString('ro-RO') : 'N/A',
+      formattedLicenseExpiration: formatDate(profileData?.license_expiration_date),
+      driverStatus: getDriverStatus(),
+      driverRating: getDriverRating(),
+      userType: profileData?.is_admin ? 'Administrator' : 
+                profileData?.is_driver ? 'Șofer' : 
+                profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator standard'
+    };
+  }, [profileData]);
+
+  // Memoized handlers
+  const toggleContact = useCallback(() => {
     setContactExpanded(!contactExpanded);
-  };
+  }, [contactExpanded]);
 
-  const toggleDocuments = () => {
+  const toggleDocuments = useCallback(() => {
     setDocumentsExpanded(!documentsExpanded);
-  };
+  }, [documentsExpanded]);
 
-  const callDispatcher = () => {
+  const callDispatcher = useCallback(() => {
     const phoneUrl = Platform.OS === 'android'
       ? `tel:${dispatcherNumber}`
       : `telprompt:${dispatcherNumber}`;
@@ -121,10 +263,10 @@ const ProfileScreen = () => {
         }
       })
       .catch(error => console.log('Error with phone call:', error));
-  };
+  }, [dispatcherNumber]);
 
-  const callManager = () => {
-    const managerPhone = '+40755123456'; // You can get this from API later
+  const callManager = useCallback(() => {
+    const managerPhone = '+40755123456';
     const phoneUrl = Platform.OS === 'android'
       ? `tel:${managerPhone}`
       : `telprompt:${managerPhone}`;
@@ -135,9 +277,9 @@ const ProfileScreen = () => {
         }
       })
       .catch(error => console.log('Error with phone call:', error));
-  };
+  }, []);
 
-  const openDocument = (documentUrl) => {
+  const openDocument = useCallback((documentUrl) => {
     Linking.canOpenURL(documentUrl)
       .then(supported => {
         if (supported) {
@@ -147,80 +289,57 @@ const ProfileScreen = () => {
         }
       })
       .catch(error => console.log('Error opening document:', error));
-  };
+  }, []);
 
-  const fetchDocuments = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
-      const authToken = await AsyncStorage.getItem('authToken');
-      if (!authToken) return;
-      
-      const headers = {
-        'Authorization': `Token ${authToken}`,
-      };
-      
-      const response = await fetch(`${BASE_URL}personal-documents`, {
-        method: 'GET',
-        headers: headers
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        Alert.alert('Eroare', 'Nu s-a găsit token-ul de autentificare.');
+        return;
       }
-      
-      const documentsData = await response.json();
-      setDocuments(documentsData);
-      
-      const expirationPromises = documentsData.map(async (doc) => {
-        try {
-          const expResponse = await fetch(`${BASE_URL}personal-documents/expiration/${doc.id}`, {
-            method: 'GET',
-            headers: headers
-          });
-          if (expResponse.ok) {
-            const expData = await expResponse.json();
-            return { ...doc, days_left: expData.days_left };
-          }
-          return { ...doc, days_left: null };
-        } catch (error) {
-          console.error('Error fetching expiration for doc:', doc.id, error);
-          return { ...doc, days_left: null };
-        }
+      const response = await fetch(`${BASE_URL}auth/token/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
-      
-      const documentsWithExpiration = await Promise.all(expirationPromises);
-      const expiring = documentsWithExpiration.filter(doc =>
-        doc.days_left !== null && doc.days_left <= 30
-      );
-      setExpiringDocuments(expiring);
+      if (response.ok) {
+        await AsyncStorage.removeItem('authToken');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }],
+        });
+      } else {
+        const err = await response.json();
+        console.error('Logout failed:', err);
+        Alert.alert('Eroare', 'Delogarea a eșuat.');
+      }
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error('Logout error:', error);
+      Alert.alert('Eroare', 'Ceva a mers greșit în timpul delogării.');
     }
-  };
+  }, [navigation]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([
-      refetchProfile(),
-      fetchDocuments(),
-    ]);
+    await refetchProfile();
     setRefreshing(false);
-  };
+  }, [refetchProfile]);
 
-  const handleRetry = async () => {
+  const handleRetry = useCallback(async () => {
     await onRefresh();
-  };
+  }, [onRefresh]);
 
-  const getExpirationColor = (daysLeft) => {
-    if (daysLeft <= 7) return '#FF7285';
-    if (daysLeft <= 30) return '#FFBD59';
-    return '#63C6AE';
-  };
+  // Memoized render functions
+  const renderDocumentItem = useCallback((doc) => (
+    <DocumentItem key={doc.id} doc={doc} onPress={openDocument} />
+  ), [openDocument]);
 
-  const getExpirationText = (daysLeft) => {
-    if (daysLeft <= 0) return 'EXPIRAT';
-    if (daysLeft === 1) return '1 zi';
-    return `${daysLeft} zile`;
-  };
+  const renderAlertItem = useCallback((doc) => (
+    <AlertItem key={doc.id} doc={doc} />
+  ), []);
 
   // Loading state
   if (profileLoading) {
@@ -280,125 +399,52 @@ const ProfileScreen = () => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        removeClippedSubviews={true}
       >
         {/* Profile Info */}
-        <View style={styles.profileInfoContainer}>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileInitials}>{profileData?.initials || 'N/A'}</Text>
-          </View>
-          <View style={styles.profileTextContainer}>
-            <Text style={styles.profileName}>{profileData?.name || 'Nume necunoscut'}</Text>
-            <Text style={styles.profileRole}>
-              {profileData?.is_driver ? 'Șofer' : profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator'}
-            </Text>
-            <Text style={styles.profileCompany}>{profileData?.company || 'Companie necunoscută'}</Text>
-          </View>
-        </View>
+        <ProfileInfo profileData={profileData} />
 
         {/* Essential Information Section */}
-        <View style={styles.dataContainer}>
-          <Text style={styles.dataTitle}>Informații Personale</Text>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Email</Text>
-            <Text style={styles.dataDivider}>|</Text>
-            <Text style={styles.dataValue}>{profileData?.email || 'N/A'}</Text>
-          </View>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Telefon</Text>
-            <Text style={styles.dataDivider}>|</Text>
-            <Text style={styles.dataValue}>{profileData?.phone_number || 'N/A'}</Text>
-          </View>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Vârsta</Text>
-            <Text style={styles.dataDivider}>|</Text>
-            <Text style={styles.dataValue}>{calculateAge(profileData?.dob)}</Text>
-          </View>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Ani în firmă</Text>
-            <Text style={styles.dataDivider}>|</Text>
-            <Text style={styles.dataValue}>{calculateTimeInCompany(profileData?.hire_date)}</Text>
-          </View>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Status cont</Text>
-            <Text style={styles.dataDivider}>|</Text>
-            <Text style={[styles.dataValue, { color: profileData?.is_active ? '#63C6AE' : '#FF7285' }]}>
-              {profileData?.is_active ? 'Activ' : 'Inactiv'}
-            </Text>
-          </View>
-        </View>
+        <DataSection title="Informații Personale">
+          <DataRow label="Email" value={profileData?.email || 'N/A'} />
+          <DataRow label="Telefon" value={profileData?.phone_number || 'N/A'} />
+          <DataRow label="Vârsta" value={profileCalculations.age} />
+          <DataRow label="Ani în firmă" value={profileCalculations.timeInCompany} />
+          <DataRow 
+            label="Status cont" 
+            value={profileData?.is_active ? 'Activ' : 'Inactiv'}
+            valueStyle={{ color: profileData?.is_active ? '#63C6AE' : '#FF7285' }}
+          />
+        </DataSection>
 
         {/* Driver Specific Information */}
         {profileData?.is_driver && (
-          <View style={styles.dataContainer}>
-            <Text style={styles.dataTitle}>Informații Șofer</Text>
-            
-            <View style={styles.dataRow}>
-              <Text style={styles.dataLabel}>Status curent</Text>
-              <Text style={styles.dataDivider}>|</Text>
-              <Text style={[styles.dataValue, { 
+          <DataSection title="Informații Șofer">
+            <DataRow 
+              label="Status curent" 
+              value={profileCalculations.driverStatus}
+              valueStyle={{ 
                 color: profileData?.driver?.on_road ? '#FFBD59' : '#63C6AE' 
-              }]}>
-                {getDriverStatus()}
-              </Text>
-            </View>
-            
-            <View style={styles.dataRow}>
-              <Text style={styles.dataLabel}>Evaluare</Text>
-              <Text style={styles.dataDivider}>|</Text>
-              <Text style={styles.dataValue}>{getDriverRating()}</Text>
-            </View>
-            
-            <View style={styles.dataRow}>
-              <Text style={styles.dataLabel}>Transport activ</Text>
-              <Text style={styles.dataDivider}>|</Text>
-              <Text style={styles.dataValue}>
-                {profileData?.driver?.active_transport ? `#${profileData.driver.active_transport}` : 'Niciun transport'}
-              </Text>
-            </View>
-            
-            <View style={styles.dataRow}>
-              <Text style={styles.dataLabel}>Total transporturi</Text>
-              <Text style={styles.dataDivider}>|</Text>
-              <Text style={styles.dataValue}>
-                {profileData?.driver?.id_transports?.length || 0} transporturi
-              </Text>
-            </View>
-            
-            <View style={styles.dataRow}>
-              <Text style={styles.dataLabel}>Expirare permis</Text>
-              <Text style={styles.dataDivider}>|</Text>
-              <Text style={styles.dataValue}>{formatDate(profileData?.license_expiration_date)}</Text>
-            </View>
-          </View>
+              }}
+            />
+            <DataRow label="Evaluare" value={profileCalculations.driverRating} />
+            <DataRow 
+              label="Transport activ" 
+              value={profileData?.driver?.active_transport ? `#${profileData.driver.active_transport}` : 'Niciun transport'}
+            />
+            <DataRow 
+              label="Total transporturi" 
+              value={`${profileData?.driver?.id_transports?.length || 0} transporturi`}
+            />
+            <DataRow label="Expirare permis" value={profileCalculations.formattedLicenseExpiration} />
+          </DataSection>
         )}
 
         {/* Last Login Information */}
-        <View style={styles.dataContainer}>
-          <Text style={styles.dataTitle}>Informații Sesiune</Text>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Ultima autentificare</Text>
-            <Text style={styles.dataDivider}>|</Text>
-            <Text style={styles.dataValue}>
-              {profileData?.last_login ? new Date(profileData.last_login).toLocaleString('ro-RO') : 'N/A'}
-            </Text>
-          </View>
-          
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Tip utilizator</Text>
-            <Text style={styles.dataDivider}>|</Text>
-            <Text style={styles.dataValue}>
-              {profileData?.is_admin ? 'Administrator' : 
-               profileData?.is_driver ? 'Șofer' : 
-               profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator standard'}
-            </Text>
-          </View>
-        </View>
+        <DataSection title="Informații Sesiune">
+          <DataRow label="Ultima autentificare" value={profileCalculations.formattedLastLogin} />
+          <DataRow label="Tip utilizator" value={profileCalculations.userType} />
+        </DataSection>
 
         {/* Expiring Documents Alert */}
         {expiringDocuments.length > 0 && (
@@ -407,17 +453,7 @@ const ProfileScreen = () => {
               <Ionicons name="warning" size={20} color="#FFBD59" />
               <Text style={styles.alertTitle}>Documente ce expiră curând</Text>
             </View>
-            {expiringDocuments.map((doc) => (
-              <View key={doc.id} style={styles.alertItem}>
-                <Text style={styles.alertDocTitle}>{doc.title}</Text>
-                <Text style={[
-                  styles.alertExpiration,
-                  { color: getExpirationColor(doc.days_left) }
-                ]}>
-                  {getExpirationText(doc.days_left)}
-                </Text>
-              </View>
-            ))}
+            {expiringDocuments.map(renderAlertItem)}
           </View>
         )}
 
@@ -426,47 +462,21 @@ const ProfileScreen = () => {
 
         {/* Documents Section */}
         <View style={styles.settingOuterContainer}>
-          <TouchableOpacity
-            style={styles.settingContainer}
+          <SettingItem
+            iconName="file-text"
+            title="Documentele Mele"
+            subtitle="Vezi și descarcă documentele tale"
             onPress={toggleDocuments}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIconContainer}>
-              <Feather name="file-text" size={20} color="#6B6F8D" />
-            </View>
-            <View style={styles.settingTextContainer}>
-              <Text style={styles.settingTitle}>Documentele Mele</Text>
-              <Text style={styles.settingSubtitle}>Vezi și descarcă documentele tale</Text>
-            </View>
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{documents.length}</Text>
-            </View>
-            <Ionicons
-              name={documentsExpanded ? "chevron-up" : "chevron-down"}
-              size={24}
-              color="#6B6F8D"
-            />
-          </TouchableOpacity>
+            badge={documents.length}
+            expandable={true}
+            expanded={documentsExpanded}
+          />
           {documentsExpanded && (
             <View style={styles.dropdownContainer}>
               {documents.length === 0 ? (
                 <Text style={styles.noDocumentsText}>Nu există documente încărcate</Text>
               ) : (
-                documents.map((doc) => (
-                  <TouchableOpacity
-                    key={doc.id}
-                    style={styles.documentItem}
-                    onPress={() => openDocument(doc.document)}
-                  >
-                    <View style={styles.documentInfo}>
-                      <Text style={styles.documentTitle}>{doc.title}</Text>
-                      <Text style={styles.documentExpiration}>
-                        Expiră: {new Date(doc.expiration_date).toLocaleDateString('ro-RO')}
-                      </Text>
-                    </View>
-                    <Ionicons name="download-outline" size={20} color="#5A5BDE" />
-                  </TouchableOpacity>
-                ))
+                documents.map(renderDocumentItem)
               )}
             </View>
           )}
@@ -474,42 +484,25 @@ const ProfileScreen = () => {
 
         {/* Manager Contact Section */}
         <View style={styles.settingOuterContainer}>
-          <TouchableOpacity
-            style={styles.settingContainer}
+          <SettingItem
+            iconName="user-check"
+            title="Contact Manager"
+            subtitle="Sună managerul firmei"
             onPress={callManager}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIconContainer}>
-              <Feather name="user-check" size={20} color="#6B6F8D" />
-            </View>
-            <View style={styles.settingTextContainer}>
-              <Text style={styles.settingTitle}>Contact Manager</Text>
-              <Text style={styles.settingSubtitle}>Sună managerul firmei</Text>
-            </View>
-            <Feather name="phone" size={20} color="#5A5BDE" />
-          </TouchableOpacity>
+            showChevron={false}
+          />
         </View>
 
         {/* Dispatcher Contact Section */}
         <View style={styles.settingOuterContainer}>
-          <TouchableOpacity
-            style={styles.settingContainer}
+          <SettingItem
+            iconName="phone"
+            title="Contact Dispecer"
+            subtitle="Contactează-ți telefonic dispecerul"
             onPress={toggleContact}
-            activeOpacity={0.7}
-          >
-            <View style={styles.settingIconContainer}>
-              <Feather name="phone" size={20} color="#6B6F8D" />
-            </View>
-            <View style={styles.settingTextContainer}>
-              <Text style={styles.settingTitle}>Contact Dispecer</Text>
-              <Text style={styles.settingSubtitle}>Contactează-ți telefonic dispecerul</Text>
-            </View>
-            <Ionicons
-              name={contactExpanded ? "chevron-up" : "chevron-down"}
-              size={24}
-              color="#6B6F8D"
-            />
-          </TouchableOpacity>
+            expandable={true}
+            expanded={contactExpanded}
+          />
           {contactExpanded && (
             <View style={styles.dropdownContainer}>
               <Text style={styles.dropdownText}>
@@ -529,42 +522,15 @@ const ProfileScreen = () => {
         {/* Sign Out Button */}
         <TouchableOpacity
           style={styles.signOutButton}
-          onPress={async () => {
-            try {
-              const token = await AsyncStorage.getItem('authToken');
-              if (!token) {
-                Alert.alert('Eroare', 'Nu s-a găsit token-ul de autentificare.');
-                return;
-              }
-              const response = await fetch(`${BASE_URL}auth/token/logout`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Token ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-              if (response.ok) {
-                await AsyncStorage.removeItem('authToken');
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                });
-              } else {
-                const err = await response.json();
-                console.error('Logout failed:', err);
-                Alert.alert('Eroare', 'Delogarea a eșuat.');
-              }
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Eroare', 'Ceva a mers greșit în timpul delogării.');
-            }
-          }}
+          onPress={handleSignOut}
         >
           <Text style={styles.signOutText}>Deloghează-te</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
-};
+});
+
+ProfileScreen.displayName = 'ProfileScreen';
 
 export default ProfileScreen;

@@ -1,14 +1,218 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Modal, FlatList, ScrollView } from 'react-native';
+// TransportActualCMRDigital/index.js - Optimized version
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  TextInput, 
+  SafeAreaView, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform, 
+  Modal, 
+  FlatList, 
+  ScrollView 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetCMRDataQuery, useUpdateCMRDataMutation } from '../../services/CMRService';
 import { styles } from './styles';
 
-const CMRDigitalForm = ({ navigation }) => {
+// Memoized components for better performance
+const ProgressIndicator = React.memo(({ completedPercentage }) => {
+  if (!completedPercentage) return null;
+
+  return (
+    <View style={styles.progressContainer}>
+      <View style={styles.progressInfo}>
+        <Text style={styles.progressLabel}>Progres completare:</Text>
+        <Text style={styles.progressPercentage}>{completedPercentage}</Text>
+      </View>
+      <View style={styles.progressBar}>
+        <View 
+          style={[
+            styles.progressFill, 
+            { width: completedPercentage }
+          ]} 
+        />
+      </View>
+    </View>
+  );
+});
+
+const CountryModal = React.memo(({ 
+  visible, 
+  countries, 
+  onSelect, 
+  onClose 
+}) => {
+  const renderCountryItem = useCallback(({ item }) => (
+    <TouchableOpacity 
+      style={styles.countryItem}
+      onPress={() => onSelect(item)}
+    >
+      <Text style={styles.countryText}>{item}</Text>
+    </TouchableOpacity>
+  ), [onSelect]);
+
+  const keyExtractor = useCallback((item) => item, []);
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Selectați Țara</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color="#373A56" />
+            </TouchableOpacity>
+          </View>
+          
+          <FlatList
+            data={countries}
+            keyExtractor={keyExtractor}
+            renderItem={renderCountryItem}
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            initialNumToRender={15}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+});
+
+const CMRInput = React.memo(({ 
+  field, 
+  value, 
+  editingMode, 
+  onPress, 
+  onChange 
+}) => {
+  const formatDate = useCallback((dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('ro-RO');
+  }, []);
+
+  if (!editingMode) {
+    return (
+      <View style={styles.displayField}>
+        <Text style={styles.displayValue}>
+          {field.type === 'date' ? formatDate(value) : value || 'Nu este completat'}
+        </Text>
+      </View>
+    );
+  }
+
+  if (field.type === 'country') {
+    return (
+      <TouchableOpacity
+        style={styles.selectInput}
+        onPress={onPress}
+      >
+        <Text style={value ? styles.selectInputText : styles.selectInputPlaceholder}>
+          {value || field.placeholder}
+        </Text>
+        <Ionicons name="chevron-down" size={20} color="#A0A4C1" />
+      </TouchableOpacity>
+    );
+  } else if (field.type === 'textarea') {
+    return (
+      <TextInput
+        style={[styles.input, styles.textArea]}
+        value={String(value)}
+        onChangeText={onChange}
+        placeholder={field.placeholder}
+        placeholderTextColor="#A0A4C1"
+        multiline={true}
+        numberOfLines={4}
+      />
+    );
+  } else {
+    return (
+      <TextInput
+        style={styles.input}
+        value={String(value)}
+        onChangeText={onChange}
+        placeholder={field.placeholder}
+        placeholderTextColor="#A0A4C1"
+        keyboardType={
+          field.type === 'number' ? 'numeric' :
+          field.type === 'decimal' ? 'decimal-pad' :
+          field.type === 'date' ? 'default' : 'default'
+        }
+      />
+    );
+  }
+});
+
+const CMRSection = React.memo(({ 
+  sectionName, 
+  fields, 
+  formData, 
+  editingMode, 
+  onFieldUpdate, 
+  onFieldTouch 
+}) => (
+  <View style={styles.sectionContainer}>
+    <Text style={styles.sectionTitle}>{sectionName}</Text>
+    
+    {fields.map((field) => (
+      <View key={field.key} style={styles.inputContainer}>
+        <Text style={styles.label}>{field.label}</Text>
+        <CMRInput
+          field={field}
+          value={formData[field.key] || ''}
+          editingMode={editingMode}
+          onPress={() => onFieldTouch(field)}
+          onChange={(text) => onFieldUpdate(field.key, text)}
+        />
+      </View>
+    ))}
+  </View>
+));
+
+const EditingFooter = React.memo(({ 
+  onCancel, 
+  onSave, 
+  isUpdating 
+}) => (
+  <View style={styles.editingFooter}>
+    <TouchableOpacity 
+      style={styles.cancelButton} 
+      onPress={onCancel}
+    >
+      <Ionicons name="close" size={20} color="#FF7285" />
+      <Text style={styles.cancelButtonText}>Anulează</Text>
+    </TouchableOpacity>
+    
+    <TouchableOpacity 
+      style={styles.saveButton} 
+      onPress={onSave}
+      disabled={isUpdating}
+    >
+      {isUpdating ? (
+        <Ionicons name="hourglass-outline" size={20} color="#FFFFFF" />
+      ) : (
+        <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+      )}
+      <Text style={styles.saveButtonText}>
+        {isUpdating ? 'Se salvează...' : 'Salvează'}
+      </Text>
+    </TouchableOpacity>
+  </View>
+));
+
+const CMRDigitalForm = React.memo(({ navigation }) => {
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [editingMode, setEditingMode] = useState(false);
   const [localFormData, setLocalFormData] = useState({});
 
@@ -33,7 +237,7 @@ const CMRDigitalForm = ({ navigation }) => {
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
 
   // European countries in Romanian
-  const europeanCountries = [
+  const europeanCountries = useMemo(() => [
     'Albania', 'Andorra', 'Austria', 'Belarus', 'Belgia', 'Bosnia și Herțegovina', 
     'Bulgaria', 'Cehia', 'Cipru', 'Croația', 'Danemarca', 'Elveția', 'Estonia', 
     'Finlanda', 'Franța', 'Germania', 'Grecia', 'Irlanda', 'Islanda', 'Italia', 
@@ -42,10 +246,10 @@ const CMRDigitalForm = ({ navigation }) => {
     'Portugalia', 'Regatul Unit', 'România', 'Rusia', 'San Marino', 'Serbia', 
     'Slovacia', 'Slovenia', 'Spania', 'Suedia', 'Turcia', 'Ucraina', 'Ungaria', 
     'Vatican'
-  ];
+  ], []);
 
   // CMR fields definition with Romanian labels
-  const cmrFields = [
+  const cmrFields = useMemo(() => [
     // Expeditor Section
     { key: 'expeditor_nume', label: 'Nume Expeditor', placeholder: 'Introduceți numele expeditorului', type: 'text', section: 'Expeditor' },
     { key: 'expeditor_adresa', label: 'Adresă Expeditor', placeholder: 'Introduceți adresa completă', type: 'text', section: 'Expeditor' },
@@ -110,7 +314,7 @@ const CMRDigitalForm = ({ navigation }) => {
     
     // Final Section
     { key: 'incheiat_la', label: 'Încheiat La', placeholder: 'Data încheierii', type: 'date', section: 'Final' },
-  ];
+  ], []);
 
   // Initialize local form data when CMR data is loaded
   useEffect(() => {
@@ -120,7 +324,7 @@ const CMRDigitalForm = ({ navigation }) => {
   }, [cmrData]);
 
   // Group fields by section
-  const getFieldsBySection = () => {
+  const getFieldsBySection = useMemo(() => {
     const sections = {};
     cmrFields.forEach(field => {
       if (!sections[field.section]) {
@@ -129,37 +333,34 @@ const CMRDigitalForm = ({ navigation }) => {
       sections[field.section].push(field);
     });
     return sections;
-  };
+  }, [cmrFields]);
 
-  // Handle field value update
-  const updateFieldValue = (key, value) => {
+  // Memoized handlers
+  const updateFieldValue = useCallback((key, value) => {
     setLocalFormData(prev => ({
       ...prev,
       [key]: value
     }));
-  };
+  }, []);
 
-  // Handle country selection
-  const handleCountrySelect = (country) => {
+  const handleCountrySelect = useCallback((country) => {
     if (activeField) {
       updateFieldValue(activeField, country);
       setShowCountryModal(false);
       setActiveField(null);
     }
-  };
+  }, [activeField, updateFieldValue]);
 
-  // Handle field touch
-  const handleFieldTouch = (field) => {
+  const handleFieldTouch = useCallback((field) => {
     if (!editingMode) return;
     
     if (field.type === 'country') {
       setActiveField(field.key);
       setShowCountryModal(true);
     }
-  };
+  }, [editingMode]);
 
-  // Handle save changes
-  const handleSaveChanges = async () => {
+  const handleSaveChanges = useCallback(async () => {
     try {
       await updateCMRData({
         activeTransportId,
@@ -178,111 +379,25 @@ const CMRDigitalForm = ({ navigation }) => {
       console.error('Save error:', error);
       Alert.alert('Eroare', 'Nu s-au putut salva modificările.');
     }
-  };
+  }, [activeTransportId, localFormData, updateCMRData, refetchCMR]);
 
-  // Handle cancel editing
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setLocalFormData(cmrData);
     setEditingMode(false);
-  };
+  }, [cmrData]);
 
-  // Format date for display
-  const formatDate = (dateString) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('ro-RO');
-  };
-
-  // Render country modal
-  const renderCountryModal = () => (
-    <Modal
-      visible={showCountryModal}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setShowCountryModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Selectați Țara</Text>
-            <TouchableOpacity onPress={() => setShowCountryModal(false)}>
-              <Ionicons name="close" size={24} color="#373A56" />
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={europeanCountries}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.countryItem}
-                onPress={() => handleCountrySelect(item)}
-              >
-                <Text style={styles.countryText}>{item}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-
-  // Render input based on field type
-  const renderInput = (field) => {
-    const value = localFormData[field.key] || '';
-    
-    if (!editingMode) {
-      // Display mode
-      return (
-        <View style={styles.displayField}>
-          <Text style={styles.displayValue}>
-            {field.type === 'date' ? formatDate(value) : value || 'Nu este completat'}
-          </Text>
-        </View>
-      );
-    }
-
-    // Edit mode
-    if (field.type === 'country') {
-      return (
-        <TouchableOpacity
-          style={styles.selectInput}
-          onPress={() => handleFieldTouch(field)}
-        >
-          <Text style={value ? styles.selectInputText : styles.selectInputPlaceholder}>
-            {value || field.placeholder}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color="#A0A4C1" />
-        </TouchableOpacity>
-      );
-    } else if (field.type === 'textarea') {
-      return (
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={String(value)}
-          onChangeText={(text) => updateFieldValue(field.key, text)}
-          placeholder={field.placeholder}
-          placeholderTextColor="#A0A4C1"
-          multiline={true}
-          numberOfLines={4}
-        />
-      );
-    } else {
-      return (
-        <TextInput
-          style={styles.input}
-          value={String(value)}
-          onChangeText={(text) => updateFieldValue(field.key, text)}
-          placeholder={field.placeholder}
-          placeholderTextColor="#A0A4C1"
-          keyboardType={
-            field.type === 'number' ? 'numeric' :
-            field.type === 'decimal' ? 'decimal-pad' :
-            field.type === 'date' ? 'default' : 'default'
-          }
-        />
-      );
-    }
-  };
+  // Memoized render functions
+  const renderSection = useCallback(([sectionName, fields]) => (
+    <CMRSection
+      key={sectionName}
+      sectionName={sectionName}
+      fields={fields}
+      formData={localFormData}
+      editingMode={editingMode}
+      onFieldUpdate={updateFieldValue}
+      onFieldTouch={handleFieldTouch}
+    />
+  ), [localFormData, editingMode, updateFieldValue, handleFieldTouch]);
 
   // Loading state
   if (profileLoading || cmrLoading) {
@@ -339,7 +454,7 @@ const CMRDigitalForm = ({ navigation }) => {
     );
   }
 
-  const sections = getFieldsBySection();
+  const sections = getFieldsBySection;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -368,70 +483,35 @@ const CMRDigitalForm = ({ navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Progress indicator */}
-        {cmrData?.completed_percentage && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressInfo}>
-              <Text style={styles.progressLabel}>Progres completare:</Text>
-              <Text style={styles.progressPercentage}>{cmrData.completed_percentage}</Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { width: cmrData.completed_percentage }
-                ]} 
-              />
-            </View>
-          </View>
-        )}
+        <ProgressIndicator completedPercentage={cmrData?.completed_percentage} />
 
-        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
-          {Object.entries(sections).map(([sectionName, fields]) => (
-            <View key={sectionName} style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>{sectionName}</Text>
-              
-              {fields.map((field) => (
-                <View key={field.key} style={styles.inputContainer}>
-                  <Text style={styles.label}>{field.label}</Text>
-                  {renderInput(field)}
-                </View>
-              ))}
-            </View>
-          ))}
+        <ScrollView 
+          style={styles.formContainer} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+        >
+          {Object.entries(sections).map(renderSection)}
         </ScrollView>
 
         {editingMode && (
-          <View style={styles.editingFooter}>
-            <TouchableOpacity 
-              style={styles.cancelButton} 
-              onPress={handleCancelEdit}
-            >
-              <Ionicons name="close" size={20} color="#FF7285" />
-              <Text style={styles.cancelButtonText}>Anulează</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.saveButton} 
-              onPress={handleSaveChanges}
-              disabled={isUpdating}
-            >
-              {isUpdating ? (
-                <Ionicons name="hourglass-outline" size={20} color="#FFFFFF" />
-              ) : (
-                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-              )}
-              <Text style={styles.saveButtonText}>
-                {isUpdating ? 'Se salvează...' : 'Salvează'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <EditingFooter
+            onCancel={handleCancelEdit}
+            onSave={handleSaveChanges}
+            isUpdating={isUpdating}
+          />
         )}
       </KeyboardAvoidingView>
 
-      {renderCountryModal()}
+      <CountryModal
+        visible={showCountryModal}
+        countries={europeanCountries}
+        onSelect={handleCountrySelect}
+        onClose={() => setShowCountryModal(false)}
+      />
     </SafeAreaView>
   );
-};
+});
+
+CMRDigitalForm.displayName = 'CMRDigitalForm';
 
 export default CMRDigitalForm;

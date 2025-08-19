@@ -1,3 +1,4 @@
+// App.js - Hermes-compatible optimized version
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
@@ -32,27 +33,78 @@ import { LoadingProvider } from './components/General/loadingSpinner.js';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Shared screen options to avoid recreation
+const slideTransitionOptions = {
+  headerShown: false,
+  gestureEnabled: true,
+  transitionSpec: {
+    open: { animation: 'timing', config: { duration: 300 } },
+    close: { animation: 'timing', config: { duration: 300 } },
+  },
+  cardStyleInterpolator: ({ current, layouts }) => ({
+    cardStyle: {
+      transform: [{
+        translateX: current.progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [layouts.screen.width, 0],
+        }),
+      }],
+    },
+  }),
+};
+
+const fadeTransitionOptions = {
+  headerShown: false,
+  transitionSpec: {
+    open: {
+      animation: 'timing',
+      config: {
+        duration: 600,
+      },
+    },
+  },
+  cardStyleInterpolator: ({ current }) => ({
+    cardStyle: {
+      opacity: current.progress,
+    },
+  }),
+};
+
+const mainScreenOptions = {
+  gestureEnabled: false,
+  headerLeft: null,
+  headerShown: false,
+  ...fadeTransitionOptions,
+};
+
 // Custom Tab Bar component with fluid animation and safe area support
-const FluidTabBar = ({ state, descriptors, navigation }) => {
+function FluidTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
+  
+  const getIconName = (routeName, isFocused) => {
+    if (routeName === 'Home') return isFocused ? 'home' : 'home-outline';
+    if (routeName === 'Transports') return isFocused ? 'car' : 'car-outline';
+    if (routeName === 'Profile') return isFocused ? 'person' : 'person-outline';
+    return 'help-outline';
+  };
+
+  const handleTabPress = (route, isFocused) => {
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(route.name);
+    }
+  };
   
   return (
     <View style={[styles.tabContainer, { paddingBottom: insets.bottom }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
-
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
-          }
-        };
 
         // Animated styles for the tab bubble
         const animatedTabStyle = useAnimatedStyle(() => {
@@ -69,16 +121,12 @@ const FluidTabBar = ({ state, descriptors, navigation }) => {
           };
         });
 
-        // Determine which icon to display
-        let iconName;
-        if (route.name === 'Home') iconName = isFocused ? 'home' : 'home-outline';
-        else if (route.name === 'Transports') iconName = isFocused ? 'car' : 'car-outline';
-        else if (route.name === 'Profile') iconName = isFocused ? 'person' : 'person-outline';
+        const iconName = getIconName(route.name, isFocused);
 
         return (
           <Pressable
-            key={index}
-            onPress={onPress}
+            key={route.key}
+            onPress={() => handleTabPress(route, isFocused)}
             style={styles.tabButton}
             accessibilityRole="button"
             accessibilityState={isFocused ? { selected: true } : {}}
@@ -95,178 +143,94 @@ const FluidTabBar = ({ state, descriptors, navigation }) => {
       })}
     </View>
   );
-};
+}
 
 // Create individual stack navigators for each tab
-const HomeStackNavigator = () => {
+function HomeStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeScreen" component={HomeScreen} />
-      <Stack.Screen name="Truck" component={Truck} 
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: { animation: 'timing', config: { duration: 300 } },
-            close: { animation: 'timing', config: { duration: 300 } },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [{
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              }],
-            },
-          }),
-        }}
+      <Stack.Screen 
+        name="Truck" 
+        component={Truck} 
+        options={slideTransitionOptions}
       />
-      <Stack.Screen name="DocumentsGeneral" component={DocumentsScreen} 
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: { animation: 'timing', config: { duration: 300 } },
-            close: { animation: 'timing', config: { duration: 300 } },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [{
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              }],
-            },
-          }),
-        }}
+      <Stack.Screen 
+        name="DocumentsGeneral" 
+        component={DocumentsScreen} 
+        options={slideTransitionOptions}
+      />
+      {/* Add TransportMainPage to Home stack as well */}
+      <Stack.Screen 
+        name="TransportMainPage" 
+        component={TransportMainPage}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen 
+        name="CMRDigitalForm" 
+        component={CMRDigitalForm}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen 
+        name="StatusTransportForm" 
+        component={StatusTransportForm}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen 
+        name="PhotoCMRForm" 
+        component={PhotoCMRForm}
+        options={slideTransitionOptions}
       />
     </Stack.Navigator>
   );
-};
+}
 
-const TransportsStackNavigator = () => {
+function TransportsStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="TransportsScreen" component={Transports} />
-      <Stack.Screen name="Transport_Update" component={Transport_Update}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: { animation: 'timing', config: { duration: 300 } },
-            close: { animation: 'timing', config: { duration: 300 } },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [{
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              }],
-            },
-          }),
-        }}
+      <Stack.Screen 
+        name="Transport_Update" 
+        component={Transport_Update}
+        options={slideTransitionOptions}
       />
-      <Stack.Screen name="TransportMainPage" component={TransportMainPage}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: { animation: 'timing', config: { duration: 300 } },
-            close: { animation: 'timing', config: { duration: 300 } },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [{
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              }],
-            },
-          }),
-        }}
+      <Stack.Screen 
+        name="TransportMainPage" 
+        component={TransportMainPage}
+        options={slideTransitionOptions}
       />
-      <Stack.Screen name="CMRDigitalForm" component={CMRDigitalForm}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: { animation: 'timing', config: { duration: 300 } },
-            close: { animation: 'timing', config: { duration: 300 } },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [{
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              }],
-            },
-          }),
-        }}
+      <Stack.Screen 
+        name="CMRDigitalForm" 
+        component={CMRDigitalForm}
+        options={slideTransitionOptions}
       />
-      <Stack.Screen name="StatusTransportForm" component={StatusTransportForm}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: { animation: 'timing', config: { duration: 300 } },
-            close: { animation: 'timing', config: { duration: 300 } },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [{
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              }],
-            },
-          }),
-        }}
+      <Stack.Screen 
+        name="StatusTransportForm" 
+        component={StatusTransportForm}
+        options={slideTransitionOptions}
       />
-      <Stack.Screen name="PhotoCMRForm" component={PhotoCMRForm}
-        options={{
-          gestureEnabled: true,
-          headerShown: false,
-          transitionSpec: {
-            open: { animation: 'timing', config: { duration: 300 } },
-            close: { animation: 'timing', config: { duration: 300 } },
-          },
-          cardStyleInterpolator: ({ current, layouts }) => ({
-            cardStyle: {
-              transform: [{
-                translateX: current.progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [layouts.screen.width, 0],
-                }),
-              }],
-            },
-          }),
-        }}
+      <Stack.Screen 
+        name="PhotoCMRForm" 
+        component={PhotoCMRForm}
+        options={slideTransitionOptions}
       />
     </Stack.Navigator>
   );
-};
+}
 
-const ProfileStackNavigator = () => {
+function ProfileStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
     </Stack.Navigator>
   );
-};
+}
 
 // Main tab navigator that appears after login - now contains stack navigators
-const MainTabs = () => {
+function MainTabs() {
   return (
     <Tab.Navigator
-      tabBar={props => <FluidTabBar {...props} />}
+      tabBar={(props) => <FluidTabBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}
@@ -276,67 +240,43 @@ const MainTabs = () => {
       <Tab.Screen name="Profile" component={ProfileStackNavigator} />
     </Tab.Navigator>
   );
-};
+}
 
 // Main app navigator wrapped with NavigationContainer
-const AppNavigatorContent = () => {
+function AppNavigatorContent() {
   return (
     <Stack.Navigator
       initialRouteName="Splash"
       screenOptions={{ headerShown: false }}
     >
-      <Stack.Screen name="Splash" component={SplashScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} 
-      options={{
-        transitionSpec: {
-          open: {
-            animation: 'timing',
-            config: {
-              duration: 600,
-            },
-          },
-        },
-        cardStyleInterpolator: ({ current }) => ({
-          cardStyle: {
-            opacity: current.progress,
-          },
-        }),
-      }}
+      <Stack.Screen 
+        name="Splash" 
+        component={SplashScreen} 
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="Login" 
+        component={LoginScreen} 
+        options={fadeTransitionOptions}
       />
       <Stack.Screen
         name="Main"
         component={MainTabs}
-        options={{
-          gestureEnabled: false,
-          headerLeft: null,
-          transitionSpec: {
-            open: {
-              animation: 'timing',
-              config: {
-                duration: 600,
-              },
-            },
-          },
-          cardStyleInterpolator: ({ current }) => ({
-            cardStyle: {
-              opacity: current.progress,
-            },
-          }),
-        }}
-        listeners={({ navigation }) => ({
+        options={mainScreenOptions}
+        listeners={{
           beforeRemove: (e) => {
             if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
               e.preventDefault();
             }
           },
-        })}
+        }}
       />
     </Stack.Navigator>
   );
-};
+}
 
 // Main app navigator with Redux Provider
-const AppNavigator = () => {
+function AppNavigator() {
   return (
     <Provider store={store}>
       <SafeAreaProvider>
@@ -350,7 +290,7 @@ const AppNavigator = () => {
       </SafeAreaProvider>
     </Provider>
   );
-};
+}
 
 const styles = StyleSheet.create({
   tabContainer: {

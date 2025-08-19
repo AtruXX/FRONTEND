@@ -1,5 +1,5 @@
-// screens/HomeScreen.js - Fixed and simplified version
-import React, { useState, useEffect } from "react";
+// screens/HomeScreen.js - Optimized version
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Alert, RefreshControl } from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -15,7 +15,36 @@ import {
   useUpdateProfileMutation 
 } from "../../services/authService";
 
-const HomeScreen = () => {
+// Memoized components for better performance
+const ProfileContainer = React.memo(({ initials }) => (
+  <View style={styles.profileContainer}>
+    <Text style={styles.profileInitials}>{initials}</Text>
+  </View>
+));
+
+const ActionCard = React.memo(({ iconName, label, onPress, iconColor }) => (
+  <TouchableOpacity style={styles.actionCard} onPress={onPress}>
+    <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
+      <Ionicons name={iconName} size={28} color={iconColor} />
+    </View>
+    <Text style={styles.actionLabel}>{label}</Text>
+  </TouchableOpacity>
+));
+
+const StatusDisplay = React.memo(({ isOnRoad, currentStatus }) => (
+  <View style={[
+    styles.statusDisplay,
+    isOnRoad ? styles.driving : styles.parked
+  ]}>
+    <View style={[
+      styles.statusDot,
+      isOnRoad ? styles.drivingDot : styles.parkedDot
+    ]} />
+    <Text style={styles.statusText}>{currentStatus}</Text>
+  </View>
+));
+
+const HomeScreen = React.memo(() => {
   const navigation = useNavigation();
   const { showLoading, hideLoading } = useLoading();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -35,7 +64,40 @@ const HomeScreen = () => {
   const [updateProfile] = useUpdateProfileMutation();
   const [logout, { isLoading: isLogoutLoading }] = useLogoutMutation();
 
-  // Date update effect
+  // Memoized date calculations
+  const dateInfo = useMemo(() => {
+    const day = currentDate.getDate();
+    const months = [
+      'ianuarie', 'februarie', 'martie', 'aprilie',
+      'mai', 'iunie', 'iulie', 'august',
+      'septembrie', 'octombrie', 'noiembrie', 'decembrie'
+    ];
+    const monthName = months[currentDate.getMonth()];
+    const year = currentDate.getFullYear();
+    
+    return { day, monthName, year };
+  }, [currentDate]);
+
+  // Memoized profile calculations
+  const profileInfo = useMemo(() => {
+    if (!profileData) return { initials: 'U', currentStatus: 'Parcat' };
+    
+    const getInitials = (name) => {
+      if (!name) return 'U';
+      const nameParts = name.split(' ');
+      const initials = nameParts.length > 1
+        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
+        : nameParts[0].substring(0, 2);
+      return initials.toUpperCase();
+    };
+
+    return {
+      initials: getInitials(profileData?.name),
+      currentStatus: profileData?.on_road === true ? 'La volan' : 'Parcat'
+    };
+  }, [profileData?.name, profileData?.on_road]);
+
+  // Date update effect with cleanup
   useEffect(() => {
     const intervalId = setInterval(() => {
       setCurrentDate(new Date());
@@ -44,7 +106,7 @@ const HomeScreen = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  // Update global loading based on profile loading
+  // Optimized loading management
   useEffect(() => {
     if (isProfileLoading) {
       showLoading();
@@ -53,28 +115,11 @@ const HomeScreen = () => {
     }
   }, [isProfileLoading, showLoading, hideLoading]);
 
-  // Format day number
-  const day = currentDate.getDate();
-
-  // Get month name in Romanian
-  const getMonthNameRomanian = (month) => {
-    const months = [
-      'ianuarie', 'februarie', 'martie', 'aprilie',
-      'mai', 'iunie', 'iulie', 'august',
-      'septembrie', 'octombrie', 'noiembrie', 'decembrie'
-    ];
-    return months[month];
-  };
-
-  const monthName = getMonthNameRomanian(currentDate.getMonth());
-  const year = currentDate.getFullYear();
-
-  // Handle status change using RTK Query
-  const handleStatusChange = async () => {
+  // Memoized handlers
+  const handleStatusChange = useCallback(async () => {
     try {
       showLoading();
       
-      // Toggle the on_road status
       const newOnRoadStatus = !profileData?.on_road;
       
       await updateProfile({ 
@@ -89,10 +134,9 @@ const HomeScreen = () => {
     } finally {
       hideLoading();
     }
-  };
+  }, [profileData?.on_road, updateProfile, showLoading, hideLoading]);
 
-  // Handle logout using RTK Query
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await logout().unwrap();
       console.log('Logout successful');
@@ -105,17 +149,43 @@ const HomeScreen = () => {
       console.error('Logout error:', error);
       Alert.alert('Eroare', 'A aparut o eroare la deconectare.');
     }
-  };
+  }, [logout, navigation]);
 
-  // Generate initials from name
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    const nameParts = name.split(' ');
-    const initials = nameParts.length > 1
-      ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
-      : nameParts[0].substring(0, 2);
-    return initials.toUpperCase();
-  };
+  // Memoized navigation handlers
+  const navigationHandlers = useMemo(() => ({
+    goToTransports: () => navigation.navigate('Transports'),
+    goToDocuments: () => navigation.navigate('DocumentsGeneral', { screen: 'DocumentsGeneral' }),
+    goToTruck: () => navigation.navigate('Truck'),
+    goToTransportMain: () => navigation.navigate('TransportMainPage'),
+  }), [navigation]);
+
+  // Memoized action cards data
+  const actionCards = useMemo(() => [
+    {
+      iconName: "subway-outline",
+      label: "Transporturi",
+      onPress: navigationHandlers.goToTransports,
+      iconColor: COLORS.primary
+    },
+    {
+      iconName: "file-tray-full-outline",
+      label: "Documente",
+      onPress: navigationHandlers.goToDocuments,
+      iconColor: COLORS.secondary
+    },
+    {
+      iconName: "bus-outline",
+      label: "Camion",
+      onPress: navigationHandlers.goToTruck,
+      iconColor: COLORS.danger
+    },
+    {
+      iconName: "map-outline",
+      label: "Transport actual",
+      onPress: navigationHandlers.goToTransportMain,
+      iconColor: COLORS.success
+    }
+  ], [navigationHandlers]);
 
   // Error handling
   if (profileError) {
@@ -134,9 +204,6 @@ const HomeScreen = () => {
     );
   }
 
-  const initials = getInitials(profileData?.name);
-  const currentStatus = profileData?.on_road === true ? 'La volan' : 'Parcat';
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView 
@@ -148,6 +215,8 @@ const HomeScreen = () => {
             colors={[COLORS.primary]}
           />
         }
+        removeClippedSubviews={true}
+        showsVerticalScrollIndicator={false}
       >
         {/* Header with profile */}
         <View style={styles.header}>
@@ -156,17 +225,15 @@ const HomeScreen = () => {
             <Text style={styles.nameText}>{profileData?.name || 'Utilizator'}</Text>
             <Text style={styles.roleText}>Sofer</Text>
           </View>
-          <View style={styles.profileContainer}>
-            <Text style={styles.profileInitials}>{initials}</Text>
-          </View>
+          <ProfileContainer initials={profileInfo.initials} />
         </View>
 
         {/* Date display */}
         <View style={styles.dateContainer}>
-          <Text style={styles.dateNumber}>{day}</Text>
+          <Text style={styles.dateNumber}>{dateInfo.day}</Text>
           <View style={styles.dateDetails}>
-            <Text style={styles.dateMonth}>{monthName}</Text>
-            <Text style={styles.dateYear}>{year}</Text>
+            <Text style={styles.dateMonth}>{dateInfo.monthName}</Text>
+            <Text style={styles.dateYear}>{dateInfo.year}</Text>
           </View>
 
           <TouchableOpacity 
@@ -191,61 +258,24 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.actionsGrid}>
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              onPress={() => navigation.navigate('Transports')}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
-                <Ionicons name="subway-outline" size={28} color={COLORS.primary} />
-              </View>
-              <Text style={styles.actionLabel}>Transporturi</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              onPress={() => navigation.navigate('DocumentsGeneral', { screen: 'DocumentsGeneral' })}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
-                <Ionicons name="file-tray-full-outline" size={28} color={COLORS.secondary} />
-              </View>
-              <Text style={styles.actionLabel}>Documente</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              onPress={() => navigation.navigate('Truck')}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
-                <Ionicons name="bus-outline" size={28} color={COLORS.danger} />
-              </View>
-              <Text style={styles.actionLabel}>Camion</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionCard} 
-              onPress={() => navigation.navigate('TransportMainPage')}
-            >
-              <View style={[styles.actionIconContainer, { backgroundColor: COLORS.background }]}>
-                <Ionicons name="map-outline" size={28} color={COLORS.success} />
-              </View>
-              <Text style={styles.actionLabel}>Transport actual</Text>
-            </TouchableOpacity>
+            {actionCards.map((card, index) => (
+              <ActionCard
+                key={index}
+                iconName={card.iconName}
+                label={card.label}
+                onPress={card.onPress}
+                iconColor={card.iconColor}
+              />
+            ))}
           </View>
         </View>
 
         {/* Status Card */}
         <View style={styles.statusCard}>
-          {/* Current Status Display */}
-          <View style={[
-            styles.statusDisplay,
-            profileData?.on_road ? styles.driving : styles.parked
-          ]}>
-            <View style={[
-              styles.statusDot,
-              profileData?.on_road ? styles.drivingDot : styles.parkedDot
-            ]} />
-            <Text style={styles.statusText}>{currentStatus}</Text>
-          </View>
+          <StatusDisplay 
+            isOnRoad={profileData?.on_road}
+            currentStatus={profileInfo.currentStatus}
+          />
 
           {/* Toggle Button */}
           <TouchableOpacity
@@ -261,19 +291,11 @@ const HomeScreen = () => {
             </Text>
           </TouchableOpacity>
         </View>
-
-        {/* Debug Info - Remove this in production */}
-        {__DEV__ && (
-          <View style={{padding: 16, backgroundColor: '#f0f0f0', margin: 16}}>
-            <Text style={{fontSize: 12}}>Debug Info:</Text>
-            <Text style={{fontSize: 10}}>Profile ID: {profileData?.id}</Text>
-            <Text style={{fontSize: 10}}>On Road: {profileData?.on_road?.toString()}</Text>
-            <Text style={{fontSize: 10}}>Loading: {isProfileLoading.toString()}</Text>
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
-};
+});
+
+HomeScreen.displayName = 'HomeScreen';
 
 export default HomeScreen;

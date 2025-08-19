@@ -1,26 +1,224 @@
-import React, { useState, useEffect } from 'react';
+// TransportsScreen/index.js - Optimized version
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   SafeAreaView,
   View,
   Text,
   FlatList,
-  StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   RefreshControl,
-  ScrollView,
-  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { styles } from './styles'; // Import your styles from the styles.js file
+import { styles } from './styles';
 import { 
   useGetTransportsQuery, 
   useSetActiveTransportMutation 
 } from '../../services/transportService';
 import { useGetUserProfileQuery } from '../../services/profileService';
 
-const TransportsScreen = ({ navigation, route }) => {
+// Memoized components for better performance
+const TransportStatusIndicator = React.memo(({ status }) => {
+  const getStatusColor = useCallback((status) => {
+    if (status === 'ok') return '#10B981';
+    if (status === 'probleme' || status === 'not started') return '#F59E0B';
+    return '#EF4444';
+  }, []);
+
+  const getStatusIcon = useCallback((status) => {
+    if (status === 'ok') return 'checkmark-circle';
+    if (status === 'probleme') return 'warning';
+    if (status === 'not started') return 'time-outline';
+    return 'alert-circle';
+  }, []);
+
+  const statusColor = getStatusColor(status);
+  const statusIcon = getStatusIcon(status);
+  const statusText = status === 'not started' ? 'Neînceput' : status || 'Neînceput';
+
+  return (
+    <View style={[styles.statusContainer, {backgroundColor: `${statusColor}15`}]}>
+      <Ionicons name={statusIcon} size={16} color={statusColor} style={styles.statusIcon} />
+      <Text style={[styles.statusText, {color: statusColor}]}>
+        {statusText}
+      </Text>
+    </View>
+  );
+});
+
+const TransportHeader = React.memo(({ transport, onViewDetails, canStartTransport }) => (
+  <View style={styles.transportHeader}>
+    <View>
+      <Text style={styles.transportTitle}>Transport #{transport.id}</Text>
+      <Text style={styles.transportSubtitle}>{transport.truck_combination}</Text>
+      {transport.destination && (
+        <Text style={styles.destinationText}>
+          <Ionicons name="mail-outline" size={14} color="#666" />
+          {' '}{transport.destination}
+        </Text>
+      )}
+      {transport.company && (
+        <Text style={styles.destinationText}>
+          <Ionicons name="business-outline" size={14} color="#666" />
+          {' '}{transport.company}
+        </Text>
+      )}
+    </View>
+    <TouchableOpacity 
+      style={styles.modifyButton} 
+      onPress={onViewDetails}
+    >
+      <Text style={styles.modifyButtonText}>Vezi detalii</Text>
+      <Ionicons name="chevron-forward-outline" size={16} color="#6366F1" />
+    </TouchableOpacity>
+  </View>
+));
+
+const TransportDetails = React.memo(({ transport }) => {
+  const statusFields = useMemo(() => [
+    { key: 'status_truck', label: 'Status camion' },
+    { key: 'status_goods', label: 'Status marfă' },
+    { key: 'status_trailer_wagon', label: 'Status remorcă' },
+    { key: 'status_coupling', label: 'Status cuplare' },
+    { key: 'status_loaded_truck', label: 'Status încărcare' },
+    { key: 'status_transport', label: 'Status transport' },
+  ], []);
+
+  return (
+    <View style={styles.transportDetails}>
+      <View style={styles.detailSection}>
+        <View style={styles.sectionTitle}>
+          <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
+          <Text style={styles.sectionTitleText}>Status Transport</Text>
+        </View>
+        
+        <View style={styles.detailGrid}>
+          {statusFields.map((field) => (
+            <View key={field.key} style={styles.detailItem}>
+              <Text style={styles.detailLabel}>{field.label}</Text>
+              <TransportStatusIndicator status={transport[field.key]} />
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+});
+
+const TransportActionButton = React.memo(({ 
+  transport, 
+  isActive, 
+  canStartTransport, 
+  isStarting, 
+  isSettingActive, 
+  onStartTransport 
+}) => {
+  if (isActive) {
+    return (
+      <View style={[styles.startButton, styles.activeButton]}>
+        <Ionicons name="checkmark-circle" size={20} color="white" style={styles.buttonIcon} />
+        <Text style={styles.startButtonText}>TRANSPORT ACTIV</Text>
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.startButton,
+        !canStartTransport && styles.disabledButton
+      ]}
+      onPress={() => onStartTransport(transport)}
+      disabled={!canStartTransport || isStarting || isSettingActive}
+    >
+      {isStarting || isSettingActive ? (
+        <ActivityIndicator size="small" color="white" />
+      ) : (
+        <>
+          <Ionicons name="play-circle" size={20} color="white" style={styles.buttonIcon} />
+          <Text style={styles.startButtonText}>
+            {canStartTransport ? "ÎNCEPE ACEST TRANSPORT" : "TRANSPORT BLOCAT"}
+          </Text>
+        </>
+      )}
+    </TouchableOpacity>
+  );
+});
+
+const TransportItem = React.memo(({ 
+  item, 
+  activeTransportId, 
+  hasActiveTransport, 
+  startingTransport, 
+  isSettingActive, 
+  onStartTransport, 
+  onViewDetails 
+}) => {
+  const isActive = activeTransportId === item.id;
+  const isStarting = startingTransport === item.id;
+  const canStartTransport = !hasActiveTransport || isActive;
+
+  return (
+    <View style={[styles.transportCard, !canStartTransport && styles.disabledCard]}>
+      <TransportHeader 
+        transport={item}
+        onViewDetails={() => onViewDetails(item)}
+        canStartTransport={canStartTransport}
+      />
+      
+      <TransportDetails transport={item} />
+
+      <View style={styles.actionSection}>
+        <TransportActionButton
+          transport={item}
+          isActive={isActive}
+          canStartTransport={canStartTransport}
+          isStarting={isStarting}
+          isSettingActive={isSettingActive}
+          onStartTransport={onStartTransport}
+        />
+      </View>
+    </View>
+  );
+});
+
+const EmptyState = React.memo(({ onRefresh, refreshing }) => (
+  <View style={styles.emptyContainer}>
+    <View style={styles.emptyIconContainer}>
+      <Ionicons name="car-outline" size={40} color="#6366F1" />
+    </View>
+    <Text style={styles.emptyTitle}>Niciun transport atribuit</Text>
+    <Text style={styles.emptyText}>Nu există transporturi atribuite în acest moment</Text>
+    <TouchableOpacity
+      style={styles.refreshButton}
+      onPress={onRefresh}
+      disabled={refreshing}
+    >
+      <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
+      <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
+    </TouchableOpacity>
+  </View>
+));
+
+const ErrorState = React.memo(({ error, onRefresh }) => (
+  <View style={styles.errorContainer}>
+    <View style={styles.errorIconContainer}>
+      <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
+    </View>
+    <Text style={styles.errorTitle}>Eroare la încărcarea transporturilor</Text>
+    <Text style={styles.errorText}>{error.message || error.toString()}</Text>
+    <TouchableOpacity
+      style={styles.retryButton}
+      onPress={onRefresh}
+    >
+      <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+      <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
+    </TouchableOpacity>
+  </View>
+));
+
+const TransportsScreen = React.memo(({ navigation, route }) => {
   const [startingTransport, setStartingTransport] = useState(null);
 
   // Use the transport service hooks
@@ -42,15 +240,17 @@ const TransportsScreen = ({ navigation, route }) => {
 
   const [setActiveTransportMutation, { isLoading: isSettingActive }] = useSetActiveTransportMutation();
 
-  // Extract data from hooks
-  const transports = transportsData?.transports || [];
-  const activeTransportId = profileData?.active_transport || null;
-  const loading = transportsLoading || profileLoading;
-  const refreshing = transportsFetching || profileFetching;
-  const error = transportsError || profileError;
+  // Memoized data extraction
+  const { transports, activeTransportId, loading, refreshing, error } = useMemo(() => ({
+    transports: transportsData?.transports || [],
+    activeTransportId: profileData?.active_transport || null,
+    loading: transportsLoading || profileLoading,
+    refreshing: transportsFetching || profileFetching,
+    error: transportsError || profileError
+  }), [transportsData, profileData, transportsLoading, profileLoading, transportsFetching, profileFetching, transportsError, profileError]);
 
-  // Refresh data
-  const onRefresh = async () => {
+  // Memoized handlers
+  const onRefresh = useCallback(async () => {
     try {
       await Promise.all([
         refetchProfile(),
@@ -59,11 +259,9 @@ const TransportsScreen = ({ navigation, route }) => {
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
-  };
+  }, [refetchProfile, refetchTransports]);
 
-  // Handle starting a transport
-  const handleStartTransport = async (transport) => {
-    // Prevent starting if there's already an active transport
+  const handleStartTransport = useCallback(async (transport) => {
     if (activeTransportId && activeTransportId !== transport.id) {
       Alert.alert(
         'Atenție',
@@ -84,7 +282,6 @@ const TransportsScreen = ({ navigation, route }) => {
         [{ text: 'OK' }]
       );
 
-      // Refresh data to get updated active transport
       await onRefresh();
     } catch (error) {
       console.error('Error starting transport:', error);
@@ -96,195 +293,37 @@ const TransportsScreen = ({ navigation, route }) => {
     } finally {
       setStartingTransport(null);
     }
-  };
+  }, [activeTransportId, setActiveTransportMutation, onRefresh]);
 
-  // Handle view details
-  const handleViewDetails = (transport) => {
+  const handleViewDetails = useCallback((transport) => {
     console.log('View details for transport:', transport.id);
-    // TODO: Navigate to details screen when implemented
-    // navigation.navigate('TransportDetails', { transport });
-    
     Alert.alert(
       'Info',
       `Detalii pentru transportul #${transport.id}\n\nFuncționalitatea va fi implementată în curând.`,
       [{ text: 'OK' }]
     );
-  };
+  }, []);
 
-  // Get status color
-  const getStatusColor = (status) => {
-    if (status === 'ok') return '#10B981'; // Green
-    if (status === 'probleme' || status === 'not started') return '#F59E0B'; // Orange/amber
-    return '#EF4444'; // Red for errors
-  };
+  // Memoized render functions
+  const renderTransportItem = useCallback(({ item }) => (
+    <TransportItem
+      item={item}
+      activeTransportId={activeTransportId}
+      hasActiveTransport={activeTransportId !== null}
+      startingTransport={startingTransport}
+      isSettingActive={isSettingActive}
+      onStartTransport={handleStartTransport}
+      onViewDetails={handleViewDetails}
+    />
+  ), [activeTransportId, startingTransport, isSettingActive, handleStartTransport, handleViewDetails]);
 
-  // Get status icon
-  const getStatusIcon = (status) => {
-    if (status === 'ok') return 'checkmark-circle';
-    if (status === 'probleme') return 'warning';
-    if (status === 'not started') return 'time-outline';
-    return 'alert-circle';
-  };
+  const keyExtractor = useCallback((item) => item.id.toString(), []);
 
-  // Error handling component
-  const renderError = () => {
-    if (!error) return null;
-    
-    return (
-      <View style={styles.errorContainer}>
-        <View style={styles.errorIconContainer}>
-          <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
-        </View>
-        <Text style={styles.errorTitle}>Eroare la încărcarea transporturilor</Text>
-        <Text style={styles.errorText}>{error.message || error.toString()}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={onRefresh}
-        >
-          <Text style={styles.retryButtonText}>Încearcă din nou</Text>
-          <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderTransportItem = ({ item }) => {
-    const isActive = activeTransportId === item.id;
-    const isStarting = startingTransport === item.id;
-    const hasActiveTransport = activeTransportId !== null;
-    const canStartTransport = !hasActiveTransport || isActive;
-
-    return (
-      <View style={[styles.transportCard, !canStartTransport && styles.disabledCard]}>
-        <View style={styles.transportHeader}>
-          <View>
-            <Text style={styles.transportTitle}>Transport #{item.id}</Text>
-            <Text style={styles.transportSubtitle}>{item.truck_combination}</Text>
-            {item.destination && (
-              <Text style={styles.destinationText}>
-                <Ionicons name="mail-outline" size={14} color="#666" />
-                {' '}{item.destination}
-              </Text>
-            )}
-            {item.company && (
-              <Text style={styles.destinationText}>
-                <Ionicons name="business-outline" size={14} color="#666" />
-                {' '}{item.company}
-              </Text>
-            )}
-          </View>
-          <TouchableOpacity 
-            style={styles.modifyButton} 
-            onPress={() => handleViewDetails(item)}
-          >
-            <Text style={styles.modifyButtonText}>Vezi detalii</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color="#6366F1" />
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.transportDetails}>
-          <View style={styles.detailSection}>
-            <View style={styles.sectionTitle}>
-              <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
-              <Text style={styles.sectionTitleText}>Status Transport</Text>
-            </View>
-            
-            <View style={styles.detailGrid}>
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status camion</Text>
-                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_truck)}15`}]}>
-                  <Ionicons name={getStatusIcon(item.status_truck)} size={16} color={getStatusColor(item.status_truck)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_truck)}]}>
-                    {item.status_truck === 'not started' ? 'Neînceput' : item.status_truck || 'Neînceput'}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status marfă</Text>
-                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_goods)}15`}]}>
-                  <Ionicons name={getStatusIcon(item.status_goods)} size={16} color={getStatusColor(item.status_goods)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_goods)}]}>
-                    {item.status_goods === 'not started' ? 'Neînceput' : item.status_goods || 'Neînceput'}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status remorcă</Text>
-                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_trailer_wagon)}15`}]}>
-                  <Ionicons name={getStatusIcon(item.status_trailer_wagon)} size={16} color={getStatusColor(item.status_trailer_wagon)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_trailer_wagon)}]}>
-                    {item.status_trailer_wagon === 'not started' ? 'Neînceput' : item.status_trailer_wagon || 'Neînceput'}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status cuplare</Text>
-                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_coupling)}15`}]}>
-                  <Ionicons name={getStatusIcon(item.status_coupling)} size={16} color={getStatusColor(item.status_coupling)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_coupling)}]}>
-                    {item.status_coupling === 'not started' ? 'Neînceput' : item.status_coupling || 'Neînceput'}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status încărcare</Text>
-                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_loaded_truck)}15`}]}>
-                  <Ionicons name={getStatusIcon(item.status_loaded_truck)} size={16} color={getStatusColor(item.status_loaded_truck)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_loaded_truck)}]}>
-                    {item.status_loaded_truck === 'not started' ? 'Neînceput' : item.status_loaded_truck || 'Neînceput'}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Status transport</Text>
-                <View style={[styles.statusContainer, {backgroundColor: `${getStatusColor(item.status_transport)}15`}]}>
-                  <Ionicons name={getStatusIcon(item.status_transport)} size={16} color={getStatusColor(item.status_transport)} style={styles.statusIcon} />
-                  <Text style={[styles.statusText, {color: getStatusColor(item.status_transport)}]}>
-                    {item.status_transport === 'not started' ? 'Neînceput' : item.status_transport || 'Neînceput'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Transport Action Button */}
-        <View style={styles.actionSection}>
-          {isActive ? (
-            <View style={[styles.startButton, styles.activeButton]}>
-              <Ionicons name="checkmark-circle" size={20} color="white" style={styles.buttonIcon} />
-              <Text style={styles.startButtonText}>TRANSPORT ACTIV</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[
-                styles.startButton,
-                !canStartTransport && styles.disabledButton
-              ]}
-              onPress={() => handleStartTransport(item)}
-              disabled={!canStartTransport || isStarting || isSettingActive}
-            >
-              {isStarting || isSettingActive ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <>
-                  <Ionicons name="play-circle" size={20} color="white" style={styles.buttonIcon} />
-                  <Text style={styles.startButtonText}>
-                    {canStartTransport ? "ÎNCEPE ACEST TRANSPORT" : "TRANSPORT BLOCAT"}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-  };
+  const getItemLayout = useCallback((data, index) => ({
+    length: 300, // Approximate item height
+    offset: 300 * index,
+    index,
+  }), []);
 
   if (loading) {
     return (
@@ -317,42 +356,38 @@ const TransportsScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
         
-        {error ? renderError() : (
-          transports.length > 0 ? (
-            <FlatList
-              data={transports}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderTransportItem}
-              contentContainerStyle={styles.listContainer}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={['#6366F1']}
-                />
-              }
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <View style={styles.emptyIconContainer}>
-                <Ionicons name="car-outline" size={40} color="#6366F1" />
-              </View>
-              <Text style={styles.emptyTitle}>Niciun transport atribuit</Text>
-              <Text style={styles.emptyText}>Nu există transporturi atribuite în acest moment</Text>
-              <TouchableOpacity
-                style={styles.refreshButton}
-                onPress={onRefresh}
-                disabled={refreshing}
-              >
-                <Text style={styles.refreshButtonText}>Reîmprospătare</Text>
-                <Ionicons name="refresh" size={18} color="white" style={{marginLeft: 6}} />
-              </TouchableOpacity>
-            </View>
-          )
+        {error ? (
+          <ErrorState error={error} onRefresh={onRefresh} />
+        ) : transports.length > 0 ? (
+          <FlatList
+            data={transports}
+            keyExtractor={keyExtractor}
+            renderItem={renderTransportItem}
+            getItemLayout={getItemLayout}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#6366F1']}
+              />
+            }
+            // Performance optimizations
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={5}
+            updateCellsBatchingPeriod={50}
+            initialNumToRender={10}
+            windowSize={10}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <EmptyState onRefresh={onRefresh} refreshing={refreshing} />
         )}
       </View>
     </SafeAreaView>
   );
-};
+});
+
+TransportsScreen.displayName = 'TransportsScreen';
 
 export default TransportsScreen;

@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Modal, FlatList, ScrollView, Image } from 'react-native';
+// TransportActualStatus/index.js - Optimized version
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  TextInput, 
+  SafeAreaView, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform, 
+  Modal, 
+  FlatList, 
+  ScrollView, 
+  Image 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useGetUserProfileQuery } from '../../services/profileService';
@@ -11,7 +25,201 @@ import {
 } from '../../services/statusService';
 import { styles } from './styles';
 
-const TransportStatusPage = ({ navigation }) => {
+// Memoized components for better performance
+const ProgressBar = React.memo(({ currentPage, totalPages, percentage }) => (
+  <View style={styles.progressContainer}>
+    <View style={styles.progressBar}>
+      <View 
+        style={[
+          styles.progressFill, 
+          { width: `${percentage}%` }
+        ]} 
+      />
+    </View>
+    <Text style={styles.progressText} numberOfLines={1} adjustsFontSizeToFit>
+      Pasul {currentPage} din {totalPages}
+    </Text>
+  </View>
+));
+
+const OptionModal = React.memo(({ 
+  visible, 
+  options, 
+  onSelect, 
+  onClose 
+}) => {
+  const renderOption = useCallback(({ item }) => (
+    <TouchableOpacity 
+      style={styles.optionItem}
+      onPress={() => onSelect(item)}
+    >
+      <Text style={styles.optionText}>{item}</Text>
+    </TouchableOpacity>
+  ), [onSelect]);
+
+  const keyExtractor = useCallback((item) => item, []);
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Selectați o opțiune</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color="#373A56" />
+            </TouchableOpacity>
+          </View>
+          
+          <FlatList
+            data={options}
+            keyExtractor={keyExtractor}
+            renderItem={renderOption}
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews={true}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+});
+
+const SelectInput = React.memo(({ 
+  value, 
+  placeholder, 
+  onPress 
+}) => (
+  <TouchableOpacity
+    style={styles.selectInput}
+    onPress={onPress}
+  >
+    <Text style={value ? styles.selectInputText : styles.selectInputPlaceholder}>
+      {value || placeholder}
+    </Text>
+    <Ionicons name="chevron-down" size={20} color="#A0A4C1" />
+  </TouchableOpacity>
+));
+
+const CameraButton = React.memo(({ 
+  capturedPhotos, 
+  onPress 
+}) => (
+  <TouchableOpacity
+    style={styles.cameraButton}
+    onPress={onPress}
+  >
+    {capturedPhotos.length > 0 ? (
+      <View style={styles.photoPreviewContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {capturedPhotos.map((photo, index) => (
+            <Image key={index} source={{ uri: photo.uri }} style={styles.photoPreview} />
+          ))}
+        </ScrollView>
+        <Text style={styles.photoTakenText}>{capturedPhotos.length} poze realizate</Text>
+      </View>
+    ) : (
+      <View style={styles.cameraButtonContent}>
+        <Ionicons name="camera" size={24} color="#5A5BDE" />
+        <Text style={styles.cameraButtonText}>Apăsați pentru a face o poză</Text>
+      </View>
+    )}
+  </TouchableOpacity>
+));
+
+const FormInput = React.memo(({ 
+  field, 
+  value, 
+  onChange, 
+  onPress 
+}) => {
+  if (field.type === 'options') {
+    return (
+      <SelectInput
+        value={value}
+        placeholder={field.placeholder}
+        onPress={onPress}
+      />
+    );
+  } else if (field.type === 'camera') {
+    return (
+      <CameraButton
+        capturedPhotos={value || []}
+        onPress={onPress}
+      />
+    );
+  } else {
+    return (
+      <TextInput
+        style={styles.input}
+        value={String(value || '')}
+        onChangeText={onChange}
+        placeholder={field.placeholder}
+        placeholderTextColor="#A0A4C1"
+        keyboardType={field.key === 'delay_estimation' ? 'numeric' : 'default'}
+      />
+    );
+  }
+});
+
+const ButtonContainer = React.memo(({ 
+  onPrevious, 
+  onSubmitNow, 
+  onNext, 
+  canNext, 
+  isUpdating, 
+  isUploading, 
+  isLastStep 
+}) => (
+  <View style={styles.buttonContainer}>
+    <TouchableOpacity 
+      style={[styles.button, styles.prevButton]} 
+      onPress={onPrevious}
+    >
+      <Ionicons name="arrow-back" size={20} color="white" />
+      <Text style={styles.buttonText}>Înapoi</Text>
+    </TouchableOpacity>
+    
+    <TouchableOpacity 
+      style={[styles.button, styles.submitNowButton]} 
+      onPress={onSubmitNow}
+      disabled={isUpdating || isUploading}
+    >
+      {isUpdating || isUploading ? (
+        <Ionicons name="hourglass-outline" size={20} color="white" />
+      ) : (
+        <Ionicons name="checkmark" size={20} color="white" />
+      )}
+      <Text style={styles.buttonText}>
+        {isUpdating || isUploading ? 'Se salvează...' : 'Trimite acum'}
+      </Text>
+    </TouchableOpacity>
+    
+    <TouchableOpacity 
+      style={[
+        styles.button, 
+        styles.nextButton,
+        !canNext && styles.disabledButton
+      ]} 
+      onPress={onNext}
+      disabled={!canNext}
+    >
+      <Text style={styles.buttonText}>
+        {isLastStep ? 'Finalizare' : 'Mai Departe'}
+      </Text>
+      <Ionicons 
+        name={isLastStep ? "checkmark" : "arrow-forward"} 
+        size={20} 
+        color="white" 
+      />
+    </TouchableOpacity>
+  </View>
+));
+
+const TransportStatusPage = React.memo(({ navigation }) => {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [modalOptions, setModalOptions] = useState([]);
@@ -23,7 +231,6 @@ const TransportStatusPage = ({ navigation }) => {
     data: profileData,
     isLoading: profileLoading,
     error: profileError,
-    refetch: refetchProfile
   } = useGetUserProfileQuery();
 
   const activeTransportId = profileData?.active_transport;
@@ -47,7 +254,7 @@ const TransportStatusPage = ({ navigation }) => {
   const [updateTransportStatus, { isLoading: isUpdating }] = useUpdateTransportStatusMutation();
   const [uploadGoodsPhotos, { isLoading: isUploading }] = useUploadGoodsPhotosMutation();
 
-  // Status form data - initialize with API data
+  // Status form data
   const [statusFormData, setStatusFormData] = useState({
     is_finished: false,
     status_truck: "",
@@ -61,26 +268,8 @@ const TransportStatusPage = ({ navigation }) => {
     delay_estimation: null
   });
 
-  // Update form data when API data is loaded
-  useEffect(() => {
-    if (transportStatus) {
-      setStatusFormData({
-        is_finished: transportStatus.is_finished || false,
-        status_truck: transportStatus.status_truck || "",
-        status_truck_problems: transportStatus.status_truck_problems || "",
-        status_goods: transportStatus.status_goods || "",
-        status_coupling: transportStatus.status_coupling || "",
-        status_trailer: transportStatus.status_trailer || "",
-        status_trailer_description: transportStatus.status_trailer_description || "",
-        status_loaded_truck: transportStatus.status_loaded_truck || "",
-        status_transport: transportStatus.status_transport || "",
-        delay_estimation: transportStatus.delay_estimation || null
-      });
-    }
-  }, [transportStatus]);
-
-  // Define Status fields with Romanian options
-  const statusFields = [
+  // Memoized status fields definition
+  const statusFields = useMemo(() => [
     { 
       key: 'status_truck', 
       label: 'Stare Camion', 
@@ -159,10 +348,28 @@ const TransportStatusPage = ({ navigation }) => {
       type: 'text',
       conditionalDisplay: true
     }
-  ];
+  ], []);
 
-  // Get current fields (showing 2 at a time, filtering conditional fields)
-  const getCurrentFields = () => {
+  // Update form data when API data is loaded
+  useEffect(() => {
+    if (transportStatus) {
+      setStatusFormData({
+        is_finished: transportStatus.is_finished || false,
+        status_truck: transportStatus.status_truck || "",
+        status_truck_problems: transportStatus.status_truck_problems || "",
+        status_goods: transportStatus.status_goods || "",
+        status_coupling: transportStatus.status_coupling || "",
+        status_trailer: transportStatus.status_trailer || "",
+        status_trailer_description: transportStatus.status_trailer_description || "",
+        status_loaded_truck: transportStatus.status_loaded_truck || "",
+        status_transport: transportStatus.status_transport || "",
+        delay_estimation: transportStatus.delay_estimation || null
+      });
+    }
+  }, [transportStatus]);
+
+  // Memoized current fields calculation
+  const currentFields = useMemo(() => {
     const allFields = statusFields.slice(currentIndex, currentIndex + 4);
     return allFields.filter(field => {
       if (!field.conditionalDisplay) return true;
@@ -172,18 +379,10 @@ const TransportStatusPage = ({ navigation }) => {
       
       return controllingField.linkedFieldVisible(statusFormData[controllingField.key]);
     }).slice(0, 2);
-  };
+  }, [statusFields, currentIndex, statusFormData]);
 
-  // Update form data
-  const setFormData = (key, value) => {
-    setStatusFormData({
-      ...statusFormData,
-      [key]: value
-    });
-  };
-
-  // Calculate total pages
-  const getTotalPages = () => {
+  // Memoized calculations
+  const pageCalculations = useMemo(() => {
     let visibleFieldCount = 0;
     let i = 0;
     while (i < statusFields.length) {
@@ -198,23 +397,31 @@ const TransportStatusPage = ({ navigation }) => {
       }
       i++;
     }
-    return Math.ceil(visibleFieldCount / 2);
-  };
+    
+    const totalPages = Math.ceil(visibleFieldCount / 2);
+    const currentPage = Math.floor(currentIndex / 2) + 1;
+    const percentage = (currentPage / totalPages) * 100;
+    
+    return { totalPages, currentPage, percentage };
+  }, [statusFields, statusFormData, currentIndex]);
 
-  const currentPage = Math.floor(currentIndex / 2) + 1;
-  const totalPages = getTotalPages();
+  // Memoized handlers
+  const setFormData = useCallback((key, value) => {
+    setStatusFormData(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  }, []);
 
-  // Handle options selection
-  const handleOptionSelect = (option) => {
+  const handleOptionSelect = useCallback((option) => {
     if (activeField) {
       setFormData(activeField, option);
       setShowOptionsModal(false);
       setActiveField(null);
     }
-  };
+  }, [activeField, setFormData]);
 
-  // Handle camera capture
-  const handleCameraCapture = async () => {
+  const handleCameraCapture = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     
     if (status !== 'granted') {
@@ -234,12 +441,11 @@ const TransportStatusPage = ({ navigation }) => {
         type: 'image/jpeg',
         name: `goods_photo_${Date.now()}.jpg`
       };
-      setCapturedPhotos([...capturedPhotos, newPhoto]);
+      setCapturedPhotos(prev => [...prev, newPhoto]);
     }
-  };
+  }, []);
 
-  // Handle field touch
-  const handleFieldTouch = (field) => {
+  const handleFieldTouch = useCallback((field) => {
     if (field.type === 'options') {
       setActiveField(field.key);
       setModalOptions(field.options);
@@ -247,20 +453,16 @@ const TransportStatusPage = ({ navigation }) => {
     } else if (field.type === 'camera') {
       handleCameraCapture();
     }
-  };
+  }, [handleCameraCapture]);
 
-  // Check if current fields are valid
-  const areCurrentFieldsValid = () => {
-    const currentFields = getCurrentFields();
-    
+  const areCurrentFieldsValid = useCallback(() => {
     return currentFields.every(field => {
       if (field.type === 'camera') return true;
       return statusFormData[field.key] !== undefined && statusFormData[field.key] !== "";
     });
-  };
+  }, [currentFields, statusFormData]);
 
-  // Handle next fields/page
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!areCurrentFieldsValid()) {
       Alert.alert('Câmpuri obligatorii', 'Vă rugăm să completați toate câmpurile pentru a continua.');
       return;
@@ -285,153 +487,55 @@ const TransportStatusPage = ({ navigation }) => {
     } else {
       handleSubmit();
     }
-  };
+  }, [areCurrentFieldsValid, currentIndex, statusFields, statusFormData]);
 
-  // Handle previous fields/page
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentIndex >= 2) {
       setCurrentIndex(currentIndex - 2);
     } else {
       navigation.goBack();
     }
-  };
+  }, [currentIndex, navigation]);
 
-  // Handle form submission
-  // Handle form submission
-const handleSubmit = async () => {
-  try {
-    // First upload photos if any
-    if (capturedPhotos.length > 0) {
-      await uploadGoodsPhotos({ 
-        activeTransportId, 
-        photos: capturedPhotos 
+  const handleSubmit = useCallback(async () => {
+    try {
+      if (capturedPhotos.length > 0) {
+        await uploadGoodsPhotos({ 
+          activeTransportId, 
+          photos: capturedPhotos 
+        }).unwrap();
+      }
+
+      await updateTransportStatus({ 
+        statusData: statusFormData, 
+        activeTransportId: activeTransportId 
       }).unwrap();
+
+      Alert.alert(
+        'Status Actualizat',
+        'Statusul transportului a fost actualizat cu succes!',
+        [{ text: 'OK', onPress: () => navigation.goBack() }]
+      );
+    } catch (error) {
+      console.error('Submit error:', error);
+      Alert.alert('Eroare', 'Nu s-a putut actualiza statusul transportului.');
     }
+  }, [capturedPhotos, statusFormData, activeTransportId, uploadGoodsPhotos, updateTransportStatus, navigation]);
 
-    // Then update transport status - FIXED: Pass activeTransportId
-    await updateTransportStatus({ 
-      statusData: statusFormData, 
-      activeTransportId: activeTransportId 
-    }).unwrap();
-
-    Alert.alert(
-      'Status Actualizat',
-      'Statusul transportului a fost actualizat cu succes!',
-      [{ text: 'OK', onPress: () => navigation.goBack() }]
-    );
-  } catch (error) {
-    console.error('Submit error:', error);
-    Alert.alert('Eroare', 'Nu s-a putut actualiza statusul transportului.');
-  }
-};
-
-  // Handle submit now (bypass validation)
-  const handleSubmitNow = async () => {
+  const handleSubmitNow = useCallback(async () => {
     Alert.alert(
       'Trimiteți formularul?',
       'Câmpurile necompletate vor fi salvate ca goale. Doriți să continuați?',
       [
-        {
-          text: 'Anulează',
-          style: 'cancel'
-        },
-        {
-          text: 'Trimite',
-          onPress: handleSubmit
-        }
+        { text: 'Anulează', style: 'cancel' },
+        { text: 'Trimite', onPress: handleSubmit }
       ]
     );
-  };
+  }, [handleSubmit]);
 
-  // Get progress percentage
-  const getProgressPercentage = () => {
-    return ((currentPage) / totalPages) * 100;
-  };
-
-  // Render options selection modal
-  const renderOptionsModal = () => (
-    <Modal
-      visible={showOptionsModal}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={() => setShowOptionsModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Selectați o opțiune</Text>
-            <TouchableOpacity onPress={() => setShowOptionsModal(false)}>
-              <Ionicons name="close" size={24} color="#373A56" />
-            </TouchableOpacity>
-          </View>
-          
-          <FlatList
-            data={modalOptions}
-            keyExtractor={(item) => item}
-            renderItem={({ item }) => (
-              <TouchableOpacity 
-                style={styles.optionItem}
-                onPress={() => handleOptionSelect(item)}
-              >
-                <Text style={styles.optionText}>{item}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
-
-  // Render input based on field type
-  const renderInput = (field) => {
-    if (field.type === 'options') {
-      return (
-        <TouchableOpacity
-          style={styles.selectInput}
-          onPress={() => handleFieldTouch(field)}
-        >
-          <Text style={statusFormData[field.key] ? styles.selectInputText : styles.selectInputPlaceholder}>
-            {statusFormData[field.key] || field.placeholder}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color="#A0A4C1" />
-        </TouchableOpacity>
-      );
-    } else if (field.type === 'camera') {
-      return (
-        <TouchableOpacity
-          style={styles.cameraButton}
-          onPress={() => handleFieldTouch(field)}
-        >
-          {capturedPhotos.length > 0 ? (
-            <View style={styles.photoPreviewContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {capturedPhotos.map((photo, index) => (
-                  <Image key={index} source={{ uri: photo.uri }} style={styles.photoPreview} />
-                ))}
-              </ScrollView>
-              <Text style={styles.photoTakenText}>{capturedPhotos.length} poze realizate</Text>
-            </View>
-          ) : (
-            <View style={styles.cameraButtonContent}>
-              <Ionicons name="camera" size={24} color="#5A5BDE" />
-              <Text style={styles.cameraButtonText}>{field.placeholder}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      );
-    } else {
-      return (
-        <TextInput
-          style={styles.input}
-          value={String(statusFormData[field.key] || '')}
-          onChangeText={(text) => setFormData(field.key, text)}
-          placeholder={field.placeholder}
-          placeholderTextColor="#A0A4C1"
-          keyboardType={field.key === 'delay_estimation' ? 'numeric' : 'default'}
-        />
-      );
-    }
-  };
+  const isLastStep = useMemo(() => {
+    return currentIndex + 2 >= statusFields.length;
+  }, [currentIndex, statusFields.length]);
 
   if (profileLoading || statusLoading) {
     return (
@@ -476,78 +580,51 @@ const handleSubmit = async () => {
           <View style={{ width: 24 }} />
         </View>
 
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${getProgressPercentage()}%` }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText} numberOfLines={1} adjustsFontSizeToFit>
-            Pasul {currentPage} din {totalPages}
-          </Text>
-        </View>
+        <ProgressBar 
+          currentPage={pageCalculations.currentPage}
+          totalPages={pageCalculations.totalPages}
+          percentage={pageCalculations.percentage}
+        />
 
-        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
-          {getCurrentFields().map((field) => (
+        <ScrollView 
+          style={styles.formContainer} 
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+        >
+          {currentFields.map((field) => (
             <View key={field.key} style={styles.inputContainer}>
               <Text style={styles.label}>{field.label}</Text>
-              {renderInput(field)}
+              <FormInput
+                field={field}
+                value={field.type === 'camera' ? capturedPhotos : statusFormData[field.key]}
+                onChange={(text) => setFormData(field.key, text)}
+                onPress={() => handleFieldTouch(field)}
+              />
             </View>
           ))}
         </ScrollView>
 
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.button, styles.prevButton]} 
-            onPress={handlePrevious}
-          >
-            <Ionicons name="arrow-back" size={20} color="white" />
-            <Text style={styles.buttonText}>Înapoi</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.button, styles.submitNowButton]} 
-            onPress={handleSubmitNow}
-            disabled={isUpdating || isUploading}
-          >
-            {isUpdating || isUploading ? (
-              <Ionicons name="hourglass-outline" size={20} color="white" />
-            ) : (
-              <Ionicons name="checkmark" size={20} color="white" />
-            )}
-            <Text style={styles.buttonText}>
-              {isUpdating || isUploading ? 'Se salvează...' : 'Trimite acum'}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[
-              styles.button, 
-              styles.nextButton,
-              !areCurrentFieldsValid() && styles.disabledButton
-            ]} 
-            onPress={handleNext}
-            disabled={!areCurrentFieldsValid()}
-          >
-            <Text style={styles.buttonText}>
-              {currentIndex + 2 >= statusFields.length ? 'Finalizare' : 'Mai Departe'}
-            </Text>
-            <Ionicons 
-              name={currentIndex + 2 >= statusFields.length ? "checkmark" : "arrow-forward"} 
-              size={20} 
-              color="white" 
-            />
-          </TouchableOpacity>
-        </View>
+        <ButtonContainer
+          onPrevious={handlePrevious}
+          onSubmitNow={handleSubmitNow}
+          onNext={handleNext}
+          canNext={areCurrentFieldsValid()}
+          isUpdating={isUpdating}
+          isUploading={isUploading}
+          isLastStep={isLastStep}
+        />
       </KeyboardAvoidingView>
 
-      {renderOptionsModal()}
+      <OptionModal
+        visible={showOptionsModal}
+        options={modalOptions}
+        onSelect={handleOptionSelect}
+        onClose={() => setShowOptionsModal(false)}
+      />
     </SafeAreaView>
   );
-};
+});
 
+TransportStatusPage.displayName = 'TransportStatusPage';
 
 export default TransportStatusPage;
