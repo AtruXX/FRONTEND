@@ -6,7 +6,9 @@ import { useFinalizeTransportMutation } from '../../services/transportService';
 import { useDownloadCMRDocumentMutation } from '../../services/CMRService';
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
+
 const TransportMainPage = ({ navigation }) => {
+  // ALWAYS call hooks at the top level - never conditionally
   // Get user profile to access active transport data
   const {
     data: profileData,
@@ -15,10 +17,11 @@ const TransportMainPage = ({ navigation }) => {
     refetch: refetchProfile
   } = useGetUserProfileQuery();
 
-  // Mutations
+  // Mutations - always call these hooks
   const [finalizeTransport, { isLoading: isFinalizing }] = useFinalizeTransportMutation();
   const [downloadCMR, { isLoading: isDownloading }] = useDownloadCMRDocumentMutation();
 
+  // Get active transport ID
   const activeTransportId = profileData?.active_transport;
 
   const handleDownloadCMR = async () => {
@@ -93,9 +96,21 @@ const TransportMainPage = ({ navigation }) => {
     return `TR-${profileData?.id || '0000'}-RO`;
   };
 
+  const handleRetry = useCallback(async () => {
+    await refetchProfile();
+  }, [refetchProfile]);
+
+  // Handle loading state
   if (profileLoading) {
     return (
       <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="CURSA ACTUALA"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
         <View style={styles.loadingContainer}>
           <Ionicons name="hourglass-outline" size={40} color="#5A5BDE" />
           <Text style={styles.loadingText}>Se încarcă datele transportului...</Text>
@@ -104,16 +119,43 @@ const TransportMainPage = ({ navigation }) => {
     );
   }
 
+  // Handle error state
+  if (profileError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="CURSA ACTUALA"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
+          <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
+          <Text style={styles.emptyText}>Nu s-au putut încărca datele transportului</Text>
+          <TouchableOpacity
+            style={styles.backToHomeButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.backToHomeText}>Înapoi la pagina principală</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Handle no active transport
   if (!activeTransportId) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#373A56" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Transport actual</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <PageHeader
+          title="CURSA ACTUALA"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
         
         <View style={styles.emptyContainer}>
           <Ionicons name="truck-outline" size={60} color="#5A5BDE" />
@@ -129,10 +171,8 @@ const TransportMainPage = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-  const handleRetry = useCallback(async () => {
-  await refetchProfile();
-}, [refetchProfile]);
 
+  // Main render - only reached if we have an active transport
   return (
     <SafeAreaView style={styles.container}>
       <PageHeader

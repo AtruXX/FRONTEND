@@ -1,4 +1,4 @@
-// TransportsScreen/index.js - Optimized version
+// TransportsScreen/index.js - Fixed version
 import React, { useState, useCallback, useMemo } from 'react';
 import {
   SafeAreaView,
@@ -18,6 +18,7 @@ import {
 } from '../../services/transportService';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import PageHeader from "../../components/General/Header";
+
 // Memoized components for better performance
 const TransportStatusIndicator = React.memo(({ status }) => {
   const getStatusColor = useCallback((status) => {
@@ -217,16 +218,7 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
     </TouchableOpacity>
   </View>
 ));
-const handleRetry = useCallback(async () => {
-  try {
-    await Promise.all([
-      refetchProfile(),
-      refetchTransports()
-    ]);
-  } catch (error) {
-    console.error('Error during retry:', error);
-  }
-}, [refetchProfile, refetchTransports]);
+
 const TransportsScreen = React.memo(({ navigation, route }) => {
   const [startingTransport, setStartingTransport] = useState(null);
 
@@ -267,6 +259,18 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       ]);
     } catch (error) {
       console.error('Error refreshing data:', error);
+    }
+  }, [refetchProfile, refetchTransports]);
+
+  // Fixed handleRetry function - now it uses the correct function names
+  const handleRetry = useCallback(async () => {
+    try {
+      await Promise.all([
+        refetchProfile(),
+        refetchTransports()
+      ]);
+    } catch (error) {
+      console.error('Error during retry:', error);
     }
   }, [refetchProfile, refetchTransports]);
 
@@ -349,12 +353,12 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <PageHeader
-        title="TRANSPORTURI"
-        onBack={() => navigation.goBack()}
-        onRetry={handleRetry}
-        showRetry={true}
-        showBack={true}
-      />
+          title="TRANSPORTURI"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
         
         {error ? (
           <ErrorState error={error} onRefresh={onRefresh} />
