@@ -5,7 +5,7 @@ import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation } from '../../services/transportService';
 import { useDownloadCMRDocumentMutation } from '../../services/CMRService';
 import { styles } from './styles'; // Import your styles from the styles.js file
-
+import PageHeader from "../../components/General/Header";
 const TransportMainPage = ({ navigation }) => {
   // Get user profile to access active transport data
   const {
@@ -132,13 +132,13 @@ const TransportMainPage = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#373A56" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Transport actual</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <PageHeader
+        title="CURSA ACTUALA"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
       
       <ScrollView 
         contentContainerStyle={styles.scrollViewContent}

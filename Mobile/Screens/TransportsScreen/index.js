@@ -17,7 +17,7 @@ import {
   useSetActiveTransportMutation 
 } from '../../services/transportService';
 import { useGetUserProfileQuery } from '../../services/profileService';
-
+import PageHeader from "../../components/General/Header";
 // Memoized components for better performance
 const TransportStatusIndicator = React.memo(({ status }) => {
   const getStatusColor = useCallback((status) => {
@@ -339,22 +339,13 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Transporturile Atribuite</Text>
-          <TouchableOpacity 
-            style={styles.refreshIconButton}
-            onPress={onRefresh}
-            disabled={refreshing}
-          >
-            <Ionicons name="refresh" size={22} color="#6366F1" />
-          </TouchableOpacity>
-        </View>
+        <PageHeader
+        title="TRANSPORTURI"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
         
         {error ? (
           <ErrorState error={error} onRefresh={onRefresh} />

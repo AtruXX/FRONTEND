@@ -6,7 +6,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { BASE_URL } from "../../utils/BASE_URL";
 
 import { styles } from './styles'; // Import your styles from the styles.js file
-
+import PageHeader from "../../components/General/Header";
 const PhotoCMRForm = ({ navigation, route }) => {
   const { authToken, driverId } = route.params;
   const [selectedImages, setSelectedImages] = useState([]);
@@ -234,13 +234,13 @@ const PhotoCMRForm = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Fotografiază CMR</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <PageHeader
+        title="CMR"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
 
       <ScrollView style={styles.photoFormContainer} contentContainerStyle={styles.photoFormContent}>
         {/* Instructions */}

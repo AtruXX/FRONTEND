@@ -19,7 +19,7 @@ import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles'; // Import your styles from the styles.js file
 import { BASE_URL } from "../../utils/BASE_URL";
-
+import PageHeader from "../../components/General/Header";
 const Modify_Page = ({ navigation, route }) => {
     console.log("Route params:", route.params);
   
@@ -138,16 +138,13 @@ const statusTransportOptions = [
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Modificare Transport #{route.params?.transport.id}</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <PageHeader
+        title="Transport"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

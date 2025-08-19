@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetCMRDataQuery, useUpdateCMRDataMutation } from '../../services/CMRService';
 import { styles } from './styles';
+import PageHeader from "../../components/General/Header";
 
 // Memoized components for better performance
 const ProgressIndicator = React.memo(({ completedPercentage }) => {
@@ -414,23 +415,13 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
   // Error state
   if (profileError || cmrError) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#373A56" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>CMR Digital</Text>
-          <View style={{ width: 24 }} />
-        </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
-          <Text style={styles.errorTitle}>Eroare la încărcare</Text>
-          <Text style={styles.errorText}>Nu s-au putut încărca datele CMR</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={refetchCMR}>
-            <Text style={styles.retryButtonText}>Încearcă din nou</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <PageHeader
+        title="CMR"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
     );
   }
 

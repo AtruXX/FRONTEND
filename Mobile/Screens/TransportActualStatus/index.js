@@ -24,7 +24,7 @@ import {
   useGetGoodsPhotosQuery 
 } from '../../services/statusService';
 import { styles } from './styles';
-
+import PageHeader from "../../components/General/Header";
 // Memoized components for better performance
 const ProgressBar = React.memo(({ currentPage, totalPages, percentage }) => (
   <View style={styles.progressContainer}>
@@ -572,13 +572,13 @@ const TransportStatusPage = React.memo(({ navigation }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handlePrevious} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#373A56" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Status Transport</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <PageHeader
+        title="STATUS"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRetry}
+        showRetry={true}
+        showBack={true}
+      />
 
         <ProgressBar 
           currentPage={pageCalculations.currentPage}
