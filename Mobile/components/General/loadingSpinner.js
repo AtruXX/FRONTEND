@@ -1,18 +1,8 @@
 // Create a new file: LoadingContext.js
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
-import COLORS from '../../utils/COLORS.js';
 
 const LoadingContext = createContext();
-
-const loadingMessages = [
-  "Just a moment...",
-  "Almost there!",
-  "Loading magic ✨",
-  "Getting things ready...",
-  "Hold tight!",
-  "Working on it...",
-];
 
 export const useLoading = () => {
   const context = useContext(LoadingContext);
@@ -24,105 +14,92 @@ export const useLoading = () => {
 
 export const LoadingProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [messageIndex, setMessageIndex] = useState(0);
-  const spinValue = useRef(new Animated.Value(0)).current;
   const fadeValue = useRef(new Animated.Value(0)).current;
-  const scaleValue = useRef(new Animated.Value(0.8)).current;
-  const pulseValue = useRef(new Animated.Value(1)).current;
+  
+  // Create animated values for 3 dots
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
 
   const showLoading = () => setIsLoading(true);
   const hideLoading = () => setIsLoading(false);
 
   useEffect(() => {
-    let spinAnimation;
-    let messageInterval;
+    let dotAnimation;
     
     if (isLoading) {
-      // Entrance animation
-      Animated.parallel([
-        Animated.timing(fadeValue, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleValue, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Fade in the overlay
+      Animated.timing(fadeValue, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
 
-      // Continuous spin animation
-      const spin = () => {
-        spinValue.setValue(0);
-        spinAnimation = Animated.timing(spinValue, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        });
-        spinAnimation.start(() => {
-          if (isLoading) {
-            spin();
-          }
-        });
+      // Animate dots in sequence
+      const animateDots = () => {
+        dotAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(dot1, {
+              toValue: 1,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot2, {
+              toValue: 1,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot3, {
+              toValue: 1,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot1, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot2, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(dot3, {
+              toValue: 0,
+              duration: 400,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+        dotAnimation.start();
       };
-      spin();
-
-      // Pulsing animation for the spinner
-      const pulse = () => {
-        Animated.sequence([
-          Animated.timing(pulseValue, {
-            toValue: 1.1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseValue, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          if (isLoading) {
-            pulse();
-          }
-        });
-      };
-      pulse();
-
-      // Change loading message every 2 seconds
-      messageInterval = setInterval(() => {
-        setMessageIndex((prev) => (prev + 1) % loadingMessages.length);
-      }, 2000);
+      animateDots();
     } else {
-      // Exit animation
-      Animated.parallel([
-        Animated.timing(fadeValue, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleValue, {
-          toValue: 0.8,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Fade out the overlay
+      Animated.timing(fadeValue, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
     }
 
     return () => {
-      if (spinAnimation) {
-        spinAnimation.stop();
-      }
-      if (messageInterval) {
-        clearInterval(messageInterval);
+      if (dotAnimation) {
+        dotAnimation.stop();
       }
     };
-  }, [isLoading, spinValue, fadeValue, scaleValue, pulseValue]);
+  }, [isLoading, fadeValue, dot1, dot2, dot3]);
 
-  const spinAnimation = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+  const getDotStyle = (animatedValue) => ({
+    opacity: animatedValue,
+    transform: [
+      {
+        scale: animatedValue.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.5, 1.2],
+        }),
+      },
+    ],
   });
 
   return (
@@ -137,45 +114,29 @@ export const LoadingProvider = ({ children }) => {
             }
           ]}
         >
-          <Animated.View 
-            style={[
-              styles.content,
-              {
-                transform: [{ scale: scaleValue }],
-              }
-            ]}
-          >
-            <View style={styles.spinnerContainer}>
+          <View style={styles.content}>
+            <Text style={styles.loadingText}>O secunda..</Text>
+            <View style={styles.dotsContainer}>
               <Animated.View
                 style={[
-                  styles.spinner,
-                  {
-                    transform: [
-                      { rotate: spinAnimation },
-                      { scale: pulseValue },
-                    ],
-                  },
+                  styles.dot,
+                  getDotStyle(dot1)
                 ]}
               />
-              <View style={styles.spinnerGlow} />
+              <Animated.View
+                style={[
+                  styles.dot,
+                  getDotStyle(dot2)
+                ]}
+              />
+              <Animated.View
+                style={[
+                  styles.dot,
+                  getDotStyle(dot3)
+                ]}
+              />
             </View>
-            <Text style={styles.loadingText}>
-              {loadingMessages[messageIndex]}
-            </Text>
-            <View style={styles.dotsContainer}>
-              {[0, 1, 2].map((index) => (
-                <Animated.View
-                  key={index}
-                  style={[
-                    styles.dot,
-                    {
-                      opacity: fadeValue,
-                    }
-                  ]}
-                />
-              ))}
-            </View>
-          </Animated.View>
+          </View>
         </Animated.View>
       )}
     </LoadingContext.Provider>
@@ -189,63 +150,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 9999,
   },
   content: {
     alignItems: 'center',
-    padding: 32,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  spinnerContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  spinner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 3,
-    borderColor: 'transparent',
-    borderTopColor: '#6366f1', // indigo-500
-    borderRightColor: '#8b5cf6', // violet-500
-    shadowColor: '#6366f1',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  spinnerGlow: {
-    position: 'absolute',
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    zIndex: -1,
+    padding: 30,
+    borderRadius: 10,
+    backgroundColor: 'white',
   },
   loadingText: {
-    color: '#374151', // gray-700
-    fontSize: 16,
+    color: '#333',
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 16,
-    textAlign: 'center',
-    letterSpacing: 0.5,
+    marginBottom: 20,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -253,10 +173,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#9ca3af', // gray-400
-    marginHorizontal: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#007AFF',
+    marginHorizontal: 4,
   },
 });
