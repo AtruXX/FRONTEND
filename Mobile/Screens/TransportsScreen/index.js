@@ -1,5 +1,5 @@
-// TransportsScreen/index.js - Fixed version
-import React, { useState, useCallback, useMemo } from 'react';
+// TransportsScreen/index.js - Updated with useLoading
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -17,6 +17,7 @@ import {
   useSetActiveTransportMutation 
 } from '../../services/transportService';
 import { useGetUserProfileQuery } from '../../services/profileService';
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 
 // Memoized components for better performance
@@ -220,6 +221,7 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
 ));
 
 const TransportsScreen = React.memo(({ navigation, route }) => {
+  const { showLoading, hideLoading } = useLoading();
   const [startingTransport, setStartingTransport] = useState(null);
 
   // Use the transport service hooks
@@ -240,6 +242,15 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
   } = useGetUserProfileQuery();
 
   const [setActiveTransportMutation, { isLoading: isSettingActive }] = useSetActiveTransportMutation();
+
+  // Update global loading state
+  useEffect(() => {
+    if (transportsLoading || profileLoading || isSettingActive) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [transportsLoading, profileLoading, isSettingActive, showLoading, hideLoading]);
 
   // Memoized data extraction
   const { transports, activeTransportId, loading, refreshing, error } = useMemo(() => ({
@@ -262,7 +273,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     }
   }, [refetchProfile, refetchTransports]);
 
-  // Fixed handleRetry function - now it uses the correct function names
   const handleRetry = useCallback(async () => {
     try {
       await Promise.all([
@@ -337,17 +347,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     offset: 300 * index,
     index,
   }), []);
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Se încarcă transporturile...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safeArea}>

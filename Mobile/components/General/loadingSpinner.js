@@ -16,16 +16,14 @@ export const LoadingProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const fadeValue = useRef(new Animated.Value(0)).current;
   
-  // Create animated values for 3 dots
-  const dot1 = useRef(new Animated.Value(0)).current;
-  const dot2 = useRef(new Animated.Value(0)).current;
-  const dot3 = useRef(new Animated.Value(0)).current;
+  // Create animated value for circular rotation
+  const spinValue = useRef(new Animated.Value(0)).current;
 
   const showLoading = () => setIsLoading(true);
   const hideLoading = () => setIsLoading(false);
 
   useEffect(() => {
-    let dotAnimation;
+    let spinAnimation;
     
     if (isLoading) {
       // Fade in the overlay
@@ -35,45 +33,15 @@ export const LoadingProvider = ({ children }) => {
         useNativeDriver: true,
       }).start();
 
-      // Animate dots in sequence
-      const animateDots = () => {
-        dotAnimation = Animated.loop(
-          Animated.sequence([
-            Animated.timing(dot1, {
-              toValue: 1,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dot2, {
-              toValue: 1,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dot3, {
-              toValue: 1,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dot1, {
-              toValue: 0,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dot2, {
-              toValue: 0,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(dot3, {
-              toValue: 0,
-              duration: 400,
-              useNativeDriver: true,
-            }),
-          ])
-        );
-        dotAnimation.start();
-      };
-      animateDots();
+      // Continuous circular rotation
+      spinAnimation = Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      );
+      spinAnimation.start();
     } else {
       // Fade out the overlay
       Animated.timing(fadeValue, {
@@ -84,22 +52,16 @@ export const LoadingProvider = ({ children }) => {
     }
 
     return () => {
-      if (dotAnimation) {
-        dotAnimation.stop();
+      if (spinAnimation) {
+        spinAnimation.stop();
       }
     };
-  }, [isLoading, fadeValue, dot1, dot2, dot3]);
+  }, [isLoading, fadeValue, spinValue]);
 
-  const getDotStyle = (animatedValue) => ({
-    opacity: animatedValue,
-    transform: [
-      {
-        scale: animatedValue.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.5, 1.2],
-        }),
-      },
-    ],
+  // Convert the animated value to a rotation
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
   });
 
   return (
@@ -116,26 +78,16 @@ export const LoadingProvider = ({ children }) => {
         >
           <View style={styles.content}>
             <Text style={styles.loadingText}>O secunda..</Text>
-            <View style={styles.dotsContainer}>
-              <Animated.View
-                style={[
-                  styles.dot,
-                  getDotStyle(dot1)
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.dot,
-                  getDotStyle(dot2)
-                ]}
-              />
-              <Animated.View
-                style={[
-                  styles.dot,
-                  getDotStyle(dot3)
-                ]}
-              />
-            </View>
+            <Animated.View
+              style={[
+                styles.spinner,
+                {
+                  transform: [{ rotate: spin }]
+                }
+              ]}
+            >
+              <View style={styles.spinnerInner} />
+            </Animated.View>
           </View>
         </Animated.View>
       )}
@@ -167,16 +119,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 20,
   },
-  dotsContainer: {
-    flexDirection: 'row',
+  spinner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: 'rgba(90, 91, 222, 0.3)',
+    borderTopColor: '#5A5BDE',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#007AFF',
-    marginHorizontal: 4,
+  spinnerInner: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
 });

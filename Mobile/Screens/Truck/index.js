@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   SafeAreaView,
   View,
@@ -19,8 +19,11 @@ import {
   useGetTruckQuery, 
   useGetTruckDocumentsQuery 
 } from '../../services/vehicleService';
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
+
 const TruckPageScreen = ({ navigation }) => {
+  const { showLoading, hideLoading } = useLoading();
   const [refreshing, setRefreshing] = useState(false);
 
   // Get user profile
@@ -56,6 +59,15 @@ const TruckPageScreen = ({ navigation }) => {
     refetch: refetchDocuments
   } = useGetTruckDocumentsQuery(activeTransport?.truck);
 
+  // Update global loading state
+  useEffect(() => {
+    if (profileLoading || transportLoading || truckLoading || documentsLoading) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [profileLoading, transportLoading, truckLoading, documentsLoading, showLoading, hideLoading]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     try {
@@ -71,6 +83,10 @@ const TruckPageScreen = ({ navigation }) => {
       setRefreshing(false);
     }
   };
+
+  const handleRetry = useCallback(async () => {
+    await onRefresh();
+  }, []);
 
   const handleBackPress = () => {
     if (navigation.canGoBack()) {
@@ -113,24 +129,17 @@ const TruckPageScreen = ({ navigation }) => {
     }
   };
 
-  const isLoading = profileLoading || transportLoading || truckLoading || documentsLoading;
-
-  if (isLoading && !refreshing) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366F1" />
-          <Text style={styles.loadingText}>Se încarcă detaliile camionului...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   if (!activeTransportId || !activeTransport) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          
+          <PageHeader
+            title="AUTOVEHICUL"
+            onBack={() => navigation.goBack()}
+            onRetry={handleRetry}
+            showRetry={true}
+            showBack={true}
+          />
           
           <View style={styles.emptyContainer}>
             <Ionicons name="truck-outline" size={60} color="#6366F1" />
@@ -142,17 +151,16 @@ const TruckPageScreen = ({ navigation }) => {
     );
   }
 
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <PageHeader
-        title="AUTOVEHICUL"
-        onBack={() => navigation.goBack()}
-        onRetry={onRefresh}
-        showRetry={true}
-        showBack={true}
-      />
+          title="AUTOVEHICUL"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
 
         <ScrollView
           contentContainerStyle={styles.scrollContainer}

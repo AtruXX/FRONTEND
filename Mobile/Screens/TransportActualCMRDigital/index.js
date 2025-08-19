@@ -1,4 +1,4 @@
-// TransportActualCMRDigital/index.js - Optimized version
+// TransportActualCMRDigital/index.js - Updated with useLoading
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   View, 
@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetCMRDataQuery, useUpdateCMRDataMutation } from '../../services/CMRService';
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles';
 import PageHeader from "../../components/General/Header";
 
@@ -212,6 +213,7 @@ const EditingFooter = React.memo(({
 ));
 
 const CMRDigitalForm = React.memo(({ navigation }) => {
+  const { showLoading, hideLoading } = useLoading();
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [editingMode, setEditingMode] = useState(false);
@@ -237,6 +239,15 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
 
   // Update mutation
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
+
+  // Update global loading state
+  useEffect(() => {
+    if (profileLoading || cmrLoading || isUpdating) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [profileLoading, cmrLoading, isUpdating, showLoading, hideLoading]);
 
   // European countries in Romanian
   const europeanCountries = useMemo(() => [
@@ -361,16 +372,17 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       setShowCountryModal(true);
     }
   }, [editingMode]);
-const handleRetry = useCallback(async () => {
-  try {
-    await Promise.all([
-      refetchProfile(),
-      refetchCMR()
-    ]);
-  } catch (error) {
-    console.error('Error during retry:', error);
-  }
-}, [refetchProfile, refetchCMR]);
+
+  const handleRetry = useCallback(async () => {
+    try {
+      await Promise.all([
+        refetchProfile(),
+        refetchCMR()
+      ]);
+    } catch (error) {
+      console.error('Error during retry:', error);
+    }
+  }, [refetchProfile, refetchCMR]);
 
   const handleSaveChanges = useCallback(async () => {
     try {
@@ -411,28 +423,26 @@ const handleRetry = useCallback(async () => {
     />
   ), [localFormData, editingMode, updateFieldValue, handleFieldTouch]);
 
-  // Loading state
-  if (profileLoading || cmrLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Ionicons name="hourglass-outline" size={40} color="#5A5BDE" />
-          <Text style={styles.loadingText}>Se încarcă datele CMR...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   // Error state
   if (profileError || cmrError) {
     return (
-      <PageHeader
-        title="CMR"
-        onBack={() => navigation.goBack()}
-        onRetry={handleRetry}
-        showRetry={true}
-        showBack={true}
-      />
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="CMR Digital"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
+          <Text style={styles.errorTitle}>Eroare la încărcare</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca datele CMR</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -440,13 +450,13 @@ const handleRetry = useCallback(async () => {
   if (!activeTransportId) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#373A56" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>CMR Digital</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <PageHeader
+          title="CMR Digital"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
         <View style={styles.emptyContainer}>
           <Ionicons name="document-outline" size={60} color="#5A5BDE" />
           <Text style={styles.emptyTitle}>Niciun transport activ</Text>
@@ -464,26 +474,26 @@ const handleRetry = useCallback(async () => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={editingMode ? handleCancelEdit : () => navigation.goBack()} 
-            style={styles.backButton}
-          >
-            <Ionicons name={editingMode ? "close" : "arrow-back"} size={24} color="#373A56" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>CMR Digital</Text>
-          <TouchableOpacity 
-            onPress={editingMode ? handleSaveChanges : () => setEditingMode(true)}
-            style={styles.editButton}
-            disabled={isUpdating}
-          >
-            {isUpdating ? (
-              <Ionicons name="hourglass-outline" size={24} color="#5A5BDE" />
-            ) : (
-              <Ionicons name={editingMode ? "checkmark" : "create-outline"} size={24} color="#5A5BDE" />
-            )}
-          </TouchableOpacity>
-        </View>
+        <PageHeader
+          title="CMR Digital"
+          onBack={editingMode ? handleCancelEdit : () => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+          rightButton={
+            <TouchableOpacity 
+              onPress={editingMode ? handleSaveChanges : () => setEditingMode(true)}
+              style={styles.editButton}
+              disabled={isUpdating}
+            >
+              {isUpdating ? (
+                <Ionicons name="hourglass-outline" size={24} color="#5A5BDE" />
+              ) : (
+                <Ionicons name={editingMode ? "checkmark" : "create-outline"} size={24} color="#5A5BDE" />
+              )}
+            </TouchableOpacity>
+          }
+        />
 
         <ProgressIndicator completedPercentage={cmrData?.completed_percentage} />
 

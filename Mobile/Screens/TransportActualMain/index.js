@@ -1,13 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation } from '../../services/transportService';
 import { useDownloadCMRDocumentMutation } from '../../services/CMRService';
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
 
 const TransportMainPage = ({ navigation }) => {
+  const { showLoading, hideLoading } = useLoading();
+  
   // ALWAYS call hooks at the top level - never conditionally
   // Get user profile to access active transport data
   const {
@@ -23,6 +26,15 @@ const TransportMainPage = ({ navigation }) => {
 
   // Get active transport ID
   const activeTransportId = profileData?.active_transport;
+
+  // Update global loading state
+  useEffect(() => {
+    if (profileLoading || isFinalizing || isDownloading) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [profileLoading, isFinalizing, isDownloading, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
@@ -99,25 +111,6 @@ const TransportMainPage = ({ navigation }) => {
   const handleRetry = useCallback(async () => {
     await refetchProfile();
   }, [refetchProfile]);
-
-  // Handle loading state
-  if (profileLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <PageHeader
-          title="CURSA ACTUALA"
-          onBack={() => navigation.goBack()}
-          onRetry={handleRetry}
-          showRetry={true}
-          showBack={true}
-        />
-        <View style={styles.loadingContainer}>
-          <Ionicons name="hourglass-outline" size={40} color="#5A5BDE" />
-          <Text style={styles.loadingText}>Se încarcă datele transportului...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Handle error state
   if (profileError) {

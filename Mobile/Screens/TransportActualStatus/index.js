@@ -23,8 +23,10 @@ import {
   useUploadGoodsPhotosMutation,
   useGetGoodsPhotosQuery 
 } from '../../services/statusService';
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles';
 import PageHeader from "../../components/General/Header";
+
 // Memoized components for better performance
 const ProgressBar = React.memo(({ currentPage, totalPages, percentage }) => (
   <View style={styles.progressContainer}>
@@ -220,6 +222,7 @@ const ButtonContainer = React.memo(({
 ));
 
 const TransportStatusPage = React.memo(({ navigation }) => {
+  const { showLoading, hideLoading } = useLoading();
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [modalOptions, setModalOptions] = useState([]);
@@ -254,6 +257,15 @@ const TransportStatusPage = React.memo(({ navigation }) => {
   // Mutations
   const [updateTransportStatus, { isLoading: isUpdating }] = useUpdateTransportStatusMutation();
   const [uploadGoodsPhotos, { isLoading: isUploading }] = useUploadGoodsPhotosMutation();
+
+  // Update global loading state
+  useEffect(() => {
+    if (profileLoading || statusLoading || photosLoading || isUpdating || isUploading) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [profileLoading, statusLoading, photosLoading, isUpdating, isUploading, showLoading, hideLoading]);
 
   // Status form data
   const [statusFormData, setStatusFormData] = useState({
@@ -533,32 +545,22 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       ]
     );
   }, [handleSubmit]);
-const handleRetry = useCallback(async () => {
-  try {
-    await Promise.all([
-      refetchProfile(),
-      refetchStatus(),
-      refetchPhotos()
-    ]);
-  } catch (error) {
-    console.error('Error during retry:', error);
-  }
-}, [refetchProfile, refetchStatus, refetchPhotos]);
+
+  const handleRetry = useCallback(async () => {
+    try {
+      await Promise.all([
+        refetchProfile(),
+        refetchStatus(),
+        refetchPhotos()
+      ]);
+    } catch (error) {
+      console.error('Error during retry:', error);
+    }
+  }, [refetchProfile, refetchStatus, refetchPhotos]);
 
   const isLastStep = useMemo(() => {
     return currentIndex + 2 >= statusFields.length;
   }, [currentIndex, statusFields.length]);
-
-  if (profileLoading || statusLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Ionicons name="hourglass-outline" size={40} color="#5A5BDE" />
-          <Text style={styles.loadingText}>Se încarcă datele transportului...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   if (!activeTransportId) {
     return (
@@ -585,12 +587,12 @@ const handleRetry = useCallback(async () => {
         style={styles.keyboardAvoidingView}
       >
         <PageHeader
-        title="STATUS"
-        onBack={() => navigation.goBack()}
-        onRetry={handleRetry}
-        showRetry={true}
-        showBack={true}
-      />
+          title="STATUS"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
 
         <ProgressBar 
           currentPage={pageCalculations.currentPage}

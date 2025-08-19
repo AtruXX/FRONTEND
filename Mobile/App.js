@@ -15,7 +15,7 @@ import Transport_Update from "./Screens/ModifyTransport";
 import Truck from "./Screens/Truck";
 import SplashScreen from "./Screens/SplashScreen";
 
-// Updated Transport Screen imports
+
 import TransportMainPage from "./Screens/TransportActualMain";
 import CMRDigitalForm from "./Screens/TransportActualCMRDigital";
 import StatusTransportForm from "./Screens/TransportActualStatus";
@@ -275,7 +275,7 @@ function AppNavigatorContent() {
   );
 }
 
-// Main app navigator with Redux Provider
+//aici avem redux provider incorporatt
 function AppNavigator() {
   return (
     <Provider store={store}>

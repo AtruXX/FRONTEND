@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import PageHeader from '../../components/General/Header';
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import { 
   useGetPersonalDocumentsQuery, 
   useUploadPersonalDocumentMutation,
@@ -14,6 +15,8 @@ import {
 } from '../../services/documentsService';
 
 const DocumentsScreen = ({ navigation, route }) => {
+  const { showLoading, hideLoading } = useLoading();
+  
   // Local state
   const [selectedFile, setSelectedFile] = useState(null);
   const [category, setCategory] = useState(''); // No default category
@@ -36,9 +39,19 @@ const DocumentsScreen = ({ navigation, route }) => {
   const recentDocuments = documents || [];
   const loading = documentsLoading;
   const error = documentsError;
-const handleRetry = useCallback(async () => {
-  await refetchDocuments();
-}, [refetchDocuments]);
+
+  // Update global loading state based on local loading states
+  useEffect(() => {
+    if (loading || isUploading || isDeleting) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [loading, isUploading, isDeleting, showLoading, hideLoading]);
+
+  const handleRetry = useCallback(async () => {
+    await refetchDocuments();
+  }, [refetchDocuments]);
 
   // Get documents to display (limit to 3 if showAllDocuments is false)
   const getDocumentsToDisplay = () => {
@@ -59,8 +72,6 @@ const handleRetry = useCallback(async () => {
     const selectedCategory = DOCUMENT_CATEGORIES.find(cat => cat.value === category);
     return selectedCategory ? selectedCategory.label : 'Document';
   };
-
-  
 
   // Get file icon based on document type
   const getFileIcon = (type) => {

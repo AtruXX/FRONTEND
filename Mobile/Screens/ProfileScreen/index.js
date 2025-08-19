@@ -1,5 +1,5 @@
 // ProfileScreen/index.js - Optimized version
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -15,6 +15,7 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useGetUserProfileQuery } from '../../services/profileService';
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL";
 import PageHeader from "../../components/General/Header";
@@ -139,6 +140,7 @@ const AlertItem = React.memo(({ doc }) => {
 
 const ProfileScreen = React.memo(() => {
   const navigation = useNavigation();
+  const { showLoading, hideLoading } = useLoading();
   
   // Get user profile using the service
   const {
@@ -155,6 +157,15 @@ const ProfileScreen = React.memo(() => {
   const [refreshing, setRefreshing] = useState(false);
   
   const dispatcherNumber = '0745346397';
+
+  // Update global loading state based on profile loading
+  useEffect(() => {
+    if (profileLoading) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [profileLoading, showLoading, hideLoading]);
 
   // Memoized calculations
   const profileCalculations = useMemo(() => {
@@ -293,6 +304,7 @@ const ProfileScreen = React.memo(() => {
 
   const handleSignOut = useCallback(async () => {
     try {
+      showLoading();
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         Alert.alert('Eroare', 'Nu s-a găsit token-ul de autentificare.');
@@ -319,8 +331,10 @@ const ProfileScreen = React.memo(() => {
     } catch (error) {
       console.error('Logout error:', error);
       Alert.alert('Eroare', 'Ceva a mers greșit în timpul delogării.');
+    } finally {
+      hideLoading();
     }
-  }, [navigation]);
+  }, [navigation, showLoading, hideLoading]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -340,25 +354,6 @@ const ProfileScreen = React.memo(() => {
   const renderAlertItem = useCallback((doc) => (
     <AlertItem key={doc.id} doc={doc} />
   ), []);
-
-  // Loading state
-  if (profileLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <PageHeader
-          title="Profil"
-          onBack={() => navigation.goBack()}
-          onRetry={handleRetry}
-          showRetry={true}
-          showBack={true}
-        />
-        <View style={styles.loadingContainer}>
-          <Ionicons name="hourglass-outline" size={40} color="#5A5BDE" />
-          <Text style={styles.loadingText}>Se încarcă profilul...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // Error state
   if (profileError) {

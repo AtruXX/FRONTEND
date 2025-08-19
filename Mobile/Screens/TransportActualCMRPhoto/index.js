@@ -1,19 +1,30 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ScrollView, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { BASE_URL } from "../../utils/BASE_URL";
-
+import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
+
 const PhotoCMRForm = ({ navigation, route }) => {
+  const { showLoading, hideLoading } = useLoading();
   const { authToken, driverId } = route.params;
   const [selectedImages, setSelectedImages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const screenWidth = Dimensions.get('window').width;
   const imageSize = (screenWidth - 60) / 2; // 2 images per row with margins
+
+  // Update global loading state
+  useEffect(() => {
+    if (isUploading) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [isUploading, showLoading, hideLoading]);
 
   // Handle camera capture
   const handleCameraCapture = async () => {
@@ -194,11 +205,13 @@ const PhotoCMRForm = ({ navigation, route }) => {
       setIsUploading(false);
     }
   };
-const handleRetry = useCallback(async () => {
-  // Add any specific retry logic for photo CMR
-  // This could involve re-checking photo upload status or refreshing data
-  console.log('Retrying photo CMR page...');
-}, []);
+
+  const handleRetry = useCallback(async () => {
+    // Add any specific retry logic for photo CMR
+    // This could involve re-checking photo upload status or refreshing data
+    console.log('Retrying photo CMR page...');
+  }, []);
+
   // Render image preview
   const renderImagePreview = (image) => {
     return (
