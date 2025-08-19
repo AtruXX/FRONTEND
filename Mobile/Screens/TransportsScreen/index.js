@@ -217,7 +217,16 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
     </TouchableOpacity>
   </View>
 ));
-
+const handleRetry = useCallback(async () => {
+  try {
+    await Promise.all([
+      refetchProfile(),
+      refetchTransports()
+    ]);
+  } catch (error) {
+    console.error('Error during retry:', error);
+  }
+}, [refetchProfile, refetchTransports]);
 const TransportsScreen = React.memo(({ navigation, route }) => {
   const [startingTransport, setStartingTransport] = useState(null);
 

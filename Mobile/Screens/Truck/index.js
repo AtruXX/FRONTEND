@@ -130,13 +130,7 @@ const TruckPageScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
-          <PageHeader
-        title="AUTOVEHICUL"
-        onBack={() => navigation.goBack()}
-        onRetry={handleRetry}
-        showRetry={true}
-        showBack={true}
-      />
+          
           
           <View style={styles.emptyContainer}>
             <Ionicons name="truck-outline" size={60} color="#6366F1" />
@@ -148,18 +142,17 @@ const TruckPageScreen = ({ navigation }) => {
     );
   }
 
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Camionul Meu</Text>
-          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-            <Ionicons name="refresh" size={22} color="#6366F1" />
-          </TouchableOpacity>
-        </View>
+        <PageHeader
+        title="AUTOVEHICUL"
+        onBack={() => navigation.goBack()}
+        onRetry={onRefresh}
+        showRetry={true}
+        showBack={true}
+      />
 
         <ScrollView
           contentContainerStyle={styles.scrollContainer}

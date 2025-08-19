@@ -129,6 +129,9 @@ const TransportMainPage = ({ navigation }) => {
       </SafeAreaView>
     );
   }
+  const handleRetry = useCallback(async () => {
+  await refetchProfile();
+}, [refetchProfile]);
 
   return (
     <SafeAreaView style={styles.container}>

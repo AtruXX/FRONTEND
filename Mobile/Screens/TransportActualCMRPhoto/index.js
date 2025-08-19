@@ -194,7 +194,11 @@ const PhotoCMRForm = ({ navigation, route }) => {
       setIsUploading(false);
     }
   };
-
+const handleRetry = useCallback(async () => {
+  // Add any specific retry logic for photo CMR
+  // This could involve re-checking photo upload status or refreshing data
+  console.log('Retrying photo CMR page...');
+}, []);
   // Render image preview
   const renderImagePreview = (image) => {
     return (

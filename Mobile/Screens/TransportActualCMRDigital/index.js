@@ -222,6 +222,7 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     data: profileData,
     isLoading: profileLoading,
     error: profileError,
+    refetch: refetchProfile
   } = useGetUserProfileQuery();
 
   const activeTransportId = profileData?.active_transport;
@@ -360,6 +361,16 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       setShowCountryModal(true);
     }
   }, [editingMode]);
+const handleRetry = useCallback(async () => {
+  try {
+    await Promise.all([
+      refetchProfile(),
+      refetchCMR()
+    ]);
+  } catch (error) {
+    console.error('Error during retry:', error);
+  }
+}, [refetchProfile, refetchCMR]);
 
   const handleSaveChanges = useCallback(async () => {
     try {

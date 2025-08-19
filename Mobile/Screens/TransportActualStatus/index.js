@@ -231,6 +231,7 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     data: profileData,
     isLoading: profileLoading,
     error: profileError,
+    refetch: refetchProfile 
   } = useGetUserProfileQuery();
 
   const activeTransportId = profileData?.active_transport;
@@ -532,6 +533,17 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       ]
     );
   }, [handleSubmit]);
+const handleRetry = useCallback(async () => {
+  try {
+    await Promise.all([
+      refetchProfile(),
+      refetchStatus(),
+      refetchPhotos()
+    ]);
+  } catch (error) {
+    console.error('Error during retry:', error);
+  }
+}, [refetchProfile, refetchStatus, refetchPhotos]);
 
   const isLastStep = useMemo(() => {
     return currentIndex + 2 >= statusFields.length;

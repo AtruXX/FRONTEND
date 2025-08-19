@@ -36,6 +36,9 @@ const DocumentsScreen = ({ navigation, route }) => {
   const recentDocuments = documents || [];
   const loading = documentsLoading;
   const error = documentsError;
+const handleRetry = useCallback(async () => {
+  await refetchDocuments();
+}, [refetchDocuments]);
 
   // Get documents to display (limit to 3 if showAllDocuments is false)
   const getDocumentsToDisplay = () => {
@@ -57,10 +60,7 @@ const DocumentsScreen = ({ navigation, route }) => {
     return selectedCategory ? selectedCategory.label : 'Document';
   };
 
-  // Handle retry function for refresh button
-  const handleRetry = async () => {
-    await refetchDocuments();
-  };
+  
 
   // Get file icon based on document type
   const getFileIcon = (type) => {
