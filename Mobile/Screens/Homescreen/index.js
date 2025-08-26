@@ -7,12 +7,13 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { styles } from "./styles";
 import COLORS from "../../utils/COLORS.js";
 import { useLoading } from "../../components/General/loadingSpinner.js";
+import { useChangeDriverStatusMutation } from "../../services/statusUpdateService";
 
 // RTK Query imports
-import { 
-  useGetProfileQuery, 
+import {
+  useGetProfileQuery,
   useLogoutMutation,
-  useUpdateProfileMutation 
+  useUpdateProfileMutation
 } from "../../services/authService";
 
 // Memoized components for better performance
@@ -48,6 +49,7 @@ const HomeScreen = React.memo(() => {
   const navigation = useNavigation();
   const { showLoading, hideLoading } = useLoading();
   const [currentDate, setCurrentDate] = useState(new Date());
+const [changeDriverStatus] = useChangeDriverStatusMutation();
 
   // RTK Query hooks
   const {
@@ -74,28 +76,11 @@ const HomeScreen = React.memo(() => {
     ];
     const monthName = months[currentDate.getMonth()];
     const year = currentDate.getFullYear();
-    
+
     return { day, monthName, year };
   }, [currentDate]);
 
   // Memoized profile calculations
-  const profileInfo = useMemo(() => {
-    if (!profileData) return { initials: 'U', currentStatus: 'Parcat' };
-    
-    const getInitials = (name) => {
-      if (!name) return 'U';
-      const nameParts = name.split(' ');
-      const initials = nameParts.length > 1
-        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
-        : nameParts[0].substring(0, 2);
-      return initials.toUpperCase();
-    };
-
-    return {
-      initials: getInitials(profileData?.name),
-      currentStatus: profileData?.on_road === true ? 'La volan' : 'Parcat'
-    };
-  }, [profileData?.name, profileData?.on_road]);
 
   // Date update effect with cleanup
   useEffect(() => {
@@ -120,27 +105,65 @@ const HomeScreen = React.memo(() => {
     try {
       showLoading();
       
-      const newOnRoadStatus = !profileData?.on_road;
+      // Get current status from profile data
+      const currentOnRoadStatus = profileData?.on_road ?? profileData?.driver?.on_road ?? false;
+      const newOnRoadStatus = !currentOnRoadStatus;
       
-      await updateProfile({ 
+      console.log('Current status:', currentOnRoadStatus ? 'La volan' : 'Parcat');
+      console.log('Changing status to:', newOnRoadStatus ? 'La volan' : 'Parcat');
+      
+      // Use the dedicated status update service
+      await changeDriverStatus({ 
         on_road: newOnRoadStatus 
       }).unwrap();
 
-      console.log('✅ Status updated successfully');
+      console.log('✅ Driver status updated successfully to:', newOnRoadStatus);
+      
+      // Refetch profile to get updated data
+      await refetchProfile();
       
     } catch (error) {
-      console.error('💥 Status update error:', error);
-      Alert.alert('Eroare', 'Nu s-a putut actualiza statusul. Încearcă din nou.');
+      console.error('💥 Driver status update error:', error);
+      Alert.alert(
+        'Eroare', 
+        'Nu s-a putut actualiza statusul. Verifică conexiunea și încearcă din nou.',
+        [
+          { text: 'OK', style: 'default' }
+        ]
+      );
     } finally {
       hideLoading();
     }
-  }, [profileData?.on_road, updateProfile, showLoading, hideLoading]);
+  }, [profileData, changeDriverStatus, showLoading, hideLoading, refetchProfile]);
+
+  // Update the profileInfo calculation to handle both data structures:
+  const profileInfo = useMemo(() => {
+    if (!profileData) return { initials: 'U', currentStatus: 'Parcat' };
+    
+    const getInitials = (name) => {
+      if (!name) return 'U';
+      const nameParts = name.split(' ');
+      const initials = nameParts.length > 1
+        ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`
+        : nameParts[0].substring(0, 2);
+      return initials.toUpperCase();
+    };
+
+    // Check both possible locations for on_road status
+    const isOnRoad = profileData?.on_road ?? profileData?.driver?.on_road ?? false;
+
+    return {
+      initials: getInitials(profileData?.name),
+      currentStatus: isOnRoad ? 'La volan' : 'Parcat'
+    };
+  }, [profileData?.name, profileData?.on_road, profileData?.driver?.on_road]);
+
 
   const handleLogout = useCallback(async () => {
     try {
       await logout().unwrap();
       console.log('Logout successful');
-      
+
       navigation.reset({
         index: 0,
         routes: [{ name: 'Login' }],
@@ -194,8 +217,8 @@ const HomeScreen = React.memo(() => {
         <Text style={styles.errorText}>
           Eroare la încărcarea profilului
         </Text>
-        <TouchableOpacity 
-          style={styles.retryButton} 
+        <TouchableOpacity
+          style={styles.retryButton}
           onPress={refetchProfile}
         >
           <Text style={styles.retryButtonText}>Încearcă din nou</Text>
@@ -206,7 +229,7 @@ const HomeScreen = React.memo(() => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView 
+      <ScrollView
         style={styles.container}
         refreshControl={
           <RefreshControl
@@ -236,7 +259,7 @@ const HomeScreen = React.memo(() => {
             <Text style={styles.dateYear}>{dateInfo.year}</Text>
           </View>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.logoutButton,
               isLogoutLoading && { opacity: 0.6 }
@@ -273,21 +296,26 @@ const HomeScreen = React.memo(() => {
         {/* Status Card */}
         <View style={styles.statusCard}>
           <StatusDisplay 
-            isOnRoad={profileData?.on_road}
+            isOnRoad={profileData?.on_road ?? profileData?.driver?.on_road ?? false}
             currentStatus={profileInfo.currentStatus}
           />
 
-          {/* Toggle Button */}
+          {/* Toggle Button - Updated */}
           <TouchableOpacity
             style={[
               styles.toggleButton,
-              profileData?.on_road ? styles.parkButton : styles.driveButton
+              (profileData?.on_road ?? profileData?.driver?.on_road ?? false) 
+                ? styles.parkButton 
+                : styles.driveButton
             ]}
             onPress={handleStatusChange}
             activeOpacity={0.7}
           >
             <Text style={styles.buttonText}>
-              {profileData?.on_road ? 'Parcheaza' : 'Pornește'}
+              {(profileData?.on_road ?? profileData?.driver?.on_road ?? false) 
+                ? 'Parcheaza' 
+                : 'Pornește'
+              }
             </Text>
           </TouchableOpacity>
         </View>
