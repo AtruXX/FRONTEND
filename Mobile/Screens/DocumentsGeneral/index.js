@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TouchableOpacity, ScrollView, Image, Platform, Linking, Modal } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import {styles} from './styles'; // Import your styles from the styles.js file
-import * as FileSystem from 'expo-file-system';
+import {styles} from './styles'; 
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import PageHeader from '../../components/General/Header';

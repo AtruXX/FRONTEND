@@ -5,7 +5,6 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { Provider } from 'react-redux';
 import { store } from './store';
-
 import LoginScreen from "./Screens/Login";
 import HomeScreen from "./Screens/Homescreen";
 import Transports from "./Screens/TransportsScreen";
@@ -14,13 +13,10 @@ import DocumentsScreen from "./Screens/DocumentsGeneral";
 import Transport_Update from "./Screens/ModifyTransport";
 import Truck from "./Screens/Truck";
 import SplashScreen from "./Screens/SplashScreen";
-
-
 import TransportMainPage from "./Screens/TransportActualMain";
 import CMRDigitalForm from "./Screens/TransportActualCMRDigital";
 import StatusTransportForm from "./Screens/TransportActualStatus";
 import PhotoCMRForm from "./Screens/TransportActualCMRPhoto";
-
 import { NavigationContainer } from '@react-navigation/native';
 import { Pressable, View, StyleSheet, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
