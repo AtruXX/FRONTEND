@@ -22,8 +22,14 @@ export const useGetTransportsQuery = (options = {}) => {
         throw new Error('No auth token found');
       }
 
-      console.log('Fetching transports');
-      const response = await fetch(`${BASE_URL}transports`, {
+      // Get driver ID from AsyncStorage
+      const driverId = await AsyncStorage.getItem('driverId');
+      if (!driverId) {
+        throw new Error('No driver ID found');
+      }
+
+      console.log('Fetching transports for driver:', driverId);
+      const response = await fetch(`${BASE_URL}transport/driver/${driverId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -42,13 +48,13 @@ export const useGetTransportsQuery = (options = {}) => {
       const transportData = await response.json();
       console.log('Transports data received:', transportData);
 
-      // Filter only assigned transports ("atribuit" status)
-      const assignedTransports = transportData.transports?.filter(transport => 
-        transport.status === 'atribuit' && !transport.is_finished
+      // Filter only non-finished transports (is_finished: false)
+      const activeTransports = transportData.transports?.filter(transport => 
+        !transport.is_finished
       ) || [];
 
       // Transform the API data to match the component structure
-      const transformedTransports = assignedTransports.map(transport => ({
+      const transformedTransports = activeTransports.map(transport => ({
         id: transport.id,
         truck_combination: `Truck #${transport.truck} + Trailer #${transport.trailer}`,
         destination: transport.email_destinatar || 'N/A',
@@ -77,7 +83,12 @@ export const useGetTransportsQuery = (options = {}) => {
         route: transport.route
       }));
 
-      setData({ transports: transformedTransports });
+      // Store all transports (for profile count) and filtered transports
+      setData({ 
+        transports: transformedTransports,
+        allTransports: transportData.transports || [],
+        totalTransports: (transportData.transports || []).length
+      });
     } catch (err) {
       console.error('Transports fetch error:', err);
       setError(err);
@@ -209,4 +220,76 @@ export const useFinalizeTransportMutation = () => {
   }, [finalizeTransport]);
 
   return [finalizeTransportMutation, { isLoading, error }];
+};
+
+// Custom hook for getting total transports count for profile
+export const useGetTotalTransportsQuery = (options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchTotalTransports = useCallback(async () => {
+    if (options.skip) return;
+
+    setIsFetching(true);
+    setError(null);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      // Get driver ID from AsyncStorage
+      const driverId = await AsyncStorage.getItem('driverId');
+      if (!driverId) {
+        throw new Error('No driver ID found');
+      }
+
+      console.log('Fetching total transports for driver:', driverId);
+      const response = await fetch(`${BASE_URL}transport/driver/${driverId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Total transports response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.log('Total transports error response:', errorData);
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const transportData = await response.json();
+      console.log('Total transports data received:', transportData);
+
+      setData({ 
+        totalTransports: (transportData.transports || []).length,
+        allTransports: transportData.transports || []
+      });
+    } catch (err) {
+      console.error('Total transports fetch error:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+    }
+  }, [options.skip]);
+
+  // Initial load
+  useEffect(() => {
+    fetchTotalTransports();
+  }, [fetchTotalTransports]);
+
+  return {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch: fetchTotalTransports,
+  };
 };

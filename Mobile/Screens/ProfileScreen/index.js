@@ -15,6 +15,7 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useGetUserProfileQuery } from '../../services/profileService';
+import { useGetTotalTransportsQuery } from '../../services/transportService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL";
@@ -150,6 +151,14 @@ const ProfileScreen = React.memo(() => {
     refetch: refetchProfile
   } = useGetUserProfileQuery();
 
+  // Get total transports count
+  const {
+    data: transportsData,
+    isLoading: transportsLoading,
+    error: transportsError,
+    refetch: refetchTransports
+  } = useGetTotalTransportsQuery();
+
   const [documents, setDocuments] = useState([]);
   const [expiringDocuments, setExpiringDocuments] = useState([]);
   const [contactExpanded, setContactExpanded] = useState(false);
@@ -158,14 +167,14 @@ const ProfileScreen = React.memo(() => {
   
   const dispatcherNumber = '0745346397';
 
-  // Update global loading state based on profile loading
+  // Update global loading state based on profile and transports loading
   useEffect(() => {
-    if (profileLoading) {
+    if (profileLoading || transportsLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, showLoading, hideLoading]);
+  }, [profileLoading, transportsLoading, showLoading, hideLoading]);
 
   // Memoized calculations
   const profileCalculations = useMemo(() => {
@@ -338,9 +347,9 @@ const ProfileScreen = React.memo(() => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await refetchProfile();
+    await Promise.all([refetchProfile(), refetchTransports()]);
     setRefreshing(false);
-  }, [refetchProfile]);
+  }, [refetchProfile, refetchTransports]);
 
   const handleRetry = useCallback(async () => {
     await onRefresh();
@@ -356,7 +365,7 @@ const ProfileScreen = React.memo(() => {
   ), []);
 
   // Error state
-  if (profileError) {
+  if (profileError || transportsError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -368,8 +377,8 @@ const ProfileScreen = React.memo(() => {
         />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
-          <Text style={styles.errorTitle}>Eroare la încărcarea profilului</Text>
-          <Text style={styles.errorText}>Nu s-au putut încărca informațiile profilului</Text>
+          <Text style={styles.errorTitle}>Eroare la încărcarea datelor</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca informațiile profilului sau transporturilor</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Încearcă din nou</Text>
           </TouchableOpacity>
@@ -429,7 +438,7 @@ const ProfileScreen = React.memo(() => {
             />
             <DataRow 
               label="Total transporturi" 
-              value={`${profileData?.driver?.id_transports?.length || 0} transporturi`}
+              value={`${transportsData?.totalTransports || 0} transporturi`}
             />
             <DataRow label="Expirare permis" value={profileCalculations.formattedLicenseExpiration} />
           </DataSection>
