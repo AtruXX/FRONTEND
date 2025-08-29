@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetTotalTransportsQuery } from '../../services/transportService';
+import { useGetPersonalDocumentsQuery } from '../../services/documentsService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL";
@@ -101,12 +102,15 @@ const SettingItem = React.memo(({
 const DocumentItem = React.memo(({ doc, onPress }) => (
   <TouchableOpacity
     style={styles.documentItem}
-    onPress={() => onPress(doc.document)}
+    onPress={() => onPress(doc.document || doc.url)}
   >
     <View style={styles.documentInfo}>
-      <Text style={styles.documentTitle}>{doc.title}</Text>
+      <Text style={styles.documentTitle}>{doc.name || doc.title}</Text>
       <Text style={styles.documentExpiration}>
-        Expiră: {new Date(doc.expiration_date).toLocaleDateString('ro-RO')}
+        {doc.expiration_date ? 
+          `Expiră: ${new Date(doc.expiration_date).toLocaleDateString('ro-RO')}` : 
+          'Fără dată de expirare'
+        }
       </Text>
     </View>
     <Ionicons name="download-outline" size={20} color="#5A5BDE" />
@@ -128,7 +132,7 @@ const AlertItem = React.memo(({ doc }) => {
 
   return (
     <View style={styles.alertItem}>
-      <Text style={styles.alertDocTitle}>{doc.title}</Text>
+      <Text style={styles.alertDocTitle}>{doc.name || doc.title}</Text>
       <Text style={[
         styles.alertExpiration,
         { color: getExpirationColor(doc.days_left) }
@@ -159,7 +163,14 @@ const ProfileScreen = React.memo(() => {
     refetch: refetchTransports
   } = useGetTotalTransportsQuery();
 
-  const [documents, setDocuments] = useState([]);
+  // Get personal documents
+  const {
+    data: documentsData,
+    isLoading: documentsLoading,
+    error: documentsError,
+    refetch: refetchDocuments
+  } = useGetPersonalDocumentsQuery();
+
   const [expiringDocuments, setExpiringDocuments] = useState([]);
   const [contactExpanded, setContactExpanded] = useState(false);
   const [documentsExpanded, setDocumentsExpanded] = useState(false);
@@ -167,14 +178,44 @@ const ProfileScreen = React.memo(() => {
   
   const dispatcherNumber = '0745346397';
 
-  // Update global loading state based on profile and transports loading
+  // Update global loading state based on profile, transports, and documents loading
   useEffect(() => {
-    if (profileLoading || transportsLoading) {
+    if (profileLoading || transportsLoading || documentsLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, transportsLoading, showLoading, hideLoading]);
+  }, [profileLoading, transportsLoading, documentsLoading, showLoading, hideLoading]);
+
+  // Process documents to identify expiring ones
+  useEffect(() => {
+    if (documentsData && Array.isArray(documentsData)) {
+      const today = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+      const expiring = documentsData.filter(doc => {
+        if (!doc.expiration_date) return false;
+        
+        const expirationDate = new Date(doc.expiration_date);
+        const timeDifference = expirationDate.getTime() - today.getTime();
+        const daysLeft = Math.ceil(timeDifference / (1000 * 3600 * 24));
+        
+        return daysLeft <= 30 && daysLeft >= 0;
+      }).map(doc => {
+        const expirationDate = new Date(doc.expiration_date);
+        const timeDifference = expirationDate.getTime() - today.getTime();
+        const daysLeft = Math.ceil(timeDifference / (1000 * 3600 * 24));
+        
+        return {
+          ...doc,
+          days_left: daysLeft
+        };
+      });
+
+      setExpiringDocuments(expiring);
+    }
+  }, [documentsData]);
 
   // Memoized calculations
   const profileCalculations = useMemo(() => {
@@ -347,9 +388,9 @@ const ProfileScreen = React.memo(() => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchProfile(), refetchTransports()]);
+    await Promise.all([refetchProfile(), refetchTransports(), refetchDocuments()]);
     setRefreshing(false);
-  }, [refetchProfile, refetchTransports]);
+  }, [refetchProfile, refetchTransports, refetchDocuments]);
 
   const handleRetry = useCallback(async () => {
     await onRefresh();
@@ -365,7 +406,7 @@ const ProfileScreen = React.memo(() => {
   ), []);
 
   // Error state
-  if (profileError || transportsError) {
+  if (profileError || transportsError || documentsError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -378,7 +419,7 @@ const ProfileScreen = React.memo(() => {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
           <Text style={styles.errorTitle}>Eroare la încărcarea datelor</Text>
-          <Text style={styles.errorText}>Nu s-au putut încărca informațiile profilului sau transporturilor</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca informațiile profilului, transporturilor sau documentelor</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Încearcă din nou</Text>
           </TouchableOpacity>
@@ -471,16 +512,16 @@ const ProfileScreen = React.memo(() => {
             title="Documentele Mele"
             subtitle="Vezi și descarcă documentele tale"
             onPress={toggleDocuments}
-            badge={documents.length}
+            badge={(documentsData || []).length}
             expandable={true}
             expanded={documentsExpanded}
           />
           {documentsExpanded && (
             <View style={styles.dropdownContainer}>
-              {documents.length === 0 ? (
+              {(!documentsData || documentsData.length === 0) ? (
                 <Text style={styles.noDocumentsText}>Nu există documente încărcate</Text>
               ) : (
-                documents.map(renderDocumentItem)
+                documentsData.map(renderDocumentItem)
               )}
             </View>
           )}

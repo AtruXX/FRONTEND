@@ -68,7 +68,7 @@ const TruckPageScreen = ({ navigation }) => {
     }
   }, [profileLoading, transportLoading, truckLoading, documentsLoading, showLoading, hideLoading]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await Promise.all([
@@ -82,11 +82,11 @@ const TruckPageScreen = ({ navigation }) => {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [refetchProfile, refetchTransport, refetchTruck, refetchDocuments]);
 
   const handleRetry = useCallback(async () => {
     await onRefresh();
-  }, []);
+  }, [onRefresh]);
 
   const handleBackPress = () => {
     if (navigation.canGoBack()) {
