@@ -180,6 +180,7 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     goToDocuments: () => navigation.navigate('DocumentsGeneral', { screen: 'DocumentsGeneral' }),
     goToTruck: () => navigation.navigate('Truck'),
     goToTransportMain: () => navigation.navigate('TransportMainPage'),
+    goToExpiredDocuments: () => navigation.navigate('ExpiredDocuments'),
   }), [navigation]);
 
   // Memoized action cards data
@@ -207,6 +208,12 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
       label: "Transport actual",
       onPress: navigationHandlers.goToTransportMain,
       iconColor: COLORS.success
+    },
+    {
+      iconName: "alert-circle-outline",
+      label: "Documente Expirate",
+      onPress: navigationHandlers.goToExpiredDocuments,
+      iconColor: COLORS.warning
     }
   ], [navigationHandlers]);
 

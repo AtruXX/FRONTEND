@@ -245,6 +245,65 @@ export const useDeletePersonalDocumentMutation = () => {
   return [deletePersonalDocumentMutation, { isLoading, error }];
 };
 
+// Custom hook for getting document expiration data
+export const useGetDocumentExpirationQuery = (documentId) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchDocumentExpiration = useCallback(async () => {
+    if (!documentId) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      console.log('Fetching document expiration for:', documentId);
+      const response = await fetch(`${BASE_URL}personal-documents/expiration/${documentId}/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Document expiration response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.log('Document expiration error response:', errorData);
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const expirationData = await response.json();
+      console.log('Document expiration data received:', expirationData);
+
+      setData(expirationData);
+    } catch (err) {
+      console.error('Document expiration fetch error:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [documentId]);
+
+  useEffect(() => {
+    fetchDocumentExpiration();
+  }, [fetchDocumentExpiration]);
+
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: fetchDocumentExpiration,
+  };
+};
+
 // Document categories constant (can be imported where needed)
 export const DOCUMENT_CATEGORIES = [
   { value: 'permis_de_conducere', label: 'Permis de conducere' },

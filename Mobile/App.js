@@ -21,7 +21,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Pressable, View, StyleSheet, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import ExpiredDocuments from "./Screens/ExpiredDocuments/index.js";
 // Import your notifications context
 import { NotificationsProvider } from './Screens/NotificationsContext/index.js';
 import { LoadingProvider } from './components/General/loadingSpinner.js';
@@ -175,6 +175,11 @@ function HomeStackNavigator() {
       <Stack.Screen 
         name="PhotoCMRForm" 
         component={PhotoCMRForm}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="ExpiredDocuments"
+        component={ExpiredDocuments}
         options={slideTransitionOptions}
       />
     </Stack.Navigator>
