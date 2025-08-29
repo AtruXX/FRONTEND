@@ -6,6 +6,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import PageHeader from '../../components/General/Header';
 import { useLoading } from "../../components/General/loadingSpinner.js";
+import Calendar from '../../components/General/Calendar';
 import { 
   useGetPersonalDocumentsQuery, 
   useUploadPersonalDocumentMutation,
@@ -21,6 +22,8 @@ const DocumentsScreen = ({ navigation, route }) => {
   const [category, setCategory] = useState(''); // No default category
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showAllDocuments, setShowAllDocuments] = useState(false);
+  const [expirationDate, setExpirationDate] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
 
   // Use the documents service hooks
   const {
@@ -321,7 +324,8 @@ const DocumentsScreen = ({ navigation, route }) => {
       await uploadDocumentMutation({
         document: selectedFile,
         title: getDocumentTitle(),
-        category: category
+        category: category,
+        expiration_date: expirationDate || null
       }).unwrap();
 
       Alert.alert('Success', 'Document uploaded successfully!');
@@ -329,6 +333,7 @@ const DocumentsScreen = ({ navigation, route }) => {
       // Reset the form
       setSelectedFile(null);
       setCategory('');
+      setExpirationDate('');
       
       // Refresh the documents list
       await refetchDocuments();
@@ -362,6 +367,20 @@ const DocumentsScreen = ({ navigation, route }) => {
             <Text style={[styles.documentName, !category && styles.placeholderText]}>
               {getDocumentTitle()}
             </Text>
+            <MaterialIcons name="keyboard-arrow-down" size={24} color="#666" />
+          </TouchableOpacity>
+
+          {/* Expiration Date Selector */}
+          <TouchableOpacity 
+            style={[styles.categorySelector, styles.expirationDateSelector]}
+            onPress={() => setShowCalendar(true)}
+          >
+            <View style={styles.expirationDateContainer}>
+              <Ionicons name="calendar-outline" size={20} color="#666" />
+              <Text style={[styles.documentName, !expirationDate && styles.placeholderText]}>
+                {expirationDate ? `Expiră: ${new Date(expirationDate).toLocaleDateString('ro-RO')}` : 'Selectează data expirării (opțional)'}
+              </Text>
+            </View>
             <MaterialIcons name="keyboard-arrow-down" size={24} color="#666" />
           </TouchableOpacity>
 
@@ -569,6 +588,15 @@ const DocumentsScreen = ({ navigation, route }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Calendar Modal */}
+      <Calendar
+        visible={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        selectedDate={expirationDate}
+        onDateSelect={(date) => setExpirationDate(date)}
+        minDate={new Date().toISOString().split('T')[0]} // Today's date as minimum
+      />
     </SafeAreaView>
   );
 };

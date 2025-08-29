@@ -80,6 +80,7 @@ export const useGetPersonalDocumentsQuery = (options = {}) => {
         category: doc.category,
         created_at: doc.created_at,
         updated_at: doc.updated_at,
+        expiration_date: doc.expiration_date, // Include expiration_date from API
       }));
 
       setData(formattedDocuments);
@@ -111,7 +112,7 @@ export const useUploadPersonalDocumentMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const uploadPersonalDocument = useCallback(async ({ document, title, category }) => {
+  const uploadPersonalDocument = useCallback(async ({ document, title, category, expiration_date }) => {
     setIsLoading(true);
     setError(null);
 
@@ -121,7 +122,7 @@ export const useUploadPersonalDocumentMutation = () => {
         throw new Error('No auth token found');
       }
 
-      console.log('Uploading personal document:', { title, category });
+      console.log('Uploading personal document:', { title, category, expiration_date });
 
       // Helper functions for file handling
       const getFileName = (uri) => {
@@ -151,6 +152,11 @@ export const useUploadPersonalDocumentMutation = () => {
       // Add other required fields
       formData.append('title', title);
       formData.append('category', category);
+      
+      // Add expiration date if provided
+      if (expiration_date) {
+        formData.append('expiration_date', expiration_date);
+      }
 
       const response = await fetch(`${BASE_URL}personal-documents/`, {
         method: 'POST',
@@ -248,11 +254,14 @@ export const useDeletePersonalDocumentMutation = () => {
 // Custom hook for getting document expiration data
 export const useGetDocumentExpirationQuery = (documentId) => {
   const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const fetchDocumentExpiration = useCallback(async () => {
-    if (!documentId) return;
+    if (!documentId) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -262,9 +271,9 @@ export const useGetDocumentExpirationQuery = (documentId) => {
       if (!token) {
         throw new Error('No auth token found');
       }
-
+      
       console.log('Fetching document expiration for:', documentId);
-      const response = await fetch(`${BASE_URL}personal-documents/expiration/${documentId}/`, {
+      const response = await fetch(`${BASE_URL}personal-documents/expiration/${documentId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -292,9 +301,56 @@ export const useGetDocumentExpirationQuery = (documentId) => {
     }
   }, [documentId]);
 
+  // Use documentId directly in useEffect dependency to avoid infinite loops
   useEffect(() => {
-    fetchDocumentExpiration();
-  }, [fetchDocumentExpiration]);
+    const fetchData = async () => {
+      if (!documentId) {
+        setData(null);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) {
+          throw new Error('No auth token found');
+        }
+        
+        console.log('Fetching document expiration for:', documentId);
+        const response = await fetch(`${BASE_URL}personal-documents/expiration/${documentId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        console.log('Document expiration response status:', response.status);
+
+        if (!response.ok) {
+          const errorData = await response.text();
+          console.log('Document expiration error response:', errorData);
+          throw new Error(`HTTP ${response.status}: ${errorData}`);
+        }
+
+        const expirationData = await response.json();
+        console.log('Document expiration data received:', expirationData);
+
+        setData(expirationData);
+      } catch (err) {
+        console.error('Document expiration fetch error:', err);
+        setError(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [documentId]); // Only depend on documentId
 
   return {
     data,

@@ -76,6 +76,16 @@ export const styles = StyleSheet.create({
     borderColor: COLORS.border,
     backgroundColor: COLORS.background,
   },
+  expirationDateSelector: {
+    borderColor: COLORS.accent2,
+    borderStyle: 'dashed',
+  },
+  expirationDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 8,
+  },
   helpText: {
     fontSize: 14,
     color: COLORS.medium,

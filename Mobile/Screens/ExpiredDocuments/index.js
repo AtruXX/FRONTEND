@@ -10,12 +10,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { styles } from './styles';
 import COLORS from '../../utils/COLORS';
 import PageHeader from '../../components/General/Header';
-import { useLoading } from '../../components/General/loadingSpinner';
-import { BASE_URL } from '../../utils/BASE_URL';
 import {
   useGetPersonalDocumentsQuery,
 } from '../../services/documentsService';
@@ -66,7 +63,6 @@ const DocumentCard = ({ document, daysLeft, isExpired }) => {
 
 const ExpiredDocuments = () => {
   const navigation = useNavigation();
-  const { showLoading, hideLoading } = useLoading();
   const [documentsWithExpiration, setDocumentsWithExpiration] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -77,83 +73,75 @@ const ExpiredDocuments = () => {
     refetch: refetchDocuments,
   } = useGetPersonalDocumentsQuery();
 
-  const fetchExpirationData = useCallback(async () => {
-    if (!documents || documents.length === 0) return;
-
-    try {
-      showLoading();
-      
-      const documentsWithExpirationPromises = documents.map(async (document) => {
-        try {
-          const token = await AsyncStorage.getItem('authToken');
-          if (!token) throw new Error('No auth token found');
-
-          const response = await fetch(
-            `${BASE_URL}personal-documents/expiration/${document.id}/`,
-            {
-              method: 'GET',
-              headers: {
-                'Authorization': `Token ${token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-
-          if (response.ok) {
-            const expirationData = await response.json();
-            return {
-              ...document,
-              daysLeft: expirationData.days_left,
-            };
-          } else {
-            console.warn(`Failed to fetch expiration for document ${document.id}`);
-            return {
-              ...document,
-              daysLeft: null,
-            };
-          }
-        } catch (error) {
-          console.error(`Error fetching expiration for document ${document.id}:`, error);
-          return {
-            ...document,
-            daysLeft: null,
-          };
-        }
-      });
-
-      const documentsWithExpirationData = await Promise.all(documentsWithExpirationPromises);
-      
-      // Filter documents that have expiration data and sort by days left
-      const validDocuments = documentsWithExpirationData
-        .filter(doc => doc.daysLeft !== null)
-        .sort((a, b) => a.daysLeft - b.daysLeft);
-
-      setDocumentsWithExpiration(validDocuments);
-    } catch (error) {
-      console.error('Error fetching expiration data:', error);
-      Alert.alert('Error', 'Failed to load expiration data');
-    } finally {
-      hideLoading();
+  // Calculate days left from expiration_date locally
+  const calculateDaysLeft = (expirationDate, documentTitle, documentId) => {
+    console.log(`🔍 Debug: Document "${documentTitle}" (ID: ${documentId})`);
+    console.log(`   Raw expiration_date: ${JSON.stringify(expirationDate)}`);
+    console.log(`   Type: ${typeof expirationDate}`);
+    console.log(`   Truthy check: ${!!expirationDate}`);
+    
+    if (!expirationDate || expirationDate === 'null' || expirationDate === null) {
+      console.log(`❌ No expiration date for document: ${documentTitle} (ID: ${documentId})`);
+      return null;
     }
-  }, [documents, showLoading, hideLoading]);
+    
+    const today = new Date();
+    const expiry = new Date(expirationDate);
+    const timeDifference = expiry.getTime() - today.getTime();
+    const daysLeft = Math.ceil(timeDifference / (1000 * 3600 * 24));
+    
+    console.log(`📅 Document: "${documentTitle}" (ID: ${documentId})`);
+    console.log(`   Expires: ${expirationDate}`);
+    console.log(`   Days left: ${daysLeft}`);
+    console.log(`   Status: ${daysLeft <= 10 ? '🔴 EXPIRING SOON' : daysLeft <= 30 ? '🟡 UPCOMING' : '🟢 VALID'}`);
+    
+    return daysLeft;
+  };
+
+  const processDocuments = useCallback(() => {
+    if (!documents || documents.length === 0) {
+      console.log('📄 No documents found to process');
+      setDocumentsWithExpiration([]);
+      return;
+    }
+
+    console.log(`📋 Processing ${documents.length} documents for expiration data...`);
+    
+    // Process documents and calculate days left locally
+    const documentsWithDays = documents
+      .map(document => ({
+        ...document,
+        daysLeft: calculateDaysLeft(document.expiration_date, document.title || document.name, document.id),
+      }))
+      .filter(doc => doc.daysLeft !== null && doc.expiration_date) // Only include documents with expiration dates
+      .sort((a, b) => a.daysLeft - b.daysLeft); // Sort by days left (ascending)
+
+    console.log(`✅ Processed ${documentsWithDays.length} documents with expiration dates`);
+    console.log('📊 Summary:');
+    console.log(`   🔴 Expiring soon (≤10 days): ${documentsWithDays.filter(d => d.daysLeft <= 10).length}`);
+    console.log(`   🟡 Upcoming (11-30 days): ${documentsWithDays.filter(d => d.daysLeft > 10 && d.daysLeft <= 30).length}`);
+    console.log(`   🟢 Valid (>30 days): ${documentsWithDays.filter(d => d.daysLeft > 30).length}`);
+
+    setDocumentsWithExpiration(documentsWithDays);
+  }, [documents]);
 
   useEffect(() => {
     if (documents && !documentsLoading) {
-      fetchExpirationData();
+      processDocuments();
     }
-  }, [documents, documentsLoading, fetchExpirationData]);
+  }, [documents, documentsLoading, processDocuments]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await refetchDocuments();
-      await fetchExpirationData();
+      // Documents will be processed automatically in useEffect
     } catch (error) {
       console.error('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [refetchDocuments, fetchExpirationData]);
+  }, [refetchDocuments]);
 
   const handleRetry = useCallback(() => {
     handleRefresh();
