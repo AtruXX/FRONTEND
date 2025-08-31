@@ -363,7 +363,7 @@ export const useGetDocumentExpirationQuery = (documentId) => {
 // Document categories constant (can be imported where needed)
 export const DOCUMENT_CATEGORIES = [
   { value: 'permis_de_conducere', label: 'Permis de conducere' },
-  { value: 'ç', label: 'Atestat profesional' },
+  { value: 'atestate', label: 'Atestat profesional' },
   { value: 'certificat_medical', label: 'Certificat medical' },
   { value: 'aviz_psihologic', label: 'Aviz psihologic' },
   { value: 'buletin', label: 'Carte de identitate' },
