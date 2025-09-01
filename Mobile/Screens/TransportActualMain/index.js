@@ -192,7 +192,7 @@ const TransportMainPage = ({ navigation }) => {
           {/* Vezi Ruta Button */}
           <TouchableOpacity
             style={[styles.selectionButton, { marginBottom: 20 }]}
-            onPress={() => navigateTo('RouteView')}
+            onPress={() => navigateTo('RoutePrincipal')}
           >
             <View style={styles.iconCircle}>
               <Ionicons name="map-outline" size={32} color="#FFFFFF" />

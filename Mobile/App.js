@@ -25,7 +25,7 @@ import ExpiredDocuments from "./Screens/ExpiredDocuments/index.js";
 // Import your notifications context
 import { NotificationsProvider } from './Screens/NotificationsContext/index.js';
 import { LoadingProvider } from './components/General/loadingSpinner.js';
-
+import Route from './Screens/RoutePrincipal/index.js';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -182,6 +182,11 @@ function HomeStackNavigator() {
         component={ExpiredDocuments}
         options={slideTransitionOptions}
       />
+      <Stack.Screen 
+        name="RoutePrincipal" 
+        component={Route}
+        options={slideTransitionOptions}
+      />
     </Stack.Navigator>
   );
 }
@@ -213,6 +218,11 @@ function TransportsStackNavigator() {
       <Stack.Screen 
         name="PhotoCMRForm" 
         component={PhotoCMRForm}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen 
+        name="RoutePrincipal" 
+        component={Route}
         options={slideTransitionOptions}
       />
     </Stack.Navigator>
