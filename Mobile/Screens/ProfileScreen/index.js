@@ -36,12 +36,12 @@ const ProfileInfo = React.memo(({ profileData }) => {
   return (
     <View style={styles.profileInfoContainer}>
       <View style={styles.profileContainer}>
-        <Text style={styles.profileInitials}>{initials}</Text>
+        <Text style={styles.profileInitials}>{String(initials || 'N/A')}</Text>
       </View>
       <View style={styles.profileTextContainer}>
-        <Text style={styles.profileName}>{profileData?.name || 'Nume necunoscut'}</Text>
-        <Text style={styles.profileRole}>{role}</Text>
-        <Text style={styles.profileCompany}>{profileData?.company || 'Companie necunoscută'}</Text>
+        <Text style={styles.profileName}>{String(profileData?.name || 'Nume necunoscut')}</Text>
+        <Text style={styles.profileRole}>{String(role || 'Utilizator')}</Text>
+        <Text style={styles.profileCompany}>{String(profileData?.company || 'Companie necunoscută')}</Text>
       </View>
     </View>
   );
@@ -49,9 +49,9 @@ const ProfileInfo = React.memo(({ profileData }) => {
 
 const DataRow = React.memo(({ label, value, valueStyle }) => (
   <View style={styles.dataRow}>
-    <Text style={styles.dataLabel}>{label}</Text>
+    <Text style={styles.dataLabel}>{label || ''}</Text>
     <Text style={styles.dataDivider}>|</Text>
-    <Text style={[styles.dataValue, valueStyle]}>{value}</Text>
+    <Text style={[styles.dataValue, valueStyle]}>{value || 'N/A'}</Text>
   </View>
 ));
 
@@ -81,12 +81,12 @@ const SettingItem = React.memo(({
       <Feather name={iconName} size={20} color="#6B6F8D" />
     </View>
     <View style={styles.settingTextContainer}>
-      <Text style={styles.settingTitle}>{title}</Text>
-      <Text style={styles.settingSubtitle}>{subtitle}</Text>
+      <Text style={styles.settingTitle}>{title || ''}</Text>
+      <Text style={styles.settingSubtitle}>{subtitle || ''}</Text>
     </View>
-    {badge && (
+    {badge !== undefined && badge !== null && (
       <View style={styles.badgeContainer}>
-        <Text style={styles.badgeText}>{badge}</Text>
+        <Text style={styles.badgeText}>{String(badge)}</Text>
       </View>
     )}
     {showChevron && (
@@ -558,7 +558,7 @@ const ProfileScreen = React.memo(() => {
                 onPress={callDispatcher}
               >
                 <Feather name="phone-call" size={18} color="#FFFFFF" />
-                <Text style={styles.callButtonText}>{dispatcherNumber}</Text>
+                <Text style={styles.callButtonText}>{String(dispatcherNumber || 'N/A')}</Text>
               </TouchableOpacity>
             </View>
           )}

@@ -29,7 +29,6 @@
     "react-native-calendars": "^1.1310.0",
     "react-native-fluidbottomnavigation": "^1.2.2",
     "react-native-gesture-handler": "^2.24.0",
-    "react-native-maps": "^1.25.6",
     "react-native-paper": "^5.13.1",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "^5.4.0",

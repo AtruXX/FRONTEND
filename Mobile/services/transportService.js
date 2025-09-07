@@ -3,6 +3,21 @@ import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
 
+// Debug function to check auth state
+const checkAuthState = async () => {
+  const token = await AsyncStorage.getItem('authToken');
+  const driverId = await AsyncStorage.getItem('driverId');
+  const userName = await AsyncStorage.getItem('userName');
+  
+  console.log('=== AUTH STATE DEBUG ===');
+  console.log('Token:', token ? `${token.substring(0, 10)}...` : 'null');
+  console.log('Driver ID:', driverId);
+  console.log('User Name:', userName);
+  console.log('========================');
+  
+  return { token, driverId, userName };
+};
+
 // Custom hook for getting transports query
 export const useGetTransportsQuery = (options = {}) => {
   const [data, setData] = useState(null);
@@ -19,22 +34,46 @@ export const useGetTransportsQuery = (options = {}) => {
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
+        console.error('No auth token found in AsyncStorage');
         throw new Error('No auth token found');
       }
 
-      // Get driver ID from AsyncStorage
       const driverId = await AsyncStorage.getItem('driverId');
       if (!driverId) {
+        console.error('No driver ID found in AsyncStorage');
         throw new Error('No driver ID found');
       }
 
+      console.log('Using same pattern as profile service...');
+      console.log('Token for transport request:', token ? `${token.substring(0, 10)}...` : 'null');
       console.log('Fetching transports for driver:', driverId);
-      const response = await fetch(`${BASE_URL}transport/driver/${driverId}`, {
+      
+      // Test: First verify token works with profile endpoint
+      console.log('Testing token with profile endpoint first...');
+      const profileHeaders = {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json',
+      };
+      console.log('Profile request headers:', {
+        'Authorization': `Token ${token.substring(0, 10)}...`,
+        'Content-Type': 'application/json',
+      });
+      
+      const profileTest = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: profileHeaders,
+      });
+      console.log('Profile test response status:', profileTest.status);
+      
+      console.log('Now testing transport endpoint...');
+      console.log('Request URL:', `${BASE_URL}assigned-transports`);
+      
+      // Use exact same token and headers as profile test
+      console.log('Using EXACT same headers for transport request...');
+      
+      const response = await fetch(`${BASE_URL}assigned-transports`, {
+        method: 'GET',
+        headers: profileHeaders,  // Using same headers object as profile test
       });
 
       console.log('Transports response status:', response.status);
@@ -42,6 +81,14 @@ export const useGetTransportsQuery = (options = {}) => {
       if (!response.ok) {
         const errorData = await response.text();
         console.log('Transports error response:', errorData);
+        
+        // If it's a 401 error, token might be invalid or expired
+        if (response.status === 401) {
+          console.log('Authentication failed - token might be expired');
+          // Clear the token so user will need to login again
+          await AsyncStorage.multiRemove(['authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher']);
+        }
+        
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
@@ -124,9 +171,11 @@ export const useSetActiveTransportMutation = () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
+        console.error('No auth token found in AsyncStorage');
         throw new Error('No auth token found');
       }
 
+      console.log('Token found:', token ? `${token.substring(0, 10)}...` : 'null');
       console.log('Setting active transport:', transportId);
       const response = await fetch(`${BASE_URL}set-active-transport/${transportId}`, {
         method: 'PATCH',
@@ -141,6 +190,14 @@ export const useSetActiveTransportMutation = () => {
       if (!response.ok) {
         const errorData = await response.text();
         console.log('Set active transport error response:', errorData);
+        
+        // If it's a 401 error, token might be invalid or expired
+        if (response.status === 401) {
+          console.log('Authentication failed - token might be expired');
+          await AsyncStorage.removeItem('authToken');
+          await AsyncStorage.removeItem('driverId');
+        }
+        
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
@@ -236,22 +293,24 @@ export const useGetTotalTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
+      // Debug auth state first
+      const authState = await checkAuthState();
+      
+      if (!authState.token) {
+        console.error('No auth token found in AsyncStorage for total transports');
         throw new Error('No auth token found');
       }
 
-      // Get driver ID from AsyncStorage
-      const driverId = await AsyncStorage.getItem('driverId');
-      if (!driverId) {
+      if (!authState.driverId) {
+        console.error('No driver ID found in AsyncStorage for total transports');
         throw new Error('No driver ID found');
       }
 
-      console.log('Fetching total transports for driver:', driverId);
-      const response = await fetch(`${BASE_URL}transport/driver/${driverId}`, {
+      console.log('Fetching TOTAL transports for driver:', authState.driverId);
+      const response = await fetch(`${BASE_URL}assigned-transports`, {
         method: 'GET',
         headers: {
-          'Authorization': `Token ${token}`,
+          'Authorization': `Token ${authState.token}`,
           'Content-Type': 'application/json',
         },
       });

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BASE_URL } from '../../utils/BASE_URL.js';
 
 const COLORS = {
   background: "#F4F5FB", // Light lavender background
@@ -20,23 +22,90 @@ const COLORS = {
 
 const SplashScreen = ({ navigation }) => {
   const opacity = useSharedValue(1);
+  const [isChecking, setIsChecking] = useState(true);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
 
-  useEffect(() => {
-    const navigateToLogin = () => {
-      navigation.replace('Login');
-    };
+  // Function to check if token is valid
+  const validateToken = async (token) => {
+    try {
+      console.log('Validating token on splash screen...');
+      const response = await fetch(`${BASE_URL}profile/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
+      if (response.ok) {
+        console.log('Token is valid, navigating to Main');
+        return true;
+      } else {
+        console.log('Token is invalid, response status:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('Token validation error:', error);
+      return false;
+    }
+  };
+
+  // Function to check authentication and navigate accordingly
+  const checkAuthAndNavigate = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      const driverId = await AsyncStorage.getItem('driverId');
+      
+      console.log('=== SPLASH SCREEN AUTH CHECK ===');
+      console.log('Stored token:', token ? `${token.substring(0, 10)}...` : 'null');
+      console.log('Stored driver ID:', driverId);
+      console.log('================================');
+
+      if (token && driverId) {
+        // Token exists, validate it
+        const isValid = await validateToken(token);
+        
+        if (isValid) {
+          // Token is valid, go to main app
+          navigation.replace('Main');
+          return;
+        } else {
+          // Token is invalid, clear storage and go to login
+          await AsyncStorage.multiRemove([
+            'authToken',
+            'driverId',
+            'userName',
+            'userCompany',
+            'isDriver',
+            'isDispatcher'
+          ]);
+          console.log('Invalid token cleared from storage');
+        }
+      }
+      
+      // No token or invalid token, go to login
+      navigation.replace('Login');
+      
+    } catch (error) {
+      console.error('Auth check error:', error);
+      // In case of error, go to login
+      navigation.replace('Login');
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       opacity.value = withTiming(0, { duration: 500 }, (finished) => {
         if (finished) {
-          runOnJS(navigateToLogin)();
+          runOnJS(checkAuthAndNavigate)();
         }
       });
-    }, 2500);
+    }, 1000); // Reduced from 2500ms to 1000ms for faster startup
 
     return () => clearTimeout(timer);
   }, [navigation, opacity]);
@@ -44,10 +113,13 @@ const SplashScreen = ({ navigation }) => {
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <Image
-// ✅ CORRECT - Relative path
-source={require("../../assets/LOGO_NB.png")}        style={styles.logo}
+        source={require("../../assets/LOGO_NB.png")}
+        style={styles.logo}
         resizeMode="contain"
       />
+      {isChecking && (
+        <Text style={styles.loadingText}>Se verifica autentificarea...</Text>
+      )}
     </Animated.View>
   );
 };
@@ -77,6 +149,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     lineHeight: 28,
     marginHorizontal: 30,
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    color: COLORS.card,
+    marginTop: 20,
+    opacity: 0.8,
   },
 });
 

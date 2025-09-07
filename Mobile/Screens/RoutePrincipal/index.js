@@ -1,22 +1,7 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, Platform, Linking } from 'react-native';
 import * as Location from 'expo-location';
-import Constants from 'expo-constants';
 import { styles } from './styles';
-
-let MapView, Marker, PROVIDER_GOOGLE;
-let isNativeMapAvailable = false;
-
-try {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
-  PROVIDER_GOOGLE = Maps.PROVIDER_GOOGLE;
-  isNativeMapAvailable = true;
-} catch (error) {
-  console.log('react-native-maps not available, using fallback');
-  isNativeMapAvailable = false;
-}
 
 const RoutePrincipalScreen = () => {
   const [location, setLocation] = useState(null);
@@ -27,8 +12,6 @@ const RoutePrincipalScreen = () => {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-
-  const googleMapsApiKey = Constants.expoConfig?.extra?.googleMapsApiKey;
 
   useEffect(() => {
     getLocationPermission();
@@ -78,20 +61,35 @@ const RoutePrincipalScreen = () => {
     getCurrentLocation();
   };
 
-  const handleMapPress = (event) => {
-    const coordinate = event.nativeEvent.coordinate;
-    console.log('Map pressed at:', coordinate);
+
+  const openInGoogleMaps = () => {
+    if (location) {
+      const { latitude, longitude } = location.coords;
+      const url = Platform.select({
+        ios: `maps://app?saddr=${latitude},${longitude}`,
+        android: `geo:${latitude},${longitude}?q=${latitude},${longitude}`,
+      });
+      const fallbackUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      
+      Linking.canOpenURL(url).then(supported => {
+        if (supported) {
+          Linking.openURL(url);
+        } else {
+          Linking.openURL(fallbackUrl);
+        }
+      });
+    }
   };
 
   const renderMap = () => {
-    if (!isNativeMapAvailable) {
-      return (
-        <View style={[styles.map, styles.fallbackContainer]}>
-          <Text style={styles.fallbackTitle}>📍 Harta</Text>
-          <Text style={styles.fallbackText}>
-            Pentru a vedea harta, te rog sa construiesti aplicatia sau sa folosesti Expo Development Client
-          </Text>
-          {location && (
+    return (
+      <View style={[styles.map, styles.fallbackContainer]}>
+        <Text style={styles.fallbackTitle}>📍 Harta</Text>
+        <Text style={styles.fallbackText}>
+          Apasa pentru a deschide locatia in aplicatia de harti
+        </Text>
+        {location && (
+          <TouchableOpacity onPress={openInGoogleMaps} style={styles.mapButton}>
             <View style={styles.locationInfo}>
               <Text style={styles.fallbackLocationTitle}>Locatia curenta:</Text>
               <Text style={styles.fallbackLocationText}>
@@ -100,51 +98,16 @@ const RoutePrincipalScreen = () => {
               <Text style={styles.fallbackLocationText}>
                 Lng: {location.coords.longitude.toFixed(6)}
               </Text>
+              <Text style={styles.openMapText}>
+                🗺️ Deschide in Google Maps
+              </Text>
             </View>
-          )}
-        </View>
-      );
-    }
-
-    return (
-      <MapView
-        provider={PROVIDER_GOOGLE}
-        style={styles.map}
-        region={mapRegion}
-        onPress={handleMapPress}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        showsCompass={true}
-        showsScale={true}
-        showsTraffic={false}
-        mapType="standard"
-        followsUserLocation={false}
-        loadingEnabled={true}
-      >
-        {location && (
-          <Marker
-            coordinate={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
-            title="Locatia mea"
-            description="Pozitia curenta"
-            pinColor="red"
-          />
+          </TouchableOpacity>
         )}
-      </MapView>
+      </View>
     );
   };
 
-  if (!googleMapsApiKey) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Google Maps API key not found</Text>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>

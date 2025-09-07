@@ -261,4 +261,18 @@ export const styles = StyleSheet.create({
     fontFamily: 'monospace',
     lineHeight: 20,
   },
+  mapButton: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  openMapText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.primary || '#007AFF',
+    textAlign: 'center',
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 8,
+  },
 });

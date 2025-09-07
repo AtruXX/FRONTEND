@@ -59,13 +59,7 @@
       "**/*"
     ],
     "plugins": [
-      "expo-location",
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": "AIzaSyDNAL2kwxRQoohJGIpErP78t3q6FN-9gS4"
-        }
-      ]
+      "expo-location"
     ],
     "extra": {
       "eas": {

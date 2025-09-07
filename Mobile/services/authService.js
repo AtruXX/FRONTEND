@@ -38,7 +38,66 @@ export const useLoginMutation = () => {
       // Store token
       if (data.auth_token) {
         await AsyncStorage.setItem('authToken', data.auth_token);
-        console.log('Token stored successfully');
+        console.log('Token stored successfully:', data.auth_token ? `${data.auth_token.substring(0, 10)}...` : 'null');
+        await new Promise(resolve => setTimeout(resolve, 100));
+        // Immediately fetch and store user profile data after login
+        try {
+          console.log('Fetching profile immediately after login...');
+          const profileResponse = await fetch(`${BASE_URL}profile/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Token ${data.auth_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            console.log('Profile fetched after login:', profileData);
+
+            // Store profile data in AsyncStorage
+            const storagePromises = [];
+
+            if (profileData.id) {
+              storagePromises.push(
+                AsyncStorage.setItem('driverId', profileData.id.toString())
+              );
+            }
+
+            if (profileData.name) {
+              storagePromises.push(
+                AsyncStorage.setItem('userName', profileData.name)
+              );
+            }
+
+            if (profileData.company) {
+              storagePromises.push(
+                AsyncStorage.setItem('userCompany', profileData.company)
+              );
+            }
+
+            if (profileData.is_driver !== undefined) {
+              storagePromises.push(
+                AsyncStorage.setItem('isDriver', profileData.is_driver.toString())
+              );
+            }
+
+            if (profileData.is_dispatcher !== undefined) {
+              storagePromises.push(
+                AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString())
+              );
+            }
+
+            await Promise.all(storagePromises);
+            console.log('Profile data stored after login');
+          } else {
+            console.warn('Failed to fetch profile after login:', profileResponse.status);
+          }
+        } catch (profileError) {
+          console.warn('Error fetching profile after login:', profileError);
+        }
+      } else {
+        console.error('No auth_token in response:', data);
       }
 
       setIsLoading(false);
