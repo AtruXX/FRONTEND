@@ -24,12 +24,12 @@ const TransportMainPage = ({ navigation }) => {
   const [finalizeTransport, { isLoading: isFinalizing }] = useFinalizeTransportMutation();
   const [downloadCMR, { isLoading: isDownloading }] = useDownloadCMRDocumentMutation();
 
-  // Get active transport ID
-  const activeTransportId = profileData?.driver?.active_transport_id;
+  // FIXED: Get active transport ID from the correct path
+  const activeTransportId = profileData?.active_transport;
   
   // Debug log for active transport ID
   useEffect(() => {
-    console.log('🎯 Active transport ID changed:', {
+    console.log('🎯 FIXED: Active transport ID changed:', {
       profileLoading,
       profileError: !!profileError,
       profileData: !!profileData,
@@ -41,10 +41,11 @@ const TransportMainPage = ({ navigation }) => {
     
     // Also log the exact path we're trying to access
     if (profileData) {
-      console.log('🔍 Profile data path check:', {
+      console.log('🔍 FIXED: Profile data path check:', {
         'profileData.driver': profileData.driver,
         'profileData.driver?.active_transport_id': profileData.driver?.active_transport_id,
-        'typeof active_transport_id': typeof profileData.driver?.active_transport_id
+        'profileData.active_transport': profileData.active_transport,
+        'typeof active_transport': typeof profileData.active_transport
       });
     }
   }, [activeTransportId, profileLoading, profileError, profileData]);
@@ -186,7 +187,7 @@ const TransportMainPage = ({ navigation }) => {
         />
         
         <View style={styles.emptyContainer}>
-          <Ionicons name="truck-outline" size={60} color="#5A5BDE" />
+          <Ionicons name="car-outline" size={60} color="#5A5BDE" />
           <Text style={styles.emptyTitle}>Niciun transport activ</Text>
           <Text style={styles.emptyText}>Nu aveți un transport activ asignat în acest moment</Text>
           <TouchableOpacity

@@ -1,4 +1,4 @@
-// services/profileService.js
+// services/profileService.js - FIXED VERSION
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
@@ -81,7 +81,7 @@ export const useGetUserProfileQuery = (options = {}) => {
       }
       console.log('Profile data stored in AsyncStorage');
 
-      // Transform profile data for easier consumption
+      // Transform profile data for easier consumption - FIXED MAPPING
       const transformedProfile = {
         id: profileData.id,
         name: profileData.name,
@@ -97,12 +97,12 @@ export const useGetUserProfileQuery = (options = {}) => {
         hire_date: profileData.hire_date,
         dob: profileData.dob,
         
-        // Driver specific data
+        // Driver specific data - FIXED TO USE CORRECT FIELD NAMES
         driver: profileData.driver ? {
           average_rating: profileData.driver.average_rating,
           on_road: profileData.driver.on_road,
-          id_transports: profileData.driver.id_transports,
-          active_transport: profileData.driver.active_transport
+          active_transport_id: profileData.driver.active_transport_id, // THIS IS THE CORRECT FIELD
+          id_transports: profileData.driver.id_transports
         } : null,
         
         // Dispatcher specific data
@@ -111,10 +111,13 @@ export const useGetUserProfileQuery = (options = {}) => {
         // Computed fields for easier UI consumption
         role: profileData.is_driver ? "Driver" : (profileData.is_dispatcher ? "Dispatcher" : "User"),
         initials: profileData.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '',
-        active_transport: profileData.driver?.active_transport || null,
+        
+        // FIXED: Use the correct field name from API response
+        active_transport: profileData.driver?.active_transport_id || null,
         on_road: profileData.driver?.on_road || false,
       };
 
+      console.log('🔧 FIXED: Active transport ID from profile:', transformedProfile.active_transport);
       setData(transformedProfile);
     } catch (err) {
       console.error('User profile fetch error:', err);
