@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
-import { useFinalizeTransportMutation } from '../../services/transportService';
+import { useFinalizeTransportMutation, useGetTransportByIdQuery } from '../../services/transportService';
 import { useDownloadCMRDocumentMutation } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
@@ -25,16 +25,48 @@ const TransportMainPage = ({ navigation }) => {
   const [downloadCMR, { isLoading: isDownloading }] = useDownloadCMRDocumentMutation();
 
   // Get active transport ID
-  const activeTransportId = profileData?.active_transport;
+  const activeTransportId = profileData?.driver?.active_transport_id;
+  
+  // Debug log for active transport ID
+  useEffect(() => {
+    console.log('🎯 Active transport ID changed:', {
+      profileLoading,
+      profileError: !!profileError,
+      profileData: !!profileData,
+      driverData: !!profileData?.driver,
+      activeTransportId,
+      rawDriverData: profileData?.driver,
+      shouldSkipTransportFetch: !activeTransportId || profileLoading || profileError
+    });
+    
+    // Also log the exact path we're trying to access
+    if (profileData) {
+      console.log('🔍 Profile data path check:', {
+        'profileData.driver': profileData.driver,
+        'profileData.driver?.active_transport_id': profileData.driver?.active_transport_id,
+        'typeof active_transport_id': typeof profileData.driver?.active_transport_id
+      });
+    }
+  }, [activeTransportId, profileLoading, profileError, profileData]);
+
+  // Fetch full transport details - skip if no transportId OR profile is still loading
+  const {
+    data: transportData,
+    isLoading: transportLoading,
+    error: transportError,
+    refetch: refetchTransport
+  } = useGetTransportByIdQuery(activeTransportId, { 
+    skip: !activeTransportId || profileLoading || profileError 
+  });
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || isFinalizing || isDownloading) {
+    if (profileLoading || transportLoading || isFinalizing || isDownloading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, isFinalizing, isDownloading, showLoading, hideLoading]);
+  }, [profileLoading, transportLoading, isFinalizing, isDownloading, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
@@ -110,7 +142,10 @@ const TransportMainPage = ({ navigation }) => {
 
   const handleRetry = useCallback(async () => {
     await refetchProfile();
-  }, [refetchProfile]);
+    if (refetchTransport) {
+      await refetchTransport();
+    }
+  }, [refetchProfile, refetchTransport]);
 
   // Handle error state
   if (profileError) {

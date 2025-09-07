@@ -293,17 +293,29 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
   const [error, setError] = useState(null);
 
   const fetchTransportById = useCallback(async () => {
-    if (!transportId || options.skip) return;
+    console.log(`🔍 useGetTransportByIdQuery called with:`, {
+      transportId,
+      skipOption: options.skip,
+      shouldSkip: !transportId || options.skip
+    });
 
+    if (!transportId || options.skip) {
+      console.log('⏭️ Skipping transport fetch:', { transportId, skip: options.skip });
+      return;
+    }
+
+    console.log('🚀 Starting transport by ID fetch process...');
     setIsFetching(true);
     setError(null);
 
     try {
       console.log(`🎯 Fetching transport by ID: ${transportId}`);
+      console.log(`📍 Full endpoint URL: ${BASE_URL}transports/${transportId}`);
       
       const token = await waitForAuthToken();
+      console.log(`🔑 Got auth token for transport request: ${token?.substring(0, 10)}...`);
       
-      const response = await fetch(`${BASE_URL}transports/${transportId}/`, {
+      const response = await fetch(`${BASE_URL}transports?id=${transportId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -312,6 +324,7 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
       });
 
       console.log('📡 Transport by ID response status:', response.status);
+      console.log('📡 Transport by ID response headers:', Object.fromEntries(response.headers));
 
       if (!response.ok) {
         const errorData = await response.text();
@@ -333,8 +346,40 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
-      const transport = await response.json();
-      console.log('📦 Transport by ID data received:', transport);
+      const responseData = await response.json();
+      console.log('📦 Transport by ID RAW response received:', responseData);
+      
+      // Handle both single transport and array responses
+      let transport;
+      if (Array.isArray(responseData)) {
+        console.log('📋 Response is array, looking for transport with ID:', transportId);
+        transport = responseData.find(t => t.id === parseInt(transportId));
+        if (!transport) {
+          throw new Error(`Transport with ID ${transportId} not found in response`);
+        }
+      } else if (responseData.transports && Array.isArray(responseData.transports)) {
+        console.log('📋 Response has transports array, looking for transport with ID:', transportId);
+        transport = responseData.transports.find(t => t.id === parseInt(transportId));
+        if (!transport) {
+          throw new Error(`Transport with ID ${transportId} not found in transports array`);
+        }
+      } else {
+        // Assume single transport object
+        transport = responseData;
+      }
+      
+      console.log('📋 Transport details breakdown:', {
+        id: transport.id,
+        status: transport.status,
+        is_finished: transport.is_finished,
+        company: transport.company,
+        dispatcher: transport.dispatcher,
+        driver: transport.driver,
+        truck: transport.truck,
+        trailer: transport.trailer,
+        email_destinatar: transport.email_destinatar,
+        route: transport.route
+      });
 
       // Transform the API data to match the component structure
       const transformedTransport = {
@@ -367,6 +412,7 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
       };
 
       console.log('✅ Transport by ID data processed successfully');
+      console.log('🔄 Transformed transport data:', transformedTransport);
       setData(transformedTransport);
     } catch (err) {
       console.error('💥 Transport by ID fetch error:', err);
@@ -379,7 +425,15 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
 
   // Initial load
   useEffect(() => {
+    console.log('⏰ useEffect triggered in useGetTransportByIdQuery', {
+      transportId,
+      currentData: data,
+      currentError: error,
+      isCurrentlyLoading: isLoading
+    });
+    
     const timer = setTimeout(() => {
+      console.log('🔄 Timer fired, calling fetchTransportById...');
       fetchTransportById();
     }, 100);
 
