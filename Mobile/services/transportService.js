@@ -285,6 +285,116 @@ export const useFinalizeTransportMutation = () => {
   return [finalizeTransportMutation, { isLoading, error }];
 };
 
+// Custom hook for getting transport by ID (for active transport from profile)
+export const useGetTransportByIdQuery = (transportId, options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchTransportById = useCallback(async () => {
+    if (!transportId || options.skip) return;
+
+    setIsFetching(true);
+    setError(null);
+
+    try {
+      console.log(`🎯 Fetching transport by ID: ${transportId}`);
+      
+      const token = await waitForAuthToken();
+      
+      const response = await fetch(`${BASE_URL}transports/${transportId}/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('📡 Transport by ID response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('❌ Transport by ID error response:', errorData);
+        
+        if (response.status === 401) {
+          console.error('🚫 Authentication failed for transport by ID');
+          
+          // Before clearing token, verify it's actually invalid
+          const isTokenValid = await verifyTokenValidity(token);
+          if (!isTokenValid) {
+            console.error('🗑️ Token verified as invalid, clearing storage');
+            await AsyncStorage.multiRemove([
+              'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
+            ]);
+          }
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const transport = await response.json();
+      console.log('📦 Transport by ID data received:', transport);
+
+      // Transform the API data to match the component structure
+      const transformedTransport = {
+        id: transport.id,
+        truck_combination: `Truck #${transport.truck} + Trailer #${transport.trailer}`,
+        destination: transport.email_destinatar || 'N/A',
+        status_truck: transport.status_truck || 'not started',
+        status_goods: transport.status_goods || 'not started',
+        status_trailer_wagon: transport.status_trailer || 'not started',
+        status_transport: transport.status_transport || 'not started',
+        status_coupling: transport.status_coupling || 'not started',
+        status_loaded_truck: transport.status_loaded_truck || 'not started',
+        departure_time: 'N/A',
+        arrival_time: 'N/A',
+        distance: 'N/A',
+        // Additional fields from API
+        email_expeditor: transport.email_expeditor,
+        email_destinatar: transport.email_destinatar,
+        status: transport.status,
+        is_finished: transport.is_finished,
+        status_truck_problems: transport.status_truck_problems,
+        status_trailer_description: transport.status_trailer_description,
+        delay_estimation: transport.delay_estimation,
+        company: transport.company,
+        dispatcher: transport.dispatcher,
+        driver: transport.driver,
+        truck: transport.truck,
+        trailer: transport.trailer,
+        route: transport.route
+      };
+
+      console.log('✅ Transport by ID data processed successfully');
+      setData(transformedTransport);
+    } catch (err) {
+      console.error('💥 Transport by ID fetch error:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+    }
+  }, [transportId, options.skip]);
+
+  // Initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchTransportById();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [fetchTransportById]);
+
+  return {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch: fetchTransportById,
+  };
+};
+
 // Custom hook for getting total transports count for profile
 export const useGetTotalTransportsQuery = (options = {}) => {
   const [data, setData] = useState(null);
