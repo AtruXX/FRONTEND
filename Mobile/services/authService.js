@@ -88,7 +88,10 @@ export const useLoginMutation = () => {
               );
             }
 
-            await Promise.all(storagePromises);
+            // Use sequential storage to avoid race conditions with authToken
+            for (const promise of storagePromises) {
+              await promise;
+            }
             console.log('Profile data stored after login');
           } else {
             console.warn('Failed to fetch profile after login:', profileResponse.status);

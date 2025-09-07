@@ -32,6 +32,9 @@ export const useGetTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
+      // Add small delay to ensure token is fully stored
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         console.error('No auth token found in AsyncStorage');
@@ -45,35 +48,18 @@ export const useGetTransportsQuery = (options = {}) => {
       }
 
       console.log('Using same pattern as profile service...');
-      console.log('Token for transport request:', token ? `${token.substring(0, 10)}...` : 'null');
+      console.log('Token for transport request:', token);
       console.log('Fetching transports for driver:', driverId);
       
       // Test: First verify token works with profile endpoint
-      console.log('Testing token with profile endpoint first...');
       const profileHeaders = {
         'Authorization': `Token ${token}`,
         'Content-Type': 'application/json',
       };
-      console.log('Profile request headers:', {
-        'Authorization': `Token ${token.substring(0, 10)}...`,
-        'Content-Type': 'application/json',
-      });
-      
-      const profileTest = await fetch(`${BASE_URL}profile/`, {
-        method: 'GET',
-        headers: profileHeaders,
-      });
-      console.log('Profile test response status:', profileTest.status);
-      
-      console.log('Now testing transport endpoint...');
-      console.log('Request URL:', `${BASE_URL}assigned-transports`);
-      
-      // Use exact same token and headers as profile test
-      console.log('Using EXACT same headers for transport request...');
-      
+     
       const response = await fetch(`${BASE_URL}assigned-transports`, {
         method: 'GET',
-        headers: profileHeaders,  // Using same headers object as profile test
+        headers: profileHeaders,  
       });
 
       console.log('Transports response status:', response.status);
@@ -82,12 +68,7 @@ export const useGetTransportsQuery = (options = {}) => {
         const errorData = await response.text();
         console.log('Transports error response:', errorData);
         
-        // If it's a 401 error, token might be invalid or expired
-        if (response.status === 401) {
-          console.log('Authentication failed - token might be expired');
-          // Clear the token so user will need to login again
-          await AsyncStorage.multiRemove(['authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher']);
-        }
+       
         
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
@@ -194,8 +175,7 @@ export const useSetActiveTransportMutation = () => {
         // If it's a 401 error, token might be invalid or expired
         if (response.status === 401) {
           console.log('Authentication failed - token might be expired');
-          await AsyncStorage.removeItem('authToken');
-          await AsyncStorage.removeItem('driverId');
+          // Note: authToken should only be cleared on explicit logout, not on 401 errors
         }
         
         throw new Error(`HTTP ${response.status}: ${errorData}`);
@@ -293,24 +273,16 @@ export const useGetTotalTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
-      // Debug auth state first
-      const authState = await checkAuthState();
+      // Add small delay to ensure token is fully stored
+      await new Promise(resolve => setTimeout(resolve, 50));
       
-      if (!authState.token) {
-        console.error('No auth token found in AsyncStorage for total transports');
-        throw new Error('No auth token found');
-      }
-
-      if (!authState.driverId) {
-        console.error('No driver ID found in AsyncStorage for total transports');
-        throw new Error('No driver ID found');
-      }
-
-      console.log('Fetching TOTAL transports for driver:', authState.driverId);
+      // Debug auth state first
+      const token = await AsyncStorage.getItem('authToken');
+      console.log(token);
       const response = await fetch(`${BASE_URL}assigned-transports`, {
         method: 'GET',
         headers: {
-          'Authorization': `Token ${authState.token}`,
+          'Authorization': `Token ${token}`,
           'Content-Type': 'application/json',
         },
       });
