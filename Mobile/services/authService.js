@@ -1,7 +1,20 @@
-// services/authService.js - Fixed version with proper unwrap()
+// services/authService.js - Fixed version with better token handling
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
+
+// Helper function to store data with verification
+const storeWithVerification = async (key, value) => {
+  await AsyncStorage.setItem(key, value);
+  // Verify it was stored
+  const stored = await AsyncStorage.getItem(key);
+  if (stored !== value) {
+    console.warn(`⚠️ Storage verification failed for ${key}`);
+    // Try again
+    await AsyncStorage.setItem(key, value);
+  }
+  console.log(`✅ Stored ${key}:`, value.length > 20 ? `${value.substring(0, 10)}...` : value);
+};
 
 // Custom hook for login mutation
 export const useLoginMutation = () => {
@@ -13,8 +26,8 @@ export const useLoginMutation = () => {
     setError(null);
 
     try {
-      console.log('Attempting login with:', phone_number);
-      console.log('URL:', `${BASE_URL}auth/token/login`);
+      console.log('🔐 Attempting login with:', phone_number);
+      console.log('🌐 URL:', `${BASE_URL}auth/token/login`);
       
       const response = await fetch(`${BASE_URL}auth/token/login`, {
         method: 'POST',
@@ -24,25 +37,35 @@ export const useLoginMutation = () => {
         body: JSON.stringify({ phone_number, password }),
       });
 
-      console.log('Response status:', response.status);
+      console.log('📡 Login response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Error response:', errorData);
+        console.error('❌ Login error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('Login successful:', data);
+      console.log('✅ Login successful, received data with auth_token');
 
-      // Store token
+      // Store token FIRST and verify it
       if (data.auth_token) {
-        await AsyncStorage.setItem('authToken', data.auth_token);
-        console.log('Token stored successfully:', data.auth_token ? `${data.auth_token.substring(0, 10)}...` : 'null');
+        console.log('💾 Storing auth token...');
+        await storeWithVerification('authToken', data.auth_token);
+        
+        // Small delay to ensure storage completion
         await new Promise(resolve => setTimeout(resolve, 100));
-        // Immediately fetch and store user profile data after login
+        
+        // Verify token was stored correctly
+        const verifyToken = await AsyncStorage.getItem('authToken');
+        if (!verifyToken) {
+          throw new Error('Failed to store auth token');
+        }
+        console.log('✅ Auth token verified in storage');
+
+        // Now fetch profile with the verified token
         try {
-          console.log('Fetching profile immediately after login...');
+          console.log('👤 Fetching profile immediately after login...');
           const profileResponse = await fetch(`${BASE_URL}profile/`, {
             method: 'GET',
             headers: {
@@ -53,60 +76,47 @@ export const useLoginMutation = () => {
 
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
-            console.log('Profile fetched after login:', profileData);
+            console.log('📋 Profile fetched after login:', profileData);
 
-            // Store profile data in AsyncStorage
-            const storagePromises = [];
+            // Store profile data sequentially with verification
+            const profileStorage = [
+              { key: 'driverId', value: profileData.id?.toString() },
+              { key: 'userName', value: profileData.name },
+              { key: 'userCompany', value: profileData.company },
+              { key: 'isDriver', value: profileData.is_driver?.toString() },
+              { key: 'isDispatcher', value: profileData.is_dispatcher?.toString() }
+            ];
 
-            if (profileData.id) {
-              storagePromises.push(
-                AsyncStorage.setItem('driverId', profileData.id.toString())
-              );
+            // Store each item with verification
+            for (const item of profileStorage) {
+              if (item.value) {
+                await storeWithVerification(item.key, item.value);
+              }
             }
 
-            if (profileData.name) {
-              storagePromises.push(
-                AsyncStorage.setItem('userName', profileData.name)
-              );
-            }
-
-            if (profileData.company) {
-              storagePromises.push(
-                AsyncStorage.setItem('userCompany', profileData.company)
-              );
-            }
-
-            if (profileData.is_driver !== undefined) {
-              storagePromises.push(
-                AsyncStorage.setItem('isDriver', profileData.is_driver.toString())
-              );
-            }
-
-            if (profileData.is_dispatcher !== undefined) {
-              storagePromises.push(
-                AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString())
-              );
-            }
-
-            // Use sequential storage to avoid race conditions with authToken
-            for (const promise of storagePromises) {
-              await promise;
-            }
-            console.log('Profile data stored after login');
+            // Final verification of all stored data
+            const finalVerification = await AsyncStorage.multiGet([
+              'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
+            ]);
+            
+            console.log('🔍 Final storage verification:', finalVerification);
+            
           } else {
-            console.warn('Failed to fetch profile after login:', profileResponse.status);
+            console.warn('⚠️ Failed to fetch profile after login:', profileResponse.status);
           }
         } catch (profileError) {
-          console.warn('Error fetching profile after login:', profileError);
+          console.warn('⚠️ Error fetching profile after login:', profileError);
+          // Don't fail the login if profile fetch fails
         }
       } else {
-        console.error('No auth_token in response:', data);
+        console.error('❌ No auth_token in response:', data);
+        throw new Error('No auth token received');
       }
 
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('💥 Login error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -116,17 +126,14 @@ export const useLoginMutation = () => {
   // Return the mutation function with unwrap method
   const loginMutation = useCallback((variables) => {
     const promise = login(variables);
-    
-    // Add unwrap method to the promise
     promise.unwrap = () => promise;
-    
     return promise;
   }, [login]);
 
   return [loginMutation, { isLoading, error }];
 };
 
-// Custom hook for profile query
+// Custom hook for profile query with better error handling
 export const useGetProfileQuery = (arg, options = {}) => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,16 +141,28 @@ export const useGetProfileQuery = (arg, options = {}) => {
   const [error, setError] = useState(null);
 
   const fetchProfile = useCallback(async () => {
+    if (options.skip) return;
+
     setIsFetching(true);
     setError(null);
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('No auth token found');
+      // Wait a bit for token to be available after login
+      let token = await AsyncStorage.getItem('authToken');
+      let retries = 0;
+      
+      while (!token && retries < 5) {
+        console.log(`⏳ Waiting for auth token, attempt ${retries + 1}...`);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        token = await AsyncStorage.getItem('authToken');
+        retries++;
       }
 
-      console.log('Fetching profile with token');
+      if (!token) {
+        throw new Error('No auth token found after waiting');
+      }
+
+      console.log('👤 Fetching profile with verified token');
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: {
@@ -152,67 +171,57 @@ export const useGetProfileQuery = (arg, options = {}) => {
         },
       });
 
-      console.log('Profile response status:', response.status);
+      console.log('📡 Profile response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Profile error response:', errorData);
+        console.error('❌ Profile error response:', errorData);
+        
+        if (response.status === 401) {
+          // Token is invalid, clear it
+          await AsyncStorage.removeItem('authToken');
+          console.log('🗑️ Cleared invalid auth token');
+        }
+        
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const profileData = await response.json();
-      console.log('Profile data received:', profileData);
+      console.log('📋 Profile data received');
 
-      // Store profile data in AsyncStorage
-      const storagePromises = [];
+      // Store profile data with verification (but don't fail if storage fails)
+      try {
+        const profileStorage = [
+          { key: 'driverId', value: profileData.id?.toString() },
+          { key: 'userName', value: profileData.name },
+          { key: 'userCompany', value: profileData.company },
+          { key: 'isDriver', value: profileData.is_driver?.toString() },
+          { key: 'isDispatcher', value: profileData.is_dispatcher?.toString() }
+        ];
 
-      if (profileData.id) {
-        storagePromises.push(
-          AsyncStorage.setItem('driverId', profileData.id.toString())
-        );
+        for (const item of profileStorage) {
+          if (item.value) {
+            await storeWithVerification(item.key, item.value);
+          }
+        }
+      } catch (storageError) {
+        console.warn('⚠️ Profile storage error (non-critical):', storageError);
       }
-
-      if (profileData.name) {
-        storagePromises.push(
-          AsyncStorage.setItem('userName', profileData.name)
-        );
-      }
-
-      if (profileData.company) {
-        storagePromises.push(
-          AsyncStorage.setItem('userCompany', profileData.company)
-        );
-      }
-
-      if (profileData.is_driver !== undefined) {
-        storagePromises.push(
-          AsyncStorage.setItem('isDriver', profileData.is_driver.toString())
-        );
-      }
-
-      if (profileData.is_dispatcher !== undefined) {
-        storagePromises.push(
-          AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString())
-        );
-      }
-
-      await Promise.all(storagePromises);
-      console.log('Profile data stored in AsyncStorage');
 
       setData(profileData);
     } catch (err) {
-      console.error('Profile fetch error:', err);
+      console.error('💥 Profile fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
       setIsFetching(false);
     }
-  }, []);
+  }, [options.skip]);
 
   // Initial load
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [fetchProfile]);
 
   return {
     data,
@@ -237,7 +246,7 @@ export const useLogoutMutation = () => {
 
       if (token) {
         try {
-          console.log('Calling logout endpoint');
+          console.log('📞 Calling logout endpoint');
           const response = await fetch(`${BASE_URL}auth/token/logout`, {
             method: 'POST',
             headers: {
@@ -245,13 +254,14 @@ export const useLogoutMutation = () => {
               'Content-Type': 'application/json',
             },
           });
-          console.log('Logout response status:', response.status);
+          console.log('📡 Logout response status:', response.status);
         } catch (logoutError) {
-          console.warn('Logout API call failed, but continuing with local cleanup');
+          console.warn('⚠️ Logout API call failed, but continuing with local cleanup');
         }
       }
 
       // Always clear storage
+      console.log('🗑️ Clearing auth storage...');
       await AsyncStorage.multiRemove([
         'authToken',
         'driverId',
@@ -261,11 +271,16 @@ export const useLogoutMutation = () => {
         'isDispatcher'
       ]);
 
-      console.log('Auth data cleared from storage');
+      // Verify storage was cleared
+      const verification = await AsyncStorage.multiGet([
+        'authToken', 'driverId', 'userName'
+      ]);
+      console.log('🔍 Storage cleared verification:', verification);
+
       setIsLoading(false);
       return { success: true };
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error('💥 Logout error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -297,7 +312,7 @@ export const useUpdateProfileMutation = () => {
         throw new Error('No auth token found');
       }
 
-      console.log('Updating profile with:', profileData);
+      console.log('📝 Updating profile with:', profileData);
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'PATCH',
         headers: {
@@ -307,21 +322,21 @@ export const useUpdateProfileMutation = () => {
         body: JSON.stringify(profileData),
       });
 
-      console.log('Update profile response status:', response.status);
+      console.log('📡 Update profile response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Update profile error response:', errorData);
+        console.error('❌ Update profile error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('Profile updated successfully:', data);
+      console.log('✅ Profile updated successfully');
       
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('Profile update error:', err);
+      console.error('💥 Profile update error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -348,7 +363,7 @@ export const useCreateAccountMutation = () => {
     setError(null);
 
     try {
-      console.log('Creating account with:', userData);
+      console.log('👤 Creating account with:', userData);
       const response = await fetch(`${BASE_URL}accounts/create`, {
         method: 'POST',
         headers: {
@@ -357,11 +372,11 @@ export const useCreateAccountMutation = () => {
         body: JSON.stringify(userData),
       });
 
-      console.log('Create account response status:', response.status);
+      console.log('📡 Create account response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Create account error response:', errorData);
+        console.error('❌ Create account error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
@@ -369,7 +384,7 @@ export const useCreateAccountMutation = () => {
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('Create account error:', err);
+      console.error('💥 Create account error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -386,7 +401,7 @@ export const useCreateAccountMutation = () => {
   return [createAccountMutation, { isLoading, error }];
 };
 
-// Transport service hooks (simplified)
+// Transport service hook with better error handling
 export const useGetTransportByDriverIdQuery = (driverId, options = {}) => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -404,7 +419,7 @@ export const useGetTransportByDriverIdQuery = (driverId, options = {}) => {
         throw new Error('No auth token found');
       }
 
-      console.log(`Fetching transport for driver ${driverId}`);
+      console.log(`🚛 Fetching transport for driver ${driverId}`);
       const response = await fetch(`${BASE_URL}transports?driver_id=${driverId}`, {
         method: 'GET',
         headers: {
@@ -413,19 +428,19 @@ export const useGetTransportByDriverIdQuery = (driverId, options = {}) => {
         },
       });
 
-      console.log('Transport response status:', response.status);
+      console.log('📡 Transport response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Transport error response:', errorData);
+        console.error('❌ Transport error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const transportData = await response.json();
-      console.log('Transport data received:', transportData);
+      console.log('📦 Transport data received');
       setData(transportData);
     } catch (err) {
-      console.error('Transport fetch error:', err);
+      console.error('💥 Transport fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -433,7 +448,11 @@ export const useGetTransportByDriverIdQuery = (driverId, options = {}) => {
   }, [driverId, options.skip]);
 
   useEffect(() => {
-    fetchTransport();
+    const timer = setTimeout(() => {
+      fetchTransport();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [fetchTransport]);
 
   return {

@@ -1,21 +1,39 @@
-// services/transportService.js
+// services/transportService.js - Fixed version with better error handling
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
 
-// Debug function to check auth state
-const checkAuthState = async () => {
-  const token = await AsyncStorage.getItem('authToken');
-  const driverId = await AsyncStorage.getItem('driverId');
-  const userName = await AsyncStorage.getItem('userName');
-  
-  console.log('=== AUTH STATE DEBUG ===');
-  console.log('Token:', token ? `${token.substring(0, 10)}...` : 'null');
-  console.log('Driver ID:', driverId);
-  console.log('User Name:', userName);
-  console.log('========================');
-  
-  return { token, driverId, userName };
+// Helper function to wait for auth token with retries
+const waitForAuthToken = async (maxRetries = 5, delay = 200) => {
+  for (let i = 0; i < maxRetries; i++) {
+    const token = await AsyncStorage.getItem('authToken');
+    if (token) {
+      console.log(`✅ Auth token found on attempt ${i + 1}:`, `${token.substring(0, 10)}...`);
+      return token;
+    }
+    console.log(`⏳ Waiting for auth token, attempt ${i + 1}/${maxRetries}`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  throw new Error('Auth token not available after maximum retries');
+};
+
+// Helper function to check if token is truly invalid (not just a temporary issue)
+const verifyTokenValidity = async (token) => {
+  try {
+    // Use a simple endpoint to verify token validity
+    const response = await fetch(`${BASE_URL}profile/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.log('Token verification failed:', error);
+    return false;
+  }
 };
 
 // Custom hook for getting transports query
@@ -32,54 +50,61 @@ export const useGetTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
-      // Add small delay to ensure token is fully stored
-      await new Promise(resolve => setTimeout(resolve, 50));
+      console.log('🚛 Starting transport fetch...');
       
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found in AsyncStorage');
-        throw new Error('No auth token found');
-      }
-
+      // Wait for auth token to be available
+      const token = await waitForAuthToken();
+      
+      // Double-check we have driver ID too
       const driverId = await AsyncStorage.getItem('driverId');
       if (!driverId) {
-        console.error('No driver ID found in AsyncStorage');
-        throw new Error('No driver ID found');
+        console.warn('⚠️ No driver ID found, but proceeding with token');
       }
 
-      console.log('Using same pattern as profile service...');
-      console.log('Token for transport request:', token);
-      console.log('Fetching transports for driver:', driverId);
+      console.log('🔑 Using token for transport request');
+      console.log('👤 Driver ID:', driverId);
       
-      // Test: First verify token works with profile endpoint
-      const profileHeaders = {
-        'Authorization': `Token ${token}`,
-        'Content-Type': 'application/json',
-      };
-     
-      const response = await fetch(`${BASE_URL}assigned-transports`, {
+      const response = await fetch(`${BASE_URL}assigned-transports/`, {
         method: 'GET',
-        headers: profileHeaders,  
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
-      console.log('Transports response status:', response.status);
+      console.log('📡 Transports response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Transports error response:', errorData);
+        console.error('❌ Transports error response:', errorData);
         
-       
+        if (response.status === 401) {
+          console.error('🚫 Authentication failed for transports');
+          
+          // Before clearing token, verify it's actually invalid
+          const isTokenValid = await verifyTokenValidity(token);
+          if (!isTokenValid) {
+            console.error('🗑️ Token verified as invalid, clearing storage');
+            await AsyncStorage.multiRemove([
+              'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
+            ]);
+          } else {
+            console.log('🤔 Token seems valid, this might be an endpoint-specific issue');
+          }
+        }
         
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const transportData = await response.json();
-      console.log('Transports data received:', transportData);
+      console.log('📦 Transports data received:', transportData);
 
       // Filter only non-finished transports (is_finished: false)
       const activeTransports = transportData.transports?.filter(transport => 
         !transport.is_finished
       ) || [];
+
+      console.log(`🎯 Filtered ${activeTransports.length} active transports from ${transportData.transports?.length || 0} total`);
 
       // Transform the API data to match the component structure
       const transformedTransports = activeTransports.map(transport => ({
@@ -111,6 +136,8 @@ export const useGetTransportsQuery = (options = {}) => {
         route: transport.route
       }));
 
+      console.log('✅ Transport data processed successfully');
+
       // Store all transports (for profile count) and filtered transports
       setData({ 
         transports: transformedTransports,
@@ -118,7 +145,7 @@ export const useGetTransportsQuery = (options = {}) => {
         totalTransports: (transportData.transports || []).length
       });
     } catch (err) {
-      console.error('Transports fetch error:', err);
+      console.error('💥 Transports fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -126,9 +153,14 @@ export const useGetTransportsQuery = (options = {}) => {
     }
   }, [options.skip]);
 
-  // Initial load
+  // Initial load with longer delay to ensure all auth data is ready
   useEffect(() => {
-    fetchTransports();
+    // Wait a bit longer for all auth setup to complete
+    const timer = setTimeout(() => {
+      fetchTransports();
+    }, 500); // Increased delay
+
+    return () => clearTimeout(timer);
   }, [fetchTransports]);
 
   return {
@@ -150,14 +182,11 @@ export const useSetActiveTransportMutation = () => {
     setError(null);
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found in AsyncStorage');
-        throw new Error('No auth token found');
-      }
-
-      console.log('Token found:', token ? `${token.substring(0, 10)}...` : 'null');
-      console.log('Setting active transport:', transportId);
+      console.log('🎯 Setting active transport:', transportId);
+      
+      // Wait for auth token to be available
+      const token = await waitForAuthToken();
+      
       const response = await fetch(`${BASE_URL}set-active-transport/${transportId}`, {
         method: 'PATCH',
         headers: {
@@ -166,28 +195,27 @@ export const useSetActiveTransportMutation = () => {
         },
       });
 
-      console.log('Set active transport response status:', response.status);
+      console.log('📡 Set active transport response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Set active transport error response:', errorData);
+        console.error('❌ Set active transport error response:', errorData);
         
-        // If it's a 401 error, token might be invalid or expired
         if (response.status === 401) {
-          console.log('Authentication failed - token might be expired');
-          // Note: authToken should only be cleared on explicit logout, not on 401 errors
+          console.error('🚫 Authentication failed for set active transport');
+          // Don't clear token here, let other parts handle it
         }
         
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('Active transport set successfully:', data);
+      console.log('✅ Active transport set successfully:', data);
 
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('Set active transport error:', err);
+      console.error('💥 Set active transport error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -214,12 +242,10 @@ export const useFinalizeTransportMutation = () => {
     setError(null);
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('No auth token found');
-      }
-
-      console.log('Finalizing transport:', activeTransportId);
+      console.log('🏁 Finalizing transport:', activeTransportId);
+      
+      const token = await waitForAuthToken();
+      
       const response = await fetch(`${BASE_URL}finish-transport/${activeTransportId}`, {
         method: 'PATCH',
         headers: {
@@ -228,21 +254,21 @@ export const useFinalizeTransportMutation = () => {
         },
       });
 
-      console.log('Finalize transport response status:', response.status);
+      console.log('📡 Finalize transport response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Finalize transport error response:', errorData);
+        console.error('❌ Finalize transport error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('Transport finalized successfully:', data);
+      console.log('✅ Transport finalized successfully:', data);
 
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('Finalize transport error:', err);
+      console.error('💥 Finalize transport error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -273,13 +299,11 @@ export const useGetTotalTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
-      // Add small delay to ensure token is fully stored
-      await new Promise(resolve => setTimeout(resolve, 50));
+      console.log('📊 Fetching total transports...');
       
-      // Debug auth state first
-      const token = await AsyncStorage.getItem('authToken');
-      console.log(token);
-      const response = await fetch(`${BASE_URL}assigned-transports`, {
+      const token = await waitForAuthToken();
+      
+      const response = await fetch(`${BASE_URL}assigned-transports/`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -287,23 +311,23 @@ export const useGetTotalTransportsQuery = (options = {}) => {
         },
       });
 
-      console.log('Total transports response status:', response.status);
+      console.log('📡 Total transports response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Total transports error response:', errorData);
+        console.error('❌ Total transports error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const transportData = await response.json();
-      console.log('Total transports data received:', transportData);
+      console.log('📦 Total transports data received:', transportData);
 
       setData({ 
         totalTransports: (transportData.transports || []).length,
         allTransports: transportData.transports || []
       });
     } catch (err) {
-      console.error('Total transports fetch error:', err);
+      console.error('💥 Total transports fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -311,9 +335,13 @@ export const useGetTotalTransportsQuery = (options = {}) => {
     }
   }, [options.skip]);
 
-  // Initial load
+  // Initial load with longer delay
   useEffect(() => {
-    fetchTotalTransports();
+    const timer = setTimeout(() => {
+      fetchTotalTransports();
+    }, 600); // Even longer delay for this one
+
+    return () => clearTimeout(timer);
   }, [fetchTotalTransports]);
 
   return {
