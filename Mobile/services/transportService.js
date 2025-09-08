@@ -64,7 +64,7 @@ export const useGetTransportsQuery = (options = {}) => {
       console.log('🔑 Using token for transport request');
       console.log('👤 Driver ID:', driverId);
       
-      const response = await fetch(`${BASE_URL}assigned-transports/`, {
+      const response = await fetch(`${BASE_URL}active-transports`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -99,12 +99,15 @@ export const useGetTransportsQuery = (options = {}) => {
       const transportData = await response.json();
       console.log('📦 Transports data received:', transportData);
 
+      // Handle new API structure with active_transports array
+      const rawTransports = transportData.active_transports || [];
+      
       // Filter only non-finished transports (is_finished: false)
-      const activeTransports = transportData.transports?.filter(transport => 
+      const activeTransports = rawTransports.filter(transport => 
         !transport.is_finished
-      ) || [];
+      );
 
-      console.log(`🎯 Filtered ${activeTransports.length} active transports from ${transportData.transports?.length || 0} total`);
+      console.log(`🎯 Filtered ${activeTransports.length} active transports from ${rawTransports.length} total`);
 
       // Transform the API data to match the component structure
       const transformedTransports = activeTransports.map(transport => ({
@@ -141,8 +144,9 @@ export const useGetTransportsQuery = (options = {}) => {
       // Store all transports (for profile count) and filtered transports
       setData({ 
         transports: transformedTransports,
-        allTransports: transportData.transports || [],
-        totalTransports: (transportData.transports || []).length
+        allTransports: rawTransports,
+        totalTransports: rawTransports.length,
+        numberOfActiveTransports: transportData.number_of_active_transports || rawTransports.length
       });
     } catch (err) {
       console.error('💥 Transports fetch error:', err);
@@ -467,7 +471,7 @@ export const useGetTotalTransportsQuery = (options = {}) => {
       
       const token = await waitForAuthToken();
       
-      const response = await fetch(`${BASE_URL}assigned-transports/`, {
+      const response = await fetch(`${BASE_URL}active-transports`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
@@ -487,8 +491,8 @@ export const useGetTotalTransportsQuery = (options = {}) => {
       console.log('📦 Total transports data received:', transportData);
 
       setData({ 
-        totalTransports: (transportData.transports || []).length,
-        allTransports: transportData.transports || []
+        totalTransports: transportData.number_of_active_transports || (transportData.active_transports || []).length,
+        allTransports: transportData.active_transports || []
       });
     } catch (err) {
       console.error('💥 Total transports fetch error:', err);

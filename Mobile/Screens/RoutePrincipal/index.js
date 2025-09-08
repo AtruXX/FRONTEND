@@ -1,154 +1,297 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, Platform, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Alert, ScrollView, SafeAreaView, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useGetUserProfileQuery } from '../../services/profileService';
+import { useGetTransportByIdQuery } from '../../services/transportService';
+import { RouteService } from '../../services/routeService';
+import { MapService } from '../../services/mapService';
+import { useLoading } from '../../components/General/loadingSpinner.js';
+import PageHeader from '../../components/General/Header';
 import { styles } from './styles';
 
-const RoutePrincipalScreen = () => {
-  const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
-  const [mapRegion, setMapRegion] = useState({
-    latitude: 44.4268, // Bucharest default coordinates
-    longitude: 26.1025,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+const RoutePrincipalScreen = ({ navigation }) => {
+  const { showLoading, hideLoading } = useLoading();
+  const [routeData, setRouteData] = useState(null);
+  const [processingRoute, setProcessingRoute] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Get user profile to access active transport data
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError
+  } = useGetUserProfileQuery();
+  
+  // Get active transport ID
+  const activeTransportId = profileData?.active_transport;
+  
+  // Fetch transport details with route data
+  const {
+    data: transportData,
+    isLoading: transportLoading,
+    error: transportError
+  } = useGetTransportByIdQuery(activeTransportId, { 
+    skip: !activeTransportId || profileLoading || profileError 
   });
 
   useEffect(() => {
-    getLocationPermission();
-  }, []);
+    if (profileLoading || transportLoading || processingRoute) {
+      showLoading();
+    } else {
+      hideLoading();
+    }
+  }, [profileLoading, transportLoading, processingRoute, showLoading, hideLoading]);
+  
+  useEffect(() => {
+    processTransportRoute();
+  }, [transportData]);
 
-  const getLocationPermission = async () => {
+  const processTransportRoute = async () => {
+    if (!transportData?.route) return;
+    
+    setProcessingRoute(true);
+    setError(null);
+    
     try {
+      // Request location permission for reverse geocoding
       let { status } = await Location.requestForegroundPermissionsAsync();
       
       if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied');
-        Alert.alert(
-          'Permisiuni locatie',
-          'Pentru a afisa ruta, aplicatia are nevoie de acces la localizare.',
-          [{ text: 'OK', style: 'default' }]
-        );
+        setError('Pentru a afișa numele locațiilor, aplicația are nevoie de acces la localizare.');
+        // Still process route without geocoding
+        const basicRoute = await RouteService.processRouteData(transportData.route);
+        setRouteData(basicRoute);
+        setProcessingRoute(false);
         return;
       }
-
-      getCurrentLocation();
-    } catch (error) {
-      console.error('Error requesting location permission:', error);
-      setErrorMsg('Error requesting location permission');
-    }
-  };
-
-  const getCurrentLocation = async () => {
-    try {
-      let location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
       
-      setLocation(location);
-      setMapRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
+      // Process route with full geocoding
+      const processedRoute = await RouteService.processRouteData(transportData.route);
+      setRouteData(processedRoute);
     } catch (error) {
-      console.error('Error getting current location:', error);
-      setErrorMsg('Unable to get current location');
+      console.error('Error processing route:', error);
+      setError('Eroare la procesarea rutei. Vă rugăm să încercați din nou.');
+    } finally {
+      setProcessingRoute(false);
     }
   };
 
-  const handleRefreshLocation = () => {
-    getCurrentLocation();
-  };
-
-
-  const openInGoogleMaps = () => {
-    if (location) {
-      const { latitude, longitude } = location.coords;
-      const url = Platform.select({
-        ios: `maps://app?saddr=${latitude},${longitude}`,
-        android: `geo:${latitude},${longitude}?q=${latitude},${longitude}`,
-      });
-      const fallbackUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-      
-      Linking.canOpenURL(url).then(supported => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          Linking.openURL(fallbackUrl);
-        }
-      });
+  const handleOpenFullRoute = () => {
+    if (!routeData?.locations) {
+      Alert.alert('Eroare', 'Nu sunt disponibile date despre rută.');
+      return;
     }
+    
+    MapService.showMapOptions(routeData.locations);
   };
 
-  const renderMap = () => {
+  const handleOpenLocation = (location) => {
+    MapService.openLocationInMaps(location, location.city);
+  };
+
+
+  const handleRefresh = () => {
+    processTransportRoute();
+  };
+
+  const renderLocationCard = (location, index, total) => {
+    const getLocationIcon = () => {
+      if (location.isStart) return 'play-circle';
+      if (location.isEnd) return 'checkmark-circle';
+      return 'location';
+    };
+    
+    const getLocationColor = () => {
+      if (location.isStart) return '#4CAF50';
+      if (location.isEnd) return '#FF5722';
+      return '#5A5BDE';
+    };
+    
     return (
-      <View style={[styles.map, styles.fallbackContainer]}>
-        <Text style={styles.fallbackTitle}>📍 Harta</Text>
-        <Text style={styles.fallbackText}>
-          Apasa pentru a deschide locatia in aplicatia de harti
-        </Text>
-        {location && (
-          <TouchableOpacity onPress={openInGoogleMaps} style={styles.mapButton}>
-            <View style={styles.locationInfo}>
-              <Text style={styles.fallbackLocationTitle}>Locatia curenta:</Text>
-              <Text style={styles.fallbackLocationText}>
-                Lat: {location.coords.latitude.toFixed(6)}
+      <TouchableOpacity
+        key={location.id}
+        style={styles.locationCard}
+        onPress={() => handleOpenLocation(location)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.locationCardContent}>
+          <View style={styles.locationIconContainer}>
+            <Ionicons
+              name={getLocationIcon()}
+              size={24}
+              color={getLocationColor()}
+            />
+            {index < total - 1 && <View style={styles.routeLine} />}
+          </View>
+          
+          <View style={styles.locationInfo}>
+            <View style={styles.locationHeader}>
+              <Text style={styles.locationNumber}>
+                {location.isStart ? 'START' : location.isEnd ? 'DESTINAȚIE' : `OPRIRE ${index}`}
               </Text>
-              <Text style={styles.fallbackLocationText}>
-                Lng: {location.coords.longitude.toFixed(6)}
-              </Text>
-              <Text style={styles.openMapText}>
-                🗺️ Deschide in Google Maps
-              </Text>
+              <TouchableOpacity
+                style={styles.openMapButton}
+                onPress={() => handleOpenLocation(location)}
+              >
+                <Ionicons name="map" size={16} color="#5A5BDE" />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        )}
+            
+            <Text style={styles.locationCity}>
+              {location.city || 'Locație necunoscută'}
+            </Text>
+            
+            {location.formattedAddress && location.formattedAddress !== 'Adresă necunoscută' && (
+              <Text style={styles.locationAddress}>
+                {location.formattedAddress}
+              </Text>
+            )}
+            
+            <Text style={styles.locationCoordinates}>
+              {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+  
+  const renderRouteInfo = () => {
+    if (!routeData) return null;
+    
+    return (
+      <View style={styles.routeInfoContainer}>
+        <View style={styles.routeInfoRow}>
+          <View style={styles.routeInfoItem}>
+            <Ionicons name="speedometer" size={20} color="#5A5BDE" />
+            <Text style={styles.routeInfoLabel}>Distanță</Text>
+            <Text style={styles.routeInfoValue}>{routeData.totalDistance} km</Text>
+          </View>
+          
+          <View style={styles.routeInfoItem}>
+            <Ionicons name="time" size={20} color="#5A5BDE" />
+            <Text style={styles.routeInfoLabel}>Timp estimat</Text>
+            <Text style={styles.routeInfoValue}>{routeData.travelTime}</Text>
+          </View>
+        </View>
       </View>
     );
   };
 
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Ruta Principala</Text>
-        <TouchableOpacity 
-          style={styles.refreshButton}
-          onPress={handleRefreshLocation}
-        >
-          <Text style={styles.refreshButtonText}>🔄</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.mapContainer}>
-        {renderMap()}
-      </View>
-
-      {errorMsg && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{errorMsg}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={getLocationPermission}
-          >
-            <Text style={styles.retryButtonText}>Incearca din nou</Text>
-          </TouchableOpacity>
+  // Handle no active transport
+  if (!activeTransportId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="RUTA TRANSPORT"
+          onBack={() => navigation.goBack()}
+          showBack={true}
+        />
+        
+        <View style={styles.emptyContainer}>
+          <Ionicons name="car-outline" size={60} color="#5A5BDE" />
+          <Text style={styles.emptyTitle}>Niciun transport activ</Text>
+          <Text style={styles.emptyText}>Nu aveți un transport activ asignat în acest moment</Text>
         </View>
-      )}
+      </SafeAreaView>
+    );
+  }
+  
+  // Handle errors
+  if (profileError || transportError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="RUTA TRANSPORT"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRefresh}
+          showRetry={true}
+          showBack={true}
+        />
+        
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
+          <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
+          <Text style={styles.emptyText}>Nu s-au putut încărca datele rutei</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+  
+  // Handle no route data
+  if (!transportData?.route) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="RUTA TRANSPORT"
+          onBack={() => navigation.goBack()}
+          showBack={true}
+        />
+        
+        <View style={styles.emptyContainer}>
+          <Ionicons name="map-outline" size={60} color="#5A5BDE" />
+          <Text style={styles.emptyTitle}>Rută indisponibilă</Text>
+          <Text style={styles.emptyText}>Nu sunt disponibile informații despre rută pentru acest transport</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>
-          Apasa pe harta pentru a selecta o destinatie
-        </Text>
-        {location && (
-          <Text style={styles.coordinatesText}>
-            Lat: {location.coords.latitude.toFixed(6)}, 
-            Lng: {location.coords.longitude.toFixed(6)}
-          </Text>
+  return (
+    <SafeAreaView style={styles.container}>
+      <PageHeader
+        title="RUTA TRANSPORT"
+        onBack={() => navigation.goBack()}
+        onRetry={handleRefresh}
+        showRetry={true}
+        showBack={true}
+      />
+      
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {error && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="warning" size={20} color="#FF7285" />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
         )}
-      </View>
-    </View>
+        
+        {renderRouteInfo()}
+        
+        {routeData?.locations && (
+          <View style={styles.locationsContainer}>
+            <View style={styles.locationsHeader}>
+              <Text style={styles.locationsTitle}>Puncte de pe rută</Text>
+              <TouchableOpacity
+                style={styles.openFullRouteButton}
+                onPress={handleOpenFullRoute}
+              >
+                <Ionicons name="navigate" size={16} color="#FFFFFF" />
+                <Text style={styles.openFullRouteText}>Navigează</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.locationsList}>
+              {routeData.locations.map((location, index) =>
+                renderLocationCard(location, index, routeData.locations.length)
+              )}
+            </View>
+          </View>
+        )}
+        
+        {processingRoute && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#5A5BDE" />
+            <Text style={styles.loadingText}>Se procesează ruta...</Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
