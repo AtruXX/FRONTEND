@@ -12,17 +12,74 @@ export class RouteService {
    */
   static decodePolyline(polylineString) {
     try {
-      // Parse the polyline if it's a JSON string
+      // Handle null/undefined input
+      if (!polylineString) {
+        console.error('Polyline string is null or undefined');
+        return [];
+      }
+
       let coordinates;
+      
+      // Parse the polyline if it's a JSON string
       if (typeof polylineString === 'string') {
-        const parsed = JSON.parse(polylineString);
-        coordinates = parsed.coordinates;
-      } else {
+        try {
+          let parsed = JSON.parse(polylineString);
+          
+          // Handle double-encoded JSON strings
+          if (typeof parsed === 'string') {
+            parsed = JSON.parse(parsed);
+          }
+          
+          // Handle different possible structures
+          coordinates = parsed.coordinates || parsed.geometry?.coordinates || parsed;
+        } catch (jsonError) {
+          console.error('Failed to parse polyline JSON:', jsonError);
+          return [];
+        }
+      } else if (polylineString.coordinates) {
+        // Object with coordinates property
         coordinates = polylineString.coordinates;
+      } else if (polylineString.geometry?.coordinates) {
+        // GeoJSON-like structure
+        coordinates = polylineString.geometry.coordinates;
+      } else if (Array.isArray(polylineString)) {
+        // Direct array of coordinates
+        coordinates = polylineString;
+      } else {
+        console.error('Invalid polyline format:', polylineString);
+        return [];
+      }
+      
+      // Validate coordinates is an array
+      if (!Array.isArray(coordinates)) {
+        console.error('Coordinates is not an array:', coordinates);
+        return [];
+      }
+
+      // Check if array is empty
+      if (coordinates.length === 0) {
+        console.error('Coordinates array is empty');
+        return [];
       }
       
       // Return coordinates in [lat, lng] format
-      return coordinates.map(coord => [coord[1], coord[0]]); // Swap lng,lat to lat,lng
+      return coordinates.map(coord => {
+        if (!Array.isArray(coord) || coord.length < 2) {
+          console.error('Invalid coordinate format:', coord);
+          return [0, 0]; // Return default coordinate
+        }
+        
+        // Convert to numbers and swap lng,lat to lat,lng
+        const lng = parseFloat(coord[0]);
+        const lat = parseFloat(coord[1]);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+          console.error('Invalid coordinate values:', coord);
+          return [0, 0];
+        }
+        
+        return [lat, lng]; // Return as [lat, lng]
+      });
     } catch (error) {
       console.error('Error decoding polyline:', error);
       return [];
