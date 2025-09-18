@@ -47,6 +47,20 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  notificationIcon: {
+    position: 'relative',
+    padding: 8,
+  },
+  notificationBadgeContainer: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+  },
   dateContainer: {
     flexDirection: "row",
     alignItems: "center",

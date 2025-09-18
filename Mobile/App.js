@@ -22,9 +22,11 @@ import { Pressable, View, StyleSheet, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import ExpiredDocuments from "./Screens/ExpiredDocuments/index.js";
+import NotificationsScreen from "./Screens/NotificationsScreen/index.js";
 // Import your notifications context
 import { NotificationsProvider } from './Screens/NotificationsContext/index.js';
 import { LoadingProvider } from './components/General/loadingSpinner.js';
+import { NotificationManager } from './components/Notifications/index.js';
 import Route from './Screens/RoutePrincipal/index.js';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -182,9 +184,14 @@ function HomeStackNavigator() {
         component={ExpiredDocuments}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="RoutePrincipal" 
+      <Stack.Screen
+        name="RoutePrincipal"
         component={Route}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="NotificationsScreen"
+        component={NotificationsScreen}
         options={slideTransitionOptions}
       />
     </Stack.Navigator>
@@ -220,9 +227,14 @@ function TransportsStackNavigator() {
         component={PhotoCMRForm}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="RoutePrincipal" 
+      <Stack.Screen
+        name="RoutePrincipal"
         component={Route}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="NotificationsScreen"
+        component={NotificationsScreen}
         options={slideTransitionOptions}
       />
     </Stack.Navigator>
@@ -233,6 +245,11 @@ function ProfileStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Stack.Screen
+        name="NotificationsScreen"
+        component={NotificationsScreen}
+        options={slideTransitionOptions}
+      />
     </Stack.Navigator>
   );
 }
@@ -256,33 +273,35 @@ function MainTabs() {
 // Main app navigator wrapped with NavigationContainer
 function AppNavigatorContent() {
   return (
-    <Stack.Navigator
-      initialRouteName="Splash"
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen 
-        name="Splash" 
-        component={SplashScreen} 
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen 
-        name="Login" 
-        component={LoginScreen} 
-        options={fadeTransitionOptions}
-      />
-      <Stack.Screen
-        name="Main"
-        component={MainTabs}
-        options={mainScreenOptions}
-        listeners={{
-          beforeRemove: (e) => {
-            if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
-              e.preventDefault();
-            }
-          },
-        }}
-      />
-    </Stack.Navigator>
+    <>
+      <Stack.Navigator
+        initialRouteName="Splash"
+        screenOptions={{ headerShown: false }}
+      >
+        <Stack.Screen
+          name="Splash"
+          component={SplashScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Login"
+          component={LoginScreen}
+          options={fadeTransitionOptions}
+        />
+        <Stack.Screen
+          name="Main"
+          component={MainTabs}
+          options={mainScreenOptions}
+          listeners={{
+            beforeRemove: (e) => {
+              if (e.data.action.type === 'GO_BACK' || e.data.action.type === 'POP') {
+                e.preventDefault();
+              }
+            },
+          }}
+        />
+      </Stack.Navigator>
+    </>
   );
 }
 

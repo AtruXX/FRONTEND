@@ -8,6 +8,8 @@ import { styles } from "./styles";
 import COLORS from "../../utils/COLORS.js";
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { useChangeDriverStatusMutation } from "../../services/statusUpdateService";
+import { useNotifications } from "../NotificationsContext/index.js";
+import { NotificationBadge } from "../../components/Notifications/index.js";
 
 // RTK Query imports
 import {
@@ -48,6 +50,7 @@ const StatusDisplay = React.memo(({ isOnRoad, currentStatus }) => (
 const HomeScreen = React.memo(() => {
   const navigation = useNavigation();
   const { showLoading, hideLoading } = useLoading();
+  const { unreadCount } = useNotifications();
   const [currentDate, setCurrentDate] = useState(new Date());
 const [changeDriverStatus] = useChangeDriverStatusMutation();
 
@@ -255,7 +258,20 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
             <Text style={styles.nameText}>{profileData?.name || 'Utilizator'}</Text>
             <Text style={styles.roleText}>Sofer</Text>
           </View>
-          <ProfileContainer initials={profileInfo.initials} />
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.notificationIcon}
+              onPress={() => navigation.navigate('NotificationsScreen')}
+            >
+              <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadgeContainer}>
+                  <NotificationBadge size="small" />
+                </View>
+              )}
+            </TouchableOpacity>
+            <ProfileContainer initials={profileInfo.initials} />
+          </View>
         </View>
 
         {/* Date display */}
