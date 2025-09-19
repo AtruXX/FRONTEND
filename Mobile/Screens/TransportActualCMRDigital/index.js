@@ -118,6 +118,8 @@ const CMRInput = React.memo(({
     );
   }
 
+  console.log(`🔧 Field ${field.key} is in edit mode, rendering TextInput`);
+
   if (field.type === 'country') {
     return (
       <TouchableOpacity
@@ -147,7 +149,10 @@ const CMRInput = React.memo(({
       <TextInput
         style={styles.input}
         value={String(value)}
-        onChangeText={onChange}
+        onChangeText={(text) => {
+          console.log(`🔧 Field ${field.key} changed to:`, text);
+          onChange(text);
+        }}
         placeholder={field.placeholder}
         placeholderTextColor="#A0A4C1"
         keyboardType={
@@ -155,6 +160,8 @@ const CMRInput = React.memo(({
           field.type === 'decimal' ? 'decimal-pad' :
           field.type === 'date' ? 'default' : 'default'
         }
+        onFocus={() => console.log(`🔧 Field ${field.key} focused`)}
+        onBlur={() => console.log(`🔧 Field ${field.key} blurred`)}
       />
     );
   }
@@ -223,6 +230,11 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
   const [activeField, setActiveField] = useState(null);
   const [editingMode, setEditingMode] = useState(false);
   const [localFormData, setLocalFormData] = useState({});
+
+  // Debug editing mode changes
+  useEffect(() => {
+    console.log('🔧 Editing mode changed to:', editingMode);
+  }, [editingMode]);
 
   // Get user profile to get active transport ID
   const {
@@ -631,20 +643,24 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
           onRetry={handleRetry}
           showRetry={true}
           showBack={true}
-          rightButton={
-            <TouchableOpacity 
-              onPress={editingMode ? handleSaveChanges : () => setEditingMode(true)}
-              style={styles.editButton}
+        />
+
+        {/* More visible edit button */}
+        {!editingMode && (
+          <View style={styles.editButtonContainer}>
+            <TouchableOpacity
+              onPress={() => {
+                console.log('🔧 Edit button pressed, enabling editing mode');
+                setEditingMode(true);
+              }}
+              style={styles.prominentEditButton}
               disabled={isUpdating}
             >
-              {isUpdating ? (
-                <Ionicons name="hourglass-outline" size={24} color="#5A5BDE" />
-              ) : (
-                <Ionicons name={editingMode ? "checkmark" : "create-outline"} size={24} color="#5A5BDE" />
-              )}
+              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.editButtonText}>Editează CMR</Text>
             </TouchableOpacity>
-          }
-        />
+          </View>
+        )}
 
         <ProgressIndicator completedPercentage={cmrData?.completed_percentage} />
 

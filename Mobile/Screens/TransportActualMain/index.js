@@ -1,15 +1,19 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation, useGetTransportByIdQuery } from '../../services/transportService';
-import { useDownloadCMRDocumentMutation, useGetCMRDataQuery } from '../../services/CMRService';
+import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
 
 const TransportMainPage = ({ navigation }) => {
   const { showLoading, hideLoading } = useLoading();
+
+  // UIT edit modal state
+  const [showUitModal, setShowUitModal] = useState(false);
+  const [uitInput, setUitInput] = useState('');
   
   // ALWAYS call hooks at the top level - never conditionally
   // Get user profile to access active transport data
@@ -23,6 +27,7 @@ const TransportMainPage = ({ navigation }) => {
   // Mutations - always call these hooks
   const [finalizeTransport, { isLoading: isFinalizing }] = useFinalizeTransportMutation();
   const [downloadCMR, { isLoading: isDownloading }] = useDownloadCMRDocumentMutation();
+  const [updateCMRData, { isLoading: isUpdatingCMR }] = useUpdateCMRDataMutation();
 
   // FIXED: Get active transport ID from the correct path
   const activeTransportId = profileData?.active_transport;
@@ -42,19 +47,20 @@ const TransportMainPage = ({ navigation }) => {
   const {
     data: cmrData,
     isLoading: cmrLoading,
-    error: cmrError
+    error: cmrError,
+    refetch: refetchCMR
   } = useGetCMRDataQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || profileError
   });
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || transportLoading || cmrLoading || isFinalizing || isDownloading) {
+    if (profileLoading || transportLoading || cmrLoading || isFinalizing || isDownloading || isUpdatingCMR) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, showLoading, hideLoading]);
+  }, [profileLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, isUpdatingCMR, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
@@ -146,6 +152,75 @@ const TransportMainPage = ({ navigation }) => {
     }
   }, [refetchProfile, refetchTransport]);
 
+  // Handle UIT edit button press
+  const handleEditUIT = () => {
+    // Pre-fill input with current UIT if it exists
+    const currentUIT = cmrData?.UIT?.trim() || '';
+    setUitInput(currentUIT);
+    setShowUitModal(true);
+  };
+
+  // Handle UIT save
+  const handleSaveUIT = async () => {
+    if (!activeTransportId) {
+      Alert.alert('Eroare', 'Nu există un transport activ.');
+      return;
+    }
+
+    // Check if CMR exists first
+    if (!cmrData) {
+      Alert.alert(
+        'CMR nu există',
+        'Pentru a edita codul UIT, trebuie să existe mai întâi un CMR. Doriți să navigați la pagina CMR pentru a crea unul?',
+        [
+          { text: 'Anulează', style: 'cancel' },
+          {
+            text: 'Mergi la CMR',
+            onPress: () => {
+              setShowUitModal(false);
+              navigation.navigate('TransportActualCMRDigital');
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    try {
+      // Try updating with minimal payload - just the UIT field
+      await updateCMRData({
+        activeTransportId,
+        cmrData: {
+          UIT: uitInput.trim()
+        }
+      }).unwrap();
+
+      // Refresh CMR data to show updated UIT
+      await refetchCMR();
+
+      setShowUitModal(false);
+      Alert.alert('Succes', 'Codul UIT a fost actualizat cu succes.');
+    } catch (error) {
+      console.error('UIT Update Error:', error);
+      console.error('CMR Update payload:', {
+        activeTransportId,
+        cmrData: {
+          UIT: uitInput.trim()
+        }
+      });
+
+      // Show specific error message if available
+      const errorMessage = error?.message || error?.data?.detail || 'Nu s-a putut actualiza codul UIT. Încercați din nou.';
+      Alert.alert('Eroare UIT Update', errorMessage);
+    }
+  };
+
+  // Handle modal cancel
+  const handleCancelUIT = () => {
+    setUitInput('');
+    setShowUitModal(false);
+  };
+
   // Handle error state
   if (profileError) {
     return (
@@ -216,8 +291,24 @@ const TransportMainPage = ({ navigation }) => {
       >
         {/* UIT Code Information */}
         <View style={styles.uitCodeContainer}>
-          <Text style={styles.uitLabel}>COD UIT:</Text>
-          <Text style={styles.uitCode}>{getUitCode()}</Text>
+          <View style={styles.uitCodeInfo}>
+            <Text style={styles.uitLabel}>COD UIT:</Text>
+            <Text style={styles.uitCode}>{getUitCode()}</Text>
+          </View>
+          {/* Only show edit button if CMR exists or can be created */}
+          {(cmrData || !cmrError) && (
+            <TouchableOpacity
+              style={styles.uitEditButton}
+              onPress={handleEditUIT}
+              disabled={isUpdatingCMR}
+            >
+              <Ionicons
+                name="pencil"
+                size={20}
+                color="#5A5BDE"
+              />
+            </TouchableOpacity>
+          )}
         </View>
         
         <View style={styles.selectionContainer}>
@@ -312,6 +403,62 @@ const TransportMainPage = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* UIT Edit Modal */}
+      <Modal
+        visible={showUitModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCancelUIT}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Editează Codul UIT</Text>
+              <TouchableOpacity onPress={handleCancelUIT}>
+                <Ionicons name="close" size={24} color="#373A56" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.inputLabel}>Codul UIT:</Text>
+              <TextInput
+                style={styles.uitInput}
+                value={uitInput}
+                onChangeText={setUitInput}
+                placeholder="Introduceți codul UIT"
+                placeholderTextColor="#A0A4C1"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancelUIT}
+              >
+                <Text style={styles.cancelButtonText}>Anulează</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.saveButton, isUpdatingCMR && styles.saveButtonDisabled]}
+                onPress={handleSaveUIT}
+                disabled={isUpdatingCMR}
+              >
+                {isUpdatingCMR ? (
+                  <Ionicons name="hourglass-outline" size={20} color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                )}
+                <Text style={styles.saveButtonText}>
+                  {isUpdatingCMR ? 'Se salvează...' : 'Salvează'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
