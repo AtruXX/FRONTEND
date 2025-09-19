@@ -28,10 +28,12 @@ const ProfileInfo = React.memo(({ profileData }) => {
     profileData?.initials || 'N/A'
   , [profileData?.initials]);
 
-  const role = useMemo(() => 
-    profileData?.is_driver ? 'Șofer' : 
-    profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator'
-  , [profileData?.is_driver, profileData?.is_dispatcher]);
+  const role = useMemo(() => {
+    if (profileData?.is_admin) return 'Administrator';
+    if (profileData?.is_driver) return 'Șofer';
+    if (profileData?.is_dispatcher) return 'Dispecer';
+    return 'Utilizator';
+  }, [profileData?.is_admin, profileData?.is_driver, profileData?.is_dispatcher]);
 
   return (
     <View style={styles.profileInfoContainer}>
@@ -282,6 +284,7 @@ const ProfileScreen = React.memo(() => {
 
     const getDriverStatus = () => {
       if (!profileData?.driver) return 'Inactiv';
+      if (!profileData.is_active) return 'Cont dezactivat';
       return profileData.driver.on_road ? 'Pe drum' : 'În depou';
     };
 
@@ -298,9 +301,9 @@ const ProfileScreen = React.memo(() => {
       formattedLicenseExpiration: formatDate(profileData?.license_expiration_date),
       driverStatus: getDriverStatus(),
       driverRating: getDriverRating(),
-      userType: profileData?.is_admin ? 'Administrator' : 
-                profileData?.is_driver ? 'Șofer' : 
-                profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator standard'
+      userType: profileData?.is_admin ? 'Administrator' :
+                profileData?.is_driver ? 'Șofer' :
+                profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator Standard'
     };
   }, [profileData]);
 
@@ -328,16 +331,36 @@ const ProfileScreen = React.memo(() => {
 
   const callManager = useCallback(() => {
     const managerPhone = '+40755123456';
-    const phoneUrl = Platform.OS === 'android'
-      ? `tel:${managerPhone}`
-      : `telprompt:${managerPhone}`;
-    Linking.canOpenURL(phoneUrl)
-      .then(supported => {
-        if (supported) {
-          return Linking.openURL(phoneUrl);
-        }
-      })
-      .catch(error => console.log('Error with phone call:', error));
+    Alert.alert(
+      'Contact Manager',
+      `Dorești să suni managerul la numărul ${managerPhone}?`,
+      [
+        {
+          text: 'Anulează',
+          style: 'cancel',
+        },
+        {
+          text: 'Sună',
+          onPress: () => {
+            const phoneUrl = Platform.OS === 'android'
+              ? `tel:${managerPhone}`
+              : `telprompt:${managerPhone}`;
+            Linking.canOpenURL(phoneUrl)
+              .then(supported => {
+                if (supported) {
+                  return Linking.openURL(phoneUrl);
+                } else {
+                  Alert.alert('Eroare', 'Nu se poate inițializa apelul telefonic');
+                }
+              })
+              .catch(error => {
+                console.log('Error with phone call:', error);
+                Alert.alert('Eroare', 'A apărut o eroare la inițializarea apelului');
+              });
+          },
+        },
+      ]
+    );
   }, []);
 
   const openDocument = useCallback((documentUrl) => {
@@ -353,37 +376,66 @@ const ProfileScreen = React.memo(() => {
   }, []);
 
   const handleSignOut = useCallback(async () => {
-    try {
-      showLoading();
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        Alert.alert('Eroare', 'Nu s-a găsit token-ul de autentificare.');
-        return;
-      }
-      const response = await fetch(`${BASE_URL}auth/token/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
+    Alert.alert(
+      'Delogare',
+      'Ești sigur că vrei să te deloghezi din aplicație?',
+      [
+        {
+          text: 'Anulează',
+          style: 'cancel',
         },
-      });
-      if (response.ok) {
-        await AsyncStorage.removeItem('authToken');
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
-      } else {
-        const err = await response.json();
-        console.error('Logout failed:', err);
-        Alert.alert('Eroare', 'Delogarea a eșuat.');
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-      Alert.alert('Eroare', 'Ceva a mers greșit în timpul delogării.');
-    } finally {
-      hideLoading();
-    }
+        {
+          text: 'Deloghează-te',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              showLoading();
+              const token = await AsyncStorage.getItem('authToken');
+
+              // Clear local storage first
+              await AsyncStorage.multiRemove([
+                'authToken',
+                'driverId',
+                'userName',
+                'userCompany',
+                'isDriver',
+                'isDispatcher'
+              ]);
+
+              // Then try to logout from server
+              if (token) {
+                try {
+                  const response = await fetch(`${BASE_URL}auth/token/logout/`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Token ${token}`,
+                      'Content-Type': 'application/json',
+                    },
+                  });
+
+                  if (!response.ok) {
+                    console.warn('Server logout failed, but local cleanup successful');
+                  }
+                } catch (networkError) {
+                  console.warn('Network error during logout, but local cleanup successful:', networkError);
+                }
+              }
+
+              // Always navigate to login screen regardless of server response
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Eroare', 'A apărut o eroare în timpul delogării. Încearcă din nou.');
+            } finally {
+              hideLoading();
+            }
+          },
+        },
+      ]
+    );
   }, [navigation, showLoading, hideLoading]);
 
   const onRefresh = useCallback(async () => {
@@ -465,30 +517,75 @@ const ProfileScreen = React.memo(() => {
         {/* Driver Specific Information */}
         {profileData?.is_driver && (
           <DataSection title="Informații Șofer">
-            <DataRow 
-              label="Status curent" 
+            <DataRow
+              label="Status curent"
               value={profileCalculations.driverStatus}
-              valueStyle={{ 
-                color: profileData?.driver?.on_road ? '#FFBD59' : '#63C6AE' 
+              valueStyle={{
+                color: profileData?.driver?.on_road ? '#FFBD59' : '#63C6AE'
               }}
             />
-            <DataRow label="Evaluare" value={profileCalculations.driverRating} />
-            <DataRow 
-              label="Transport activ" 
-              value={profileData?.driver?.active_transport ? `#${profileData.driver.active_transport}` : 'Niciun transport'}
+            <DataRow label="Evaluare medie" value={profileCalculations.driverRating} />
+            <DataRow
+              label="Transport activ"
+              value={profileData?.active_transport ? `Transport #${profileData.active_transport}` : 'Niciun transport activ'}
             />
-            <DataRow 
-              label="Total transporturi" 
-              value={`${transportsData?.totalTransports || 0} transporturi`}
+            <DataRow
+              label="Total transporturi"
+              value={profileData?.driver?.id_transports ? `${profileData.driver.id_transports.length || 0} transporturi` : '0 transporturi'}
             />
             <DataRow label="Expirare permis" value={profileCalculations.formattedLicenseExpiration} />
           </DataSection>
         )}
 
-        {/* Last Login Information */}
-        <DataSection title="Informații Sesiune">
+        {/* Dispatcher Specific Information */}
+        {profileData?.is_dispatcher && (
+          <DataSection title="Informații Dispecer">
+            <DataRow
+              label="Total transporturi coordonate"
+              value={`${transportsData?.totalTransports || 0} transporturi`}
+            />
+            <DataRow
+              label="Transporturi active"
+              value={`${transportsData?.activeTransports || 0} active`}
+            />
+          </DataSection>
+        )}
+
+        {/* Admin Specific Information */}
+        {profileData?.is_admin && (
+          <DataSection title="Informații Administrator">
+            <DataRow
+              label="Nivel acces"
+              value="Administrator complet"
+              valueStyle={{ color: '#FF7285', fontWeight: '700' }}
+            />
+            <DataRow
+              label="Companie"
+              value={profileData?.company || 'N/A'}
+            />
+          </DataSection>
+        )}
+
+        {/* Account Information */}
+        <DataSection title="Informații Cont">
           <DataRow label="Ultima autentificare" value={profileCalculations.formattedLastLogin} />
           <DataRow label="Tip utilizator" value={profileCalculations.userType} />
+          <DataRow
+            label="Data angajării"
+            value={profileData?.hire_date ? new Date(profileData.hire_date).toLocaleDateString('ro-RO', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : 'N/A'}
+          />
+          <DataRow
+            label="Data nașterii"
+            value={profileData?.dob ? new Date(profileData.dob).toLocaleDateString('ro-RO', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : 'N/A'}
+          />
         </DataSection>
 
         {/* Expiring Documents Alert */}
@@ -527,14 +624,39 @@ const ProfileScreen = React.memo(() => {
           )}
         </View>
 
-        {/* Manager Contact Section */}
+        {/* Emergency Contact Section */}
         <View style={styles.settingOuterContainer}>
           <SettingItem
-            iconName="user-check"
+            iconName="phone-call"
             title="Contact Manager"
-            subtitle="Sună managerul firmei"
+            subtitle="Apel de urgență către management"
             onPress={callManager}
             showChevron={false}
+          />
+        </View>
+
+        {/* My Transports Section */}
+        {profileData?.is_driver && (
+          <View style={styles.settingOuterContainer}>
+            <SettingItem
+              iconName="truck"
+              title="Transporturile Mele"
+              subtitle="Vezi istoricul transporturilor tale"
+              onPress={() => navigation.navigate('MyTransports')}
+              badge={profileData?.driver?.id_transports?.length || 0}
+              showChevron={true}
+            />
+          </View>
+        )}
+
+        {/* Notifications Settings */}
+        <View style={styles.settingOuterContainer}>
+          <SettingItem
+            iconName="bell"
+            title="Notificări"
+            subtitle="Gestionează preferințele de notificare"
+            onPress={() => navigation.navigate('NotificationsScreen')}
+            showChevron={true}
           />
         </View>
 
@@ -551,7 +673,7 @@ const ProfileScreen = React.memo(() => {
           {contactExpanded && (
             <View style={styles.dropdownContainer}>
               <Text style={styles.dropdownText}>
-                Atinge pentru a apela dispecerul:
+                Apel direct către dispecerul tău:
               </Text>
               <TouchableOpacity
                 style={styles.callButton}

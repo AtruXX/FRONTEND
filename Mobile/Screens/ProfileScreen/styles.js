@@ -1,10 +1,28 @@
 import { StyleSheet } from "react-native";
-import COLORS from "../../utils/COLORS.js"; // Adjust path as needed
+import COLORS from "../../utils/COLORS.js";
+
+// Enhanced color palette for production consistency
+const ENHANCED_COLORS = {
+  ...COLORS,
+  background: "#F4F5FB",
+  card: "#FFFFFF",
+  primary: "#5A5BDE",
+  secondary: "#6F89FF",
+  accent: "#FF8C66",
+  accent2: "#81C3F8",
+  dark: "#373A56",
+  medium: "#6B6F8D",
+  light: "#A0A4C1",
+  border: "#E2E5F1",
+  success: "#63C6AE",
+  warning: "#FFBD59",
+  danger: "#FF7285",
+};
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: ENHANCED_COLORS.background,
   },
   scrollViewContent: {
     paddingBottom: 32,
@@ -19,8 +37,8 @@ export const styles = StyleSheet.create({
   backButton: {
     padding: 12,
     borderRadius: 12,
-    backgroundColor: COLORS.card,
-    shadowColor: '#000',
+    backgroundColor: ENHANCED_COLORS.card,
+    shadowColor: ENHANCED_COLORS.dark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
@@ -35,7 +53,7 @@ export const styles = StyleSheet.create({
     paddingVertical: 24,
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: COLORS.card,
+    backgroundColor: ENHANCED_COLORS.card,
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -47,10 +65,10 @@ export const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: COLORS.primary,
+    backgroundColor: ENHANCED_COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: COLORS.primary,
+    shadowColor: ENHANCED_COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -59,7 +77,7 @@ export const styles = StyleSheet.create({
   profileInitials: {
     fontSize: 24,
     fontWeight: '700',
-    color: COLORS.card,
+    color: ENHANCED_COLORS.card,
   },
   profileTextContainer: {
     flex: 1,
@@ -68,24 +86,24 @@ export const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: '600',
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     marginBottom: 4,
   },
   profileRole: {
     fontSize: 16,
-    color: COLORS.primary,
+    color: ENHANCED_COLORS.primary,
     fontWeight: '500',
     marginBottom: 2,
   },
   profileCompany: {
     fontSize: 14,
-    color: COLORS.medium,
+    color: ENHANCED_COLORS.medium,
     fontWeight: '400',
   },
 
   // Data Container - Cleaner layout
   dataContainer: {
-    backgroundColor: COLORS.card,
+    backgroundColor: ENHANCED_COLORS.card,
     marginHorizontal: 16,
     marginTop: 20,
     padding: 20,
@@ -99,7 +117,7 @@ export const styles = StyleSheet.create({
   dataTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     marginBottom: 20,
   },
   dataRow: {
@@ -111,7 +129,7 @@ export const styles = StyleSheet.create({
   },
   dataLabel: {
     fontSize: 15,
-    color: COLORS.medium,
+    color: ENHANCED_COLORS.medium,
     fontWeight: '500',
     minWidth: 120,
   },
@@ -122,14 +140,14 @@ export const styles = StyleSheet.create({
   },
   dataValue: {
     fontSize: 15,
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     fontWeight: '500',
     flex: 1,
   },
 
   // Alert Container for expiring documents
   alertContainer: {
-    backgroundColor: COLORS.card,
+    backgroundColor: ENHANCED_COLORS.card,
     marginHorizontal: 16,
     marginTop: 16,
     padding: 16,
@@ -150,7 +168,7 @@ export const styles = StyleSheet.create({
   alertTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     marginLeft: 8,
   },
   alertItem: {
@@ -163,7 +181,7 @@ export const styles = StyleSheet.create({
   },
   alertDocTitle: {
     fontSize: 14,
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     fontWeight: '500',
     flex: 1,
   },
@@ -176,7 +194,7 @@ export const styles = StyleSheet.create({
   settingsTitle: {
     fontSize: 24,
     fontWeight: '600',
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     marginTop: 32,
     marginBottom: 16,
     paddingHorizontal: 20,
@@ -185,7 +203,7 @@ export const styles = StyleSheet.create({
   settingOuterContainer: {
     marginVertical: 6,
     marginHorizontal: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: ENHANCED_COLORS.card,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -215,16 +233,16 @@ export const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     marginBottom: 2,
   },
   settingSubtitle: {
     fontSize: 14,
-    color: COLORS.medium,
+    color: ENHANCED_COLORS.medium,
     lineHeight: 18,
   },
   badgeContainer: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: ENHANCED_COLORS.primary,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -233,7 +251,7 @@ export const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.card,
+    color: ENHANCED_COLORS.card,
   },
 
   // Dropdown containers
@@ -245,7 +263,7 @@ export const styles = StyleSheet.create({
   },
   dropdownText: {
     fontSize: 15,
-    color: COLORS.medium,
+    color: ENHANCED_COLORS.medium,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -262,7 +280,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: ENHANCED_COLORS.card,
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
@@ -274,12 +292,12 @@ export const styles = StyleSheet.create({
   documentTitle: {
     fontSize: 15,
     fontWeight: '500',
-    color: COLORS.dark,
+    color: ENHANCED_COLORS.dark,
     marginBottom: 2,
   },
   documentExpiration: {
     fontSize: 13,
-    color: COLORS.medium,
+    color: ENHANCED_COLORS.medium,
   },
 
   // Call button
@@ -287,11 +305,11 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.primary,
+    backgroundColor: ENHANCED_COLORS.primary,
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
-    shadowColor: COLORS.primary,
+    shadowColor: ENHANCED_COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -300,7 +318,7 @@ export const styles = StyleSheet.create({
   callButtonText: {
     fontSize: 17,
     fontWeight: '600',
-    color: COLORS.card,
+    color: ENHANCED_COLORS.card,
     marginLeft: 10,
   },
 
@@ -310,7 +328,7 @@ export const styles = StyleSheet.create({
     marginHorizontal: 16,
     paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: COLORS.card,
+    backgroundColor: ENHANCED_COLORS.card,
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: COLORS.danger,
@@ -362,7 +380,7 @@ export const styles = StyleSheet.create({
   },
   sectionSubtitle: {
     fontSize: 14,
-    color: COLORS.medium,
+    color: ENHANCED_COLORS.medium,
     marginTop: 2,
   },
   addIconCircle: {
@@ -370,7 +388,7 @@ export const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: COLORS.primary,
+    backgroundColor: ENHANCED_COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
     bottom: -2,
