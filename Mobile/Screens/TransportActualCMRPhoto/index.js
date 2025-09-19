@@ -3,28 +3,40 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ScrollVi
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { BASE_URL } from "../../utils/BASE_URL";
+import { useGetUserProfileQuery } from '../../services/profileService';
+import { useUploadCMRDocumentsMutation } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
 
-const PhotoCMRForm = ({ navigation, route }) => {
+const PhotoCMRForm = ({ navigation }) => {
   const { showLoading, hideLoading } = useLoading();
-  const { authToken, driverId } = route.params;
   const [selectedImages, setSelectedImages] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
+
+  // Get user profile to access active transport data
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile
+  } = useGetUserProfileQuery();
+
+  // Upload mutation
+  const [uploadCMRDocuments, { isLoading: isUploading }] = useUploadCMRDocumentsMutation();
+
+  const activeTransportId = profileData?.active_transport;
 
   const screenWidth = Dimensions.get('window').width;
   const imageSize = (screenWidth - 60) / 2; // 2 images per row with margins
 
   // Update global loading state
   useEffect(() => {
-    if (isUploading) {
+    if (profileLoading || isUploading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [isUploading, showLoading, hideLoading]);
+  }, [profileLoading, isUploading, showLoading, hideLoading]);
 
   // Handle camera capture
   const handleCameraCapture = async () => {
@@ -46,7 +58,10 @@ const PhotoCMRForm = ({ navigation, route }) => {
       const newImage = {
         id: Date.now().toString(),
         uri: result.assets[0].uri,
-        type: 'camera'
+        type: 'image/jpeg',
+        name: `cmr_photo_${Date.now()}.jpg`,
+        title: `CMR Photo ${selectedImages.length + 1}`,
+        category: 'cmr'
       };
       setSelectedImages([...selectedImages, newImage]);
     }
@@ -73,7 +88,10 @@ const PhotoCMRForm = ({ navigation, route }) => {
       const newImages = result.assets.map((asset, index) => ({
         id: (Date.now() + index).toString(),
         uri: asset.uri,
-        type: 'gallery'
+        type: 'image/jpeg',
+        name: `cmr_gallery_${Date.now() + index}.jpg`,
+        title: `CMR Photo ${selectedImages.length + index + 1}`,
+        category: 'cmr'
       }));
       setSelectedImages([...selectedImages, ...newImages]);
     }
@@ -93,13 +111,14 @@ const PhotoCMRForm = ({ navigation, route }) => {
           id: (Date.now() + index).toString(),
           uri: asset.uri,
           name: asset.name,
-          type: 'document',
-          mimeType: asset.mimeType
+          type: asset.mimeType || 'application/pdf',
+          mimeType: asset.mimeType,
+          title: asset.name || `CMR Document ${selectedImages.length + index + 1}`,
+          category: 'cmr'
         }));
         setSelectedImages([...selectedImages, ...newDocuments]);
       }
     } catch (error) {
-      console.error('Error picking document:', error);
       Alert.alert('Eroare', 'Nu s-a putut selecta documentul.');
     }
   };
@@ -132,85 +151,44 @@ const PhotoCMRForm = ({ navigation, route }) => {
       return;
     }
 
-    setIsUploading(true);
+    if (!activeTransportId) {
+      Alert.alert('Eroare', 'Nu există un transport activ pentru încărcarea documentelor CMR.');
+      return;
+    }
 
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      
-      selectedImages.forEach((image, index) => {
-        if (image.type === 'document') {
-          formData.append('cmr_documents', {
-            uri: image.uri,
-            type: image.mimeType || 'application/octet-stream',
-            name: image.name || `cmr_document_${index}.pdf`
-          });
-        } else {
-          formData.append('cmr_photos', {
-            uri: image.uri,
-            type: 'image/jpeg',
-            name: `cmr_photo_${index}.jpg`
-          });
-        }
-      });
+      await uploadCMRDocuments({
+        activeTransportId,
+        documents: selectedImages
+      }).unwrap();
 
-      // Add additional data
-      if (driverId) {
-        formData.append('driver_id', driverId);
-      }
-
-      // Upload to server
-      const response = await fetch(
-        'https://atrux-717ecf8763ea.herokuapp.com/upload_cmr_photos/',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Token ${authToken}`,
-            'Content-Type': 'multipart/form-data',
-          },
-          body: formData,
-        }
+      Alert.alert(
+        'Upload reușit',
+        'Documentele CMR au fost încărcate cu succes!',
+        [{
+          text: 'OK',
+          onPress: () => navigation.goBack()
+        }]
       );
 
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log('Upload successful:', responseData);
-        
-        Alert.alert(
-          'Upload reușit',
-          'Imaginile și documentele CMR au fost încărcate cu succes!',
-          [{ 
-            text: 'OK', 
-            onPress: () => navigation.navigate('TransportMainPage') 
-          }]
-        );
-      } else {
-        const errorData = await response.json();
-        console.error('Upload failed:', errorData);
-        
-        Alert.alert(
-          'Eroare upload',
-          'Nu s-au putut încărca imaginile. Vă rugăm să încercați din nou.',
-          [{ text: 'OK' }]
-        );
-      }
+      // Clear selected images after successful upload
+      setSelectedImages([]);
     } catch (error) {
-      console.error('Upload error:', error);
       Alert.alert(
-        'Eroare',
-        'A apărut o eroare la încărcarea imaginilor. Verificați conexiunea la internet.',
+        'Eroare upload',
+        error.message || 'Nu s-au putut încărca documentele. Verificați conexiunea la internet și încercați din nou.',
         [{ text: 'OK' }]
       );
-    } finally {
-      setIsUploading(false);
     }
   };
 
   const handleRetry = useCallback(async () => {
-    // Add any specific retry logic for photo CMR
-    // This could involve re-checking photo upload status or refreshing data
-    console.log('Retrying photo CMR page...');
-  }, []);
+    try {
+      await refetchProfile();
+    } catch (error) {
+      // Retry failed, but we don't need to log it
+    }
+  }, [refetchProfile]);
 
   // Render image preview
   const renderImagePreview = (image) => {
@@ -239,15 +217,59 @@ const PhotoCMRForm = ({ navigation, route }) => {
         </TouchableOpacity>
         
         <View style={styles.imageTypeIndicator}>
-          <Ionicons 
-            name={image.type === 'camera' ? 'camera' : image.type === 'gallery' ? 'image' : 'document'} 
-            size={16} 
-            color="white" 
+          <Ionicons
+            name={image.mimeType?.includes('pdf') ? 'document' : 'image'}
+            size={16}
+            color="white"
           />
         </View>
       </View>
     );
   };
+
+  // Error handling
+  if (profileError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="CMR"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
+          <Text style={styles.errorTitle}>Eroare de profil</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca datele profilului</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // No active transport
+  if (!activeTransportId && !profileLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="CMR"
+          onBack={() => navigation.goBack()}
+          showBack={true}
+        />
+        <View style={styles.errorContainer}>
+          <Ionicons name="document-outline" size={60} color="#5A5BDE" />
+          <Text style={styles.errorTitle}>Niciun transport activ</Text>
+          <Text style={styles.errorText}>Nu aveți un transport activ pentru a încărca documente CMR</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>Reîncarcă</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

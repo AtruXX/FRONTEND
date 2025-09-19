@@ -15,7 +15,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
-import { useGetCMRDataQuery, useUpdateCMRDataMutation } from '../../services/CMRService';
+import {
+  useGetCMRDataQuery,
+  useUpdateCMRDataMutation,
+  useCreateCMRDataMutation,
+  CMR_ERROR_TYPES
+} from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles';
 import PageHeader from "../../components/General/Header";
@@ -229,25 +234,27 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
 
   const activeTransportId = profileData?.active_transport;
 
-  // Get CMR data
+  // Get CMR data with enhanced error handling
   const {
     data: cmrData,
     isLoading: cmrLoading,
     error: cmrError,
+    cmrExists,
     refetch: refetchCMR
   } = useGetCMRDataQuery(activeTransportId);
 
-  // Update mutation
+  // Mutations
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
+  const [createCMRData, { isLoading: isCreating }] = useCreateCMRDataMutation();
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || cmrLoading || isUpdating) {
+    if (profileLoading || cmrLoading || isUpdating || isCreating) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, cmrLoading, isUpdating, showLoading, hideLoading]);
+  }, [profileLoading, cmrLoading, isUpdating, isCreating, showLoading, hideLoading]);
 
   // European countries in Romanian
   const europeanCountries = useMemo(() => [
@@ -384,6 +391,49 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     }
   }, [refetchProfile, refetchCMR]);
 
+  // Handle creating new CMR with empty data
+  const handleCreateNewCMR = useCallback(async () => {
+    if (!activeTransportId) return;
+
+    try {
+      const emptyCMRData = {
+        expeditor_nume: '',
+        expeditor_adresa: '',
+        expeditor_tara: '',
+        destinatar_nume: '',
+        destinatar_adresa: '',
+        destinatar_tara: '',
+        marfa_descriere: '',
+        greutate: '',
+        observatii: ''
+      };
+
+      await createCMRData({
+        activeTransportId,
+        cmrData: emptyCMRData
+      }).unwrap();
+
+      // Refresh the data to show the newly created CMR
+      await refetchCMR();
+
+      // Switch to editing mode so the driver can fill in the details
+      setEditingMode(true);
+
+      Alert.alert(
+        'CMR Creat',
+        'CMR-ul a fost creat cu succes. Puteți acum să completați datele.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Create CMR error:', error);
+      Alert.alert(
+        'Eroare',
+        'Nu s-a putut crea CMR-ul. Încercați din nou.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [activeTransportId, createCMRData, refetchCMR]);
+
   const handleSaveChanges = useCallback(async () => {
     try {
       await updateCMRData({
@@ -423,8 +473,8 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     />
   ), [localFormData, editingMode, updateFieldValue, handleFieldTouch]);
 
-  // Error state
-  if (profileError || cmrError) {
+  // Error state - handle profile errors first
+  if (profileError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -436,8 +486,109 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
         />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
-          <Text style={styles.errorTitle}>Eroare la încărcare</Text>
-          <Text style={styles.errorText}>Nu s-au putut încărca datele CMR</Text>
+          <Text style={styles.errorTitle}>Eroare de profil</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca datele profilului</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+            <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Enhanced CMR error handling based on error type
+  if (cmrError) {
+    // Handle CMR not found - offer to create new CMR
+    if (cmrError.type === CMR_ERROR_TYPES.NOT_FOUND) {
+      return (
+        <SafeAreaView style={styles.container}>
+          <PageHeader
+            title="CMR Digital"
+            onBack={() => navigation.goBack()}
+            showBack={true}
+          />
+          <View style={styles.errorContainer}>
+            <Ionicons name="document-outline" size={60} color="#5A5BDE" />
+            <Text style={styles.errorTitle}>CMR nu există</Text>
+            <Text style={styles.errorText}>
+              Nu există un CMR pentru acest transport. Doriți să creați unul nou?
+            </Text>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.createButton}
+                onPress={handleCreateNewCMR}
+                disabled={isCreating}
+              >
+                {isCreating ? (
+                  <Ionicons name="hourglass-outline" size={20} color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="add" size={20} color="#FFFFFF" />
+                )}
+                <Text style={styles.createButtonText}>
+                  {isCreating ? 'Se creează...' : 'Creează CMR'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={handleRetry}
+              >
+                <Text style={styles.retryButtonText}>Reîncarcă</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
+    // Handle other error types
+    const getErrorConfig = () => {
+      switch (cmrError.type) {
+        case CMR_ERROR_TYPES.NETWORK_ERROR:
+          return {
+            icon: 'wifi-outline',
+            title: 'Problemă de conexiune',
+            message: cmrError.message || 'Verificați conexiunea la internet și încercați din nou.',
+            color: '#FF9500'
+          };
+        case CMR_ERROR_TYPES.AUTH_ERROR:
+          return {
+            icon: 'lock-closed-outline',
+            title: 'Acces restricționat',
+            message: cmrError.message || 'Nu aveți permisiuni pentru această acțiune.',
+            color: '#FF7285'
+          };
+        case CMR_ERROR_TYPES.SERVER_ERROR:
+          return {
+            icon: 'server-outline',
+            title: 'Eroare de server',
+            message: cmrError.message || 'Serverul întâmpină probleme. Încercați din nou.',
+            color: '#FF7285'
+          };
+        default:
+          return {
+            icon: 'alert-circle-outline',
+            title: 'Eroare neașteptată',
+            message: cmrError.message || 'A apărut o eroare neașteptată.',
+            color: '#FF7285'
+          };
+      }
+    };
+
+    const errorConfig = getErrorConfig();
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="CMR Digital"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
+        <View style={styles.errorContainer}>
+          <Ionicons name={errorConfig.icon} size={60} color={errorConfig.color} />
+          <Text style={styles.errorTitle}>{errorConfig.title}</Text>
+          <Text style={styles.errorText}>{errorConfig.message}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Încearcă din nou</Text>
           </TouchableOpacity>

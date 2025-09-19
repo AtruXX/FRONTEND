@@ -376,6 +376,32 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  buttonContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 16,
+  },
+  createButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    // Neomorphic button
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  createButtonText: {
+    color: COLORS.card,
+    fontSize: 16,
+    fontWeight: '700',
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
