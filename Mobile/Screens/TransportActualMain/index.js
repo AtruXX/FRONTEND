@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'r
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation, useGetTransportByIdQuery } from '../../services/transportService';
-import { useDownloadCMRDocumentMutation } from '../../services/CMRService';
+import { useDownloadCMRDocumentMutation, useGetCMRDataQuery } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
@@ -27,28 +27,6 @@ const TransportMainPage = ({ navigation }) => {
   // FIXED: Get active transport ID from the correct path
   const activeTransportId = profileData?.active_transport;
   
-  // Debug log for active transport ID
-  useEffect(() => {
-    console.log('🎯 FIXED: Active transport ID changed:', {
-      profileLoading,
-      profileError: !!profileError,
-      profileData: !!profileData,
-      driverData: !!profileData?.driver,
-      activeTransportId,
-      rawDriverData: profileData?.driver,
-      shouldSkipTransportFetch: !activeTransportId || profileLoading || profileError
-    });
-    
-    // Also log the exact path we're trying to access
-    if (profileData) {
-      console.log('🔍 FIXED: Profile data path check:', {
-        'profileData.driver': profileData.driver,
-        'profileData.driver?.active_transport_id': profileData.driver?.active_transport_id,
-        'profileData.active_transport': profileData.active_transport,
-        'typeof active_transport': typeof profileData.active_transport
-      });
-    }
-  }, [activeTransportId, profileLoading, profileError, profileData]);
 
   // Fetch full transport details - skip if no transportId OR profile is still loading
   const {
@@ -56,18 +34,27 @@ const TransportMainPage = ({ navigation }) => {
     isLoading: transportLoading,
     error: transportError,
     refetch: refetchTransport
-  } = useGetTransportByIdQuery(activeTransportId, { 
-    skip: !activeTransportId || profileLoading || profileError 
+  } = useGetTransportByIdQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || profileError
+  });
+
+  // Fetch CMR data to get UIT code
+  const {
+    data: cmrData,
+    isLoading: cmrLoading,
+    error: cmrError
+  } = useGetCMRDataQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || profileError
   });
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || transportLoading || isFinalizing || isDownloading) {
+    if (profileLoading || transportLoading || cmrLoading || isFinalizing || isDownloading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, transportLoading, isFinalizing, isDownloading, showLoading, hideLoading]);
+  }, [profileLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
@@ -83,7 +70,6 @@ const TransportMainPage = ({ navigation }) => {
         [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('Download CMR error:', error);
       Alert.alert('Eroare', 'Nu s-a putut descărca documentul CMR.');
     }
   };
@@ -120,7 +106,6 @@ const TransportMainPage = ({ navigation }) => {
                 }]
               );
             } catch (error) {
-              console.error('Finalize transport error:', error);
               Alert.alert('Eroare', 'Nu s-a putut finaliza transportul.');
             }
           }
@@ -133,12 +118,25 @@ const TransportMainPage = ({ navigation }) => {
     navigation.navigate(screenName);
   };
 
-  // Generate UIT code based on active transport or profile data
-  const generateUitCode = () => {
-    if (activeTransportId) {
-      return `TR-${activeTransportId}-RO`;
+  // Get UIT code from CMR data or show appropriate message
+  const getUitCode = () => {
+    // If CMR data is loading, show loading message
+    if (cmrLoading) {
+      return 'Se încarcă...';
     }
-    return `TR-${profileData?.id || '0000'}-RO`;
+
+    // If CMR data failed to load or doesn't exist, show message
+    if (cmrError || !cmrData) {
+      return 'Nu există CMR';
+    }
+
+    // If UIT field exists and has value, show it
+    if (cmrData.UIT && cmrData.UIT.trim() !== '') {
+      return cmrData.UIT;
+    }
+
+    // If UIT field is empty, show message
+    return 'UIT nu este completat';
   };
 
   const handleRetry = useCallback(async () => {
@@ -219,7 +217,7 @@ const TransportMainPage = ({ navigation }) => {
         {/* UIT Code Information */}
         <View style={styles.uitCodeContainer}>
           <Text style={styles.uitLabel}>COD UIT:</Text>
-          <Text style={styles.uitCode}>{generateUitCode()}</Text>
+          <Text style={styles.uitCode}>{getUitCode()}</Text>
         </View>
         
         <View style={styles.selectionContainer}>
