@@ -31,7 +31,6 @@ const SplashScreen = ({ navigation }) => {
   // Function to check if token is valid
   const validateToken = async (token) => {
     try {
-      console.log('Validating token on splash screen...');
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: {
@@ -41,14 +40,11 @@ const SplashScreen = ({ navigation }) => {
       });
 
       if (response.ok) {
-        console.log('Token is valid, navigating to Main');
         return true;
       } else {
-        console.log('Token is invalid, response status:', response.status);
         return false;
       }
     } catch (error) {
-      console.error('Token validation error:', error);
       return false;
     }
   };
@@ -59,10 +55,6 @@ const SplashScreen = ({ navigation }) => {
       const token = await AsyncStorage.getItem('authToken');
       const driverId = await AsyncStorage.getItem('driverId');
       
-      console.log('=== SPLASH SCREEN AUTH CHECK ===');
-      console.log('Stored token:', token ? `${token.substring(0, 10)}...` : 'null');
-      console.log('Stored driver ID:', driverId);
-      console.log('================================');
 
       if (token && driverId) {
         // Token exists, validate it
@@ -82,7 +74,6 @@ const SplashScreen = ({ navigation }) => {
             'isDriver',
             'isDispatcher'
           ]);
-          console.log('Invalid token cleared from storage');
         }
       }
       
@@ -90,7 +81,6 @@ const SplashScreen = ({ navigation }) => {
       navigation.replace('Login');
       
     } catch (error) {
-      console.error('Auth check error:', error);
       // In case of error, go to login
       navigation.replace('Login');
     } finally {
@@ -117,9 +107,6 @@ const SplashScreen = ({ navigation }) => {
         style={styles.logo}
         resizeMode="contain"
       />
-      {isChecking && (
-        <Text style={styles.loadingText}>Se verifica autentificarea...</Text>
-      )}
     </Animated.View>
   );
 };

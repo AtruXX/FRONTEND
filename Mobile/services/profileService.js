@@ -22,7 +22,6 @@ export const useGetUserProfileQuery = (options = {}) => {
         throw new Error('No auth token found');
       }
 
-      console.log('Fetching user profile from /profile/');
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: {
@@ -31,16 +30,13 @@ export const useGetUserProfileQuery = (options = {}) => {
         },
       });
 
-      console.log('User profile response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('User profile error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const profileData = await response.json();
-      console.log('User profile data received:', profileData);
 
       // Store profile data in AsyncStorage (as you were doing before)
       const storagePromises = [];
@@ -79,7 +75,6 @@ export const useGetUserProfileQuery = (options = {}) => {
       for (const promise of storagePromises) {
         await promise;
       }
-      console.log('Profile data stored in AsyncStorage');
 
       // Transform profile data for easier consumption - FIXED MAPPING
       const transformedProfile = {
@@ -117,10 +112,8 @@ export const useGetUserProfileQuery = (options = {}) => {
         on_road: profileData.driver?.on_road || false,
       };
 
-      console.log('🔧 FIXED: Active transport ID from profile:', transformedProfile.active_transport);
       setData(transformedProfile);
     } catch (err) {
-      console.error('User profile fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -157,7 +150,6 @@ export const useUpdateUserProfileMutation = () => {
         throw new Error('No auth token found');
       }
 
-      console.log('Updating user profile with:', profileData);
       const response = await fetch(`${BASE_URL}profile`, {
         method: 'PATCH',
         headers: {
@@ -167,21 +159,17 @@ export const useUpdateUserProfileMutation = () => {
         body: JSON.stringify(profileData),
       });
 
-      console.log('Update user profile response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Update user profile error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('User profile updated successfully:', data);
       
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('User profile update error:', err);
       setIsLoading(false);
       setError(err);
       throw err;

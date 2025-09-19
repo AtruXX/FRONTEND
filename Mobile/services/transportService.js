@@ -8,10 +8,8 @@ const waitForAuthToken = async (maxRetries = 5, delay = 200) => {
   for (let i = 0; i < maxRetries; i++) {
     const token = await AsyncStorage.getItem('authToken');
     if (token) {
-      console.log(`✅ Auth token found on attempt ${i + 1}:`, `${token.substring(0, 10)}...`);
       return token;
     }
-    console.log(`⏳ Waiting for auth token, attempt ${i + 1}/${maxRetries}`);
     await new Promise(resolve => setTimeout(resolve, delay));
   }
   throw new Error('Auth token not available after maximum retries');
@@ -31,7 +29,6 @@ const verifyTokenValidity = async (token) => {
     
     return response.ok;
   } catch (error) {
-    console.log('Token verification failed:', error);
     return false;
   }
 };
@@ -50,7 +47,6 @@ export const useGetTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
-      console.log('🚛 Starting transport fetch...');
       
       // Wait for auth token to be available
       const token = await waitForAuthToken();
@@ -58,11 +54,8 @@ export const useGetTransportsQuery = (options = {}) => {
       // Double-check we have driver ID too
       const driverId = await AsyncStorage.getItem('driverId');
       if (!driverId) {
-        console.warn('⚠️ No driver ID found, but proceeding with token');
       }
 
-      console.log('🔑 Using token for transport request');
-      console.log('👤 Driver ID:', driverId);
       
       const response = await fetch(`${BASE_URL}active-transports`, {
         method: 'GET',
@@ -72,24 +65,19 @@ export const useGetTransportsQuery = (options = {}) => {
         },
       });
 
-      console.log('📡 Transports response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Transports error response:', errorData);
         
         if (response.status === 401) {
-          console.error('🚫 Authentication failed for transports');
           
           // Before clearing token, verify it's actually invalid
           const isTokenValid = await verifyTokenValidity(token);
           if (!isTokenValid) {
-            console.error('🗑️ Token verified as invalid, clearing storage');
             await AsyncStorage.multiRemove([
               'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
             ]);
           } else {
-            console.log('🤔 Token seems valid, this might be an endpoint-specific issue');
           }
         }
         
@@ -97,7 +85,6 @@ export const useGetTransportsQuery = (options = {}) => {
       }
 
       const transportData = await response.json();
-      console.log('📦 Transports data received:', transportData);
 
       // Handle new API structure with active_transports array
       const rawTransports = transportData.active_transports || [];
@@ -107,7 +94,6 @@ export const useGetTransportsQuery = (options = {}) => {
         !transport.is_finished
       );
 
-      console.log(`🎯 Filtered ${activeTransports.length} active transports from ${rawTransports.length} total`);
 
       // Transform the API data to match the component structure
       const transformedTransports = activeTransports.map(transport => ({
@@ -139,7 +125,6 @@ export const useGetTransportsQuery = (options = {}) => {
         route: transport.route
       }));
 
-      console.log('✅ Transport data processed successfully');
 
       // Store all transports (for profile count) and filtered transports
       setData({ 
@@ -149,7 +134,6 @@ export const useGetTransportsQuery = (options = {}) => {
         numberOfActiveTransports: transportData.number_of_active_transports || rawTransports.length
       });
     } catch (err) {
-      console.error('💥 Transports fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -186,7 +170,6 @@ export const useSetActiveTransportMutation = () => {
     setError(null);
 
     try {
-      console.log('🎯 Setting active transport:', transportId);
       
       // Wait for auth token to be available
       const token = await waitForAuthToken();
@@ -199,14 +182,11 @@ export const useSetActiveTransportMutation = () => {
         },
       });
 
-      console.log('📡 Set active transport response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Set active transport error response:', errorData);
         
         if (response.status === 401) {
-          console.error('🚫 Authentication failed for set active transport');
           // Don't clear token here, let other parts handle it
         }
         
@@ -214,12 +194,10 @@ export const useSetActiveTransportMutation = () => {
       }
 
       const data = await response.json();
-      console.log('✅ Active transport set successfully:', data);
 
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('💥 Set active transport error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -246,7 +224,6 @@ export const useFinalizeTransportMutation = () => {
     setError(null);
 
     try {
-      console.log('🏁 Finalizing transport:', activeTransportId);
       
       const token = await waitForAuthToken();
       
@@ -258,21 +235,17 @@ export const useFinalizeTransportMutation = () => {
         },
       });
 
-      console.log('📡 Finalize transport response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Finalize transport error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('✅ Transport finalized successfully:', data);
 
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('💥 Finalize transport error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -297,27 +270,17 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
   const [error, setError] = useState(null);
 
   const fetchTransportById = useCallback(async () => {
-    console.log(`🔍 useGetTransportByIdQuery called with:`, {
-      transportId,
-      skipOption: options.skip,
-      shouldSkip: !transportId || options.skip
-    });
 
     if (!transportId || options.skip) {
-      console.log('⏭️ Skipping transport fetch:', { transportId, skip: options.skip });
       return;
     }
 
-    console.log('🚀 Starting transport by ID fetch process...');
     setIsFetching(true);
     setError(null);
 
     try {
-      console.log(`🎯 Fetching transport by ID: ${transportId}`);
-      console.log(`📍 Full endpoint URL: ${BASE_URL}transports/${transportId}`);
       
       const token = await waitForAuthToken();
-      console.log(`🔑 Got auth token for transport request: ${token?.substring(0, 10)}...`);
       
       const response = await fetch(`${BASE_URL}transports?id=${transportId}`, {
         method: 'GET',
@@ -327,20 +290,15 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
         },
       });
 
-      console.log('📡 Transport by ID response status:', response.status);
-      console.log('📡 Transport by ID response headers:', Object.fromEntries(response.headers));
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Transport by ID error response:', errorData);
         
         if (response.status === 401) {
-          console.error('🚫 Authentication failed for transport by ID');
           
           // Before clearing token, verify it's actually invalid
           const isTokenValid = await verifyTokenValidity(token);
           if (!isTokenValid) {
-            console.error('🗑️ Token verified as invalid, clearing storage');
             await AsyncStorage.multiRemove([
               'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
             ]);
@@ -351,18 +309,15 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
       }
 
       const responseData = await response.json();
-      console.log('📦 Transport by ID RAW response received:', responseData);
       
       // Handle both single transport and array responses
       let transport;
       if (Array.isArray(responseData)) {
-        console.log('📋 Response is array, looking for transport with ID:', transportId);
         transport = responseData.find(t => t.id === parseInt(transportId));
         if (!transport) {
           throw new Error(`Transport with ID ${transportId} not found in response`);
         }
       } else if (responseData.transports && Array.isArray(responseData.transports)) {
-        console.log('📋 Response has transports array, looking for transport with ID:', transportId);
         transport = responseData.transports.find(t => t.id === parseInt(transportId));
         if (!transport) {
           throw new Error(`Transport with ID ${transportId} not found in transports array`);
@@ -372,18 +327,6 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
         transport = responseData;
       }
       
-      console.log('📋 Transport details breakdown:', {
-        id: transport.id,
-        status: transport.status,
-        is_finished: transport.is_finished,
-        company: transport.company,
-        dispatcher: transport.dispatcher,
-        driver: transport.driver,
-        truck: transport.truck,
-        trailer: transport.trailer,
-        email_destinatar: transport.email_destinatar,
-        route: transport.route
-      });
 
       // Transform the API data to match the component structure
       const transformedTransport = {
@@ -415,11 +358,8 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
         route: transport.route
       };
 
-      console.log('✅ Transport by ID data processed successfully');
-      console.log('🔄 Transformed transport data:', transformedTransport);
       setData(transformedTransport);
     } catch (err) {
-      console.error('💥 Transport by ID fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -429,15 +369,8 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
 
   // Initial load
   useEffect(() => {
-    console.log('⏰ useEffect triggered in useGetTransportByIdQuery', {
-      transportId,
-      currentData: data,
-      currentError: error,
-      isCurrentlyLoading: isLoading
-    });
     
     const timer = setTimeout(() => {
-      console.log('🔄 Timer fired, calling fetchTransportById...');
       fetchTransportById();
     }, 100);
 
@@ -467,7 +400,6 @@ export const useGetTotalTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
-      console.log('📊 Fetching total transports...');
       
       const token = await waitForAuthToken();
       
@@ -479,23 +411,19 @@ export const useGetTotalTransportsQuery = (options = {}) => {
         },
       });
 
-      console.log('📡 Total transports response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Total transports error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const transportData = await response.json();
-      console.log('📦 Total transports data received:', transportData);
 
       setData({ 
         totalTransports: transportData.number_of_active_transports || (transportData.active_transports || []).length,
         allTransports: transportData.active_transports || []
       });
     } catch (err) {
-      console.error('💥 Total transports fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);

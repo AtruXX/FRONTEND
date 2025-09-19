@@ -51,7 +51,6 @@ const LoginScreen = () => {
     }
 
     try {
-      console.log('Attempting login with phone:', cleanPhoneNumber);
       
       // Call the login mutation
       const result = await login({ 
@@ -59,27 +58,12 @@ const LoginScreen = () => {
         password: password.trim() 
       }).unwrap();
       
-      console.log('Login successful:', result);
       
-      // Debug: Check if token was stored properly
-      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-      setTimeout(async () => {
-        const storedToken = await AsyncStorage.getItem('authToken');
-        const storedDriverId = await AsyncStorage.getItem('driverId');
-        const storedUserName = await AsyncStorage.getItem('userName');
-        
-        console.log('=== POST-LOGIN STORAGE CHECK ===');
-        console.log('Stored Token:', storedToken ? `${storedToken.substring(0, 10)}...` : 'null');
-        console.log('Stored Driver ID:', storedDriverId);
-        console.log('Stored User Name:', storedUserName);
-        console.log('===============================');
-      }, 100);
       
       // Navigate to main app
       navigation.navigate('Main');
       
     } catch (error) {
-      console.error('Login error:', error);
       
       // Handle different error types with user-friendly messages
       let errorMessage = 'A aparut o eroare in timpul autentificarii. Te rugam sa incerci din nou.';

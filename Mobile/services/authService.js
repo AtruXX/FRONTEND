@@ -9,11 +9,8 @@ const storeWithVerification = async (key, value) => {
   // Verify it was stored
   const stored = await AsyncStorage.getItem(key);
   if (stored !== value) {
-    console.warn(`⚠️ Storage verification failed for ${key}`);
-    // Try again
     await AsyncStorage.setItem(key, value);
   }
-  console.log(`✅ Stored ${key}:`, value.length > 20 ? `${value.substring(0, 10)}...` : value);
 };
 
 // Custom hook for login mutation
@@ -26,8 +23,6 @@ export const useLoginMutation = () => {
     setError(null);
 
     try {
-      console.log('🔐 Attempting login with:', phone_number);
-      console.log('🌐 URL:', `${BASE_URL}auth/token/login`);
       
       const response = await fetch(`${BASE_URL}auth/token/login`, {
         method: 'POST',
@@ -37,20 +32,16 @@ export const useLoginMutation = () => {
         body: JSON.stringify({ phone_number, password }),
       });
 
-      console.log('📡 Login response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Login error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('✅ Login successful, received data with auth_token');
 
       // Store token FIRST and verify it
       if (data.auth_token) {
-        console.log('💾 Storing auth token...');
         await storeWithVerification('authToken', data.auth_token);
         
         // Small delay to ensure storage completion
@@ -61,11 +52,9 @@ export const useLoginMutation = () => {
         if (!verifyToken) {
           throw new Error('Failed to store auth token');
         }
-        console.log('✅ Auth token verified in storage');
 
         // Now fetch profile with the verified token
         try {
-          console.log('👤 Fetching profile immediately after login...');
           const profileResponse = await fetch(`${BASE_URL}profile/`, {
             method: 'GET',
             headers: {
@@ -76,7 +65,6 @@ export const useLoginMutation = () => {
 
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
-            console.log('📋 Profile fetched after login:', profileData);
 
             // Store profile data sequentially with verification
             const profileStorage = [
@@ -99,24 +87,19 @@ export const useLoginMutation = () => {
               'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
             ]);
             
-            console.log('🔍 Final storage verification:', finalVerification);
             
           } else {
-            console.warn('⚠️ Failed to fetch profile after login:', profileResponse.status);
           }
         } catch (profileError) {
-          console.warn('⚠️ Error fetching profile after login:', profileError);
           // Don't fail the login if profile fetch fails
         }
       } else {
-        console.error('❌ No auth_token in response:', data);
         throw new Error('No auth token received');
       }
 
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('💥 Login error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -152,7 +135,6 @@ export const useGetProfileQuery = (arg, options = {}) => {
       let retries = 0;
       
       while (!token && retries < 5) {
-        console.log(`⏳ Waiting for auth token, attempt ${retries + 1}...`);
         await new Promise(resolve => setTimeout(resolve, 200));
         token = await AsyncStorage.getItem('authToken');
         retries++;
@@ -162,7 +144,6 @@ export const useGetProfileQuery = (arg, options = {}) => {
         throw new Error('No auth token found after waiting');
       }
 
-      console.log('👤 Fetching profile with verified token');
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: {
@@ -171,23 +152,19 @@ export const useGetProfileQuery = (arg, options = {}) => {
         },
       });
 
-      console.log('📡 Profile response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Profile error response:', errorData);
         
         if (response.status === 401) {
           // Token is invalid, clear it
           await AsyncStorage.removeItem('authToken');
-          console.log('🗑️ Cleared invalid auth token');
         }
         
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const profileData = await response.json();
-      console.log('📋 Profile data received');
 
       // Store profile data with verification (but don't fail if storage fails)
       try {
@@ -205,12 +182,10 @@ export const useGetProfileQuery = (arg, options = {}) => {
           }
         }
       } catch (storageError) {
-        console.warn('⚠️ Profile storage error (non-critical):', storageError);
       }
 
       setData(profileData);
     } catch (err) {
-      console.error('💥 Profile fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -246,7 +221,6 @@ export const useLogoutMutation = () => {
 
       if (token) {
         try {
-          console.log('📞 Calling logout endpoint');
           const response = await fetch(`${BASE_URL}auth/token/logout`, {
             method: 'POST',
             headers: {
@@ -254,14 +228,11 @@ export const useLogoutMutation = () => {
               'Content-Type': 'application/json',
             },
           });
-          console.log('📡 Logout response status:', response.status);
         } catch (logoutError) {
-          console.warn('⚠️ Logout API call failed, but continuing with local cleanup');
         }
       }
 
       // Always clear storage
-      console.log('🗑️ Clearing auth storage...');
       await AsyncStorage.multiRemove([
         'authToken',
         'driverId',
@@ -275,12 +246,10 @@ export const useLogoutMutation = () => {
       const verification = await AsyncStorage.multiGet([
         'authToken', 'driverId', 'userName'
       ]);
-      console.log('🔍 Storage cleared verification:', verification);
 
       setIsLoading(false);
       return { success: true };
     } catch (err) {
-      console.error('💥 Logout error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -312,7 +281,6 @@ export const useUpdateProfileMutation = () => {
         throw new Error('No auth token found');
       }
 
-      console.log('📝 Updating profile with:', profileData);
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'PATCH',
         headers: {
@@ -322,21 +290,17 @@ export const useUpdateProfileMutation = () => {
         body: JSON.stringify(profileData),
       });
 
-      console.log('📡 Update profile response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Update profile error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const data = await response.json();
-      console.log('✅ Profile updated successfully');
       
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('💥 Profile update error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -363,7 +327,6 @@ export const useCreateAccountMutation = () => {
     setError(null);
 
     try {
-      console.log('👤 Creating account with:', userData);
       const response = await fetch(`${BASE_URL}accounts/create`, {
         method: 'POST',
         headers: {
@@ -372,11 +335,9 @@ export const useCreateAccountMutation = () => {
         body: JSON.stringify(userData),
       });
 
-      console.log('📡 Create account response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Create account error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
@@ -384,7 +345,6 @@ export const useCreateAccountMutation = () => {
       setIsLoading(false);
       return data;
     } catch (err) {
-      console.error('💥 Create account error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
@@ -419,7 +379,6 @@ export const useGetTransportByDriverIdQuery = (driverId, options = {}) => {
         throw new Error('No auth token found');
       }
 
-      console.log(`🚛 Fetching transport for driver ${driverId}`);
       const response = await fetch(`${BASE_URL}transports?driver_id=${driverId}`, {
         method: 'GET',
         headers: {
@@ -428,19 +387,15 @@ export const useGetTransportByDriverIdQuery = (driverId, options = {}) => {
         },
       });
 
-      console.log('📡 Transport response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ Transport error response:', errorData);
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const transportData = await response.json();
-      console.log('📦 Transport data received');
       setData(transportData);
     } catch (err) {
-      console.error('💥 Transport fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
