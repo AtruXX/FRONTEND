@@ -22,38 +22,75 @@ const DocumentCard = ({ document, daysLeft, isExpired }) => {
   const titleStyle = isExpired ? [styles.documentTitle, styles.expiredTitle] : styles.documentTitle;
   const daysStyle = isExpired ? [styles.daysLeft, styles.expiredDays] : styles.daysLeft;
 
+  // Enhanced document type detection
+  const getDocumentIcon = (category) => {
+    switch (category?.toLowerCase()) {
+      case 'license':
+      case 'licenta':
+        return 'card';
+      case 'insurance':
+      case 'asigurare':
+        return 'shield-checkmark';
+      case 'permit':
+      case 'permis':
+        return 'badge';
+      case 'certificate':
+      case 'certificat':
+        return 'ribbon';
+      case 'cmr':
+        return 'clipboard';
+      default:
+        return 'document-text';
+    }
+  };
+
+  // Enhanced status text
+  const getStatusText = () => {
+    if (daysLeft < 0) {
+      return `Expirat de ${Math.abs(daysLeft)} zile`;
+    } else if (daysLeft === 0) {
+      return 'Expiră astăzi';
+    } else if (daysLeft === 1) {
+      return 'Expiră mâine';
+    } else if (isExpired) {
+      return `Expiră în ${daysLeft} zile`;
+    } else {
+      return `${daysLeft} zile rămase`;
+    }
+  };
+
   return (
     <TouchableOpacity style={cardStyle} activeOpacity={0.7}>
       <View style={styles.documentHeader}>
         <View style={styles.documentIcon}>
-          <Ionicons 
-            name="document-text" 
-            size={24} 
-            color={isExpired ? COLORS.danger : COLORS.primary} 
+          <Ionicons
+            name={getDocumentIcon(document.category)}
+            size={28}
+            color={isExpired ? COLORS.danger : COLORS.primary}
           />
         </View>
         <View style={styles.documentInfo}>
-          <Text style={titleStyle}>{document.name}</Text>
+          <Text style={titleStyle}>{document.title || document.name}</Text>
           <Text style={styles.documentCategory}>
             {document.category?.replace('_', ' ').toUpperCase() || 'DOCUMENT'}
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.documentFooter}>
         <View style={styles.expirationInfo}>
-          <Ionicons 
-            name={isExpired ? "alert-circle" : "time"} 
-            size={16} 
-            color={isExpired ? COLORS.danger : COLORS.medium} 
+          <Ionicons
+            name={daysLeft < 0 ? "close-circle" : isExpired ? "alert-circle" : "time"}
+            size={16}
+            color={daysLeft < 0 ? COLORS.danger : isExpired ? COLORS.warning : COLORS.medium}
           />
           <Text style={daysStyle}>
-            {isExpired ? `Expiring in ${daysLeft} days` : `${daysLeft} days left`}
+            {getStatusText()}
           </Text>
         </View>
         {document.expiration_date && (
           <Text style={styles.expirationDate}>
-            Expires: {new Date(document.expiration_date).toLocaleDateString()}
+            Expiră: {new Date(document.expiration_date).toLocaleDateString('ro-RO')}
           </Text>
         )}
       </View>
@@ -151,14 +188,15 @@ const ExpiredDocuments = () => {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
-          title="Expired Documents"
+          title="Documente Expirate"
           onBack={() => navigation.goBack()}
           onRetry={handleRetry}
           showRetry={true}
           showBack={true}
         />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading documents...</Text>
+          <Ionicons name="document-text-outline" size={48} color={COLORS.primary} />
+          <Text style={styles.loadingText}>Se încarcă documentele...</Text>
         </View>
       </SafeAreaView>
     );
@@ -168,7 +206,7 @@ const ExpiredDocuments = () => {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
-          title="Expired Documents"
+          title="Documente Expirate"
           onBack={() => navigation.goBack()}
           onRetry={handleRetry}
           showRetry={true}
@@ -176,19 +214,21 @@ const ExpiredDocuments = () => {
         />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color={COLORS.danger} />
-          <Text style={styles.errorTitle}>Error Loading Documents</Text>
+          <Text style={styles.errorTitle}>Eroare la încărcarea documentelor</Text>
           <Text style={styles.errorMessage}>
-            {documentsError.message || 'Failed to load documents'}
+            {documentsError.message || 'Nu s-au putut încărca documentele'}
           </Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>Încearcă din nou</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
 
-  const expiredDocuments = documentsWithExpiration.filter(doc => doc.daysLeft <= 10);
+  // Enhanced document categorization
+  const actuallyExpiredDocuments = documentsWithExpiration.filter(doc => doc.daysLeft < 0);
+  const expiringSoonDocuments = documentsWithExpiration.filter(doc => doc.daysLeft >= 0 && doc.daysLeft <= 10);
   const upcomingDocuments = documentsWithExpiration.filter(doc => doc.daysLeft > 10 && doc.daysLeft <= 30);
 
   return (
@@ -208,15 +248,34 @@ const ExpiredDocuments = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        {expiredDocuments.length > 0 && (
+        {actuallyExpiredDocuments.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
+              <Ionicons name="close-circle" size={20} color={COLORS.danger} />
               <Text style={[styles.sectionTitle, styles.expiredSectionTitle]}>
-                Expiring Soon (d 10 days)
+                Documente Expirate
               </Text>
             </View>
-            {expiredDocuments.map((document) => (
+            {actuallyExpiredDocuments.map((document) => (
+              <DocumentCard
+                key={document.id}
+                document={document}
+                daysLeft={document.daysLeft}
+                isExpired={true}
+              />
+            ))}
+          </View>
+        )}
+
+        {expiringSoonDocuments.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="alert-circle" size={20} color={COLORS.warning} />
+              <Text style={[styles.sectionTitle, { color: COLORS.warning }]}>
+                Expiră în curând (≤ 10 zile)
+              </Text>
+            </View>
+            {expiringSoonDocuments.map((document) => (
               <DocumentCard
                 key={document.id}
                 document={document}
@@ -231,7 +290,7 @@ const ExpiredDocuments = () => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="time" size={20} color={COLORS.warning} />
-              <Text style={styles.sectionTitle}>Upcoming Expiration (11-30 days)</Text>
+              <Text style={styles.sectionTitle}>Expirare apropiată (11-30 zile)</Text>
             </View>
             {upcomingDocuments.map((document) => (
               <DocumentCard
@@ -247,19 +306,19 @@ const ExpiredDocuments = () => {
         {documentsWithExpiration.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
-            <Text style={styles.emptyTitle}>All Documents Valid</Text>
+            <Text style={styles.emptyTitle}>Toate documentele sunt valide</Text>
             <Text style={styles.emptyMessage}>
-              No documents are expiring in the next 30 days
+              Nu există documente care expiră în următoarele 30 de zile
             </Text>
           </View>
         )}
 
-        {expiredDocuments.length === 0 && upcomingDocuments.length === 0 && documentsWithExpiration.length > 0 && (
+        {actuallyExpiredDocuments.length === 0 && expiringSoonDocuments.length === 0 && upcomingDocuments.length === 0 && documentsWithExpiration.length > 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
-            <Text style={styles.emptyTitle}>No Expiring Documents</Text>
+            <Text style={styles.emptyTitle}>Niciun document în expirare</Text>
             <Text style={styles.emptyMessage}>
-              All your documents are valid for more than 30 days
+              Toate documentele dumneavoastră sunt valide pentru mai mult de 30 de zile
             </Text>
           </View>
         )}
