@@ -19,6 +19,7 @@ import {
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
+import TransportDetailsModal from "../../components/TransportDetailsModal";
 
 // Memoized components for better performance
 const TransportStatusIndicator = React.memo(({ status }) => {
@@ -256,6 +257,8 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
   const { showLoading, hideLoading } = useLoading();
   const [startingTransport, setStartingTransport] = useState(null);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
+  const [selectedTransport, setSelectedTransport] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   // Use the transport service hooks
   const {
@@ -363,12 +366,13 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
   }, [activeTransportId, setActiveTransportMutation, onRefresh]);
 
   const handleViewDetails = useCallback((transport) => {
-    console.log('View details for transport:', transport.id);
-    Alert.alert(
-      'Info',
-      `Detalii pentru transportul #${transport.id}\n\nFuncționalitatea va fi implementată în curând.`,
-      [{ text: 'OK' }]
-    );
+    setSelectedTransport(transport);
+    setModalVisible(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalVisible(false);
+    setSelectedTransport(null);
   }, []);
 
   // Memoized render functions
@@ -451,6 +455,13 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
         ) : (
           <EmptyState onRefresh={onRefresh} refreshing={refreshing} activeTab={activeTab} />
         )}
+
+        {/* Transport Details Modal */}
+        <TransportDetailsModal
+          visible={modalVisible}
+          transport={selectedTransport}
+          onClose={handleCloseModal}
+        />
       </View>
     </SafeAreaView>
   );
