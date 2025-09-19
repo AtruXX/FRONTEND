@@ -205,3 +205,68 @@ export const useGetTruckDocumentsQuery = (truckId, options = {}) => {
     refetch: fetchTruckDocuments,
   };
 };
+
+// Custom hook for getting trailer details
+export const useGetTrailerQuery = (trailerId, options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchTrailer = useCallback(async () => {
+    if (options.skip || !trailerId) return;
+
+    setIsFetching(true);
+    setError(null);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      console.log('Fetching trailer details for ID:', trailerId);
+      const response = await fetch(`${BASE_URL}trailers/${trailerId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Trailer response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.log('Trailer error response:', errorData);
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const trailerData = await response.json();
+      console.log('Trailer data received:', trailerData);
+
+      // Get the first trailer from the array if it's an array
+      const trailer = Array.isArray(trailerData) ? trailerData[0] : trailerData;
+      setData(trailer);
+    } catch (err) {
+      console.error('Trailer fetch error:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+    }
+  }, [trailerId, options.skip]);
+
+  // Initial load
+  useEffect(() => {
+    fetchTrailer();
+  }, [fetchTrailer]);
+
+  return {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch: fetchTrailer,
+  };
+};

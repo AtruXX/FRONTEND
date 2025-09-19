@@ -14,10 +14,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
-import { 
-  useGetActiveTransportQuery, 
-  useGetTruckQuery, 
-  useGetTruckDocumentsQuery 
+import {
+  useGetActiveTransportQuery,
+  useGetTruckQuery,
+  useGetTruckDocumentsQuery,
+  useGetTrailerQuery
 } from '../../services/vehicleService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
@@ -59,14 +60,22 @@ const TruckPageScreen = ({ navigation }) => {
     refetch: refetchDocuments
   } = useGetTruckDocumentsQuery(activeTransport?.truck);
 
+  // Get trailer details
+  const {
+    data: trailerData,
+    isLoading: trailerLoading,
+    error: trailerError,
+    refetch: refetchTrailer
+  } = useGetTrailerQuery(activeTransport?.trailer);
+
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || transportLoading || truckLoading || documentsLoading) {
+    if (profileLoading || transportLoading || truckLoading || documentsLoading || trailerLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, transportLoading, truckLoading, documentsLoading, showLoading, hideLoading]);
+  }, [profileLoading, transportLoading, truckLoading, documentsLoading, trailerLoading, showLoading, hideLoading]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -75,7 +84,8 @@ const TruckPageScreen = ({ navigation }) => {
         refetchProfile(),
         refetchTransport(),
         refetchTruck(),
-        refetchDocuments()
+        refetchDocuments(),
+        refetchTrailer()
       ]);
     } catch (error) {
       console.error('Refresh error:', error);
@@ -182,7 +192,7 @@ const TruckPageScreen = ({ navigation }) => {
               </View>
               <View style={styles.truckInfoContainer}>
                 <Text style={styles.truckModel}>{truckData.make} {truckData.model}</Text>
-                <Text style={styles.truckNumber}>{truckData.license_plate}</Text>
+                <Text style={styles.truckNumber}>Nr. înmatriculare: {truckData.license_plate}</Text>
                 <View style={styles.truckIdContainer}>
                   <Ionicons name="barcode-outline" size={16} color="#666" />
                   <Text style={styles.truckIdText}>VIN: {truckData.vin}</Text>
@@ -213,12 +223,16 @@ const TruckPageScreen = ({ navigation }) => {
                 </Text>
               </View>
               <View style={styles.transportDetail}>
-                <Text style={styles.transportLabel}>Dispatcher:</Text>
-                <Text style={styles.transportValue}>{activeTransport.dispatcher || 'N/A'}</Text>
+                <Text style={styles.transportLabel}>Nume Autovehicul:</Text>
+                <Text style={styles.transportValue}>{truckData ? `${truckData.make} ${truckData.model}` : 'Se încarcă...'}</Text>
               </View>
               <View style={styles.transportDetail}>
-                <Text style={styles.transportLabel}>Trailer:</Text>
-                <Text style={styles.transportValue}>#{activeTransport.trailer}</Text>
+                <Text style={styles.transportLabel}>Număr Înmatriculare:</Text>
+                <Text style={styles.transportValue}>{truckData?.license_plate || 'Se încarcă...'}</Text>
+              </View>
+              <View style={styles.transportDetail}>
+                <Text style={styles.transportLabel}>Remorcă:</Text>
+                <Text style={styles.transportValue}>{trailerData ? `${trailerData.make || ''} ${trailerData.model || ''} - ${trailerData.license_plate || trailerData.id}`.trim() : activeTransport?.trailer ? `ID: ${activeTransport.trailer}` : 'Fără remorcă'}</Text>
               </View>
             </View>
           </View>
@@ -235,25 +249,25 @@ const TruckPageScreen = ({ navigation }) => {
                   <View style={styles.specificationItem}>
                     <Text style={styles.specificationLabel}>Motor</Text>
                     <Text style={styles.specificationValue}>
-                      {truckData.engine?.type} - {truckData.engine?.horsepower} HP
+                      {truckData.engine?.type || 'N/A'} - {truckData.engine?.horsepower || 'N/A'} CP
                     </Text>
                   </View>
                   <View style={styles.specificationItem}>
                     <Text style={styles.specificationLabel}>Greutate Maximă</Text>
                     <Text style={styles.specificationValue}>
-                      {truckData.weight?.gross_weight} {truckData.weight?.unit}
+                      {truckData.weight?.gross_weight || 'N/A'} {truckData.weight?.unit || 'kg'}
                     </Text>
                   </View>
                   <View style={styles.specificationItem}>
                     <Text style={styles.specificationLabel}>Dimensiuni</Text>
                     <Text style={styles.specificationValue}>
-                      {truckData.dimensions?.length}"L x {truckData.dimensions?.width}"W x {truckData.dimensions?.height}"H
+                      {truckData.dimensions?.length || 'N/A'}"L x {truckData.dimensions?.width || 'N/A'}"W x {truckData.dimensions?.height || 'N/A'}"H
                     </Text>
                   </View>
                   <View style={styles.specificationItem}>
                     <Text style={styles.specificationLabel}>Tip Încărcare</Text>
                     <Text style={styles.specificationValue}>
-                      {truckData.load?.load_type}
+                      {truckData.load?.load_type || 'N/A'}
                     </Text>
                   </View>
                 </View>
@@ -272,23 +286,23 @@ const TruckPageScreen = ({ navigation }) => {
                 <View style={styles.legalItem}>
                   <Text style={styles.legalLabel}>Rating Siguranță:</Text>
                   <Text style={[styles.legalValue, { color: '#10B981' }]}>
-                    {truckData.legal_condition.safety_rating}
+                    {truckData.legal_condition.safety_rating || 'N/A'}
                   </Text>
                 </View>
                 <View style={styles.legalItem}>
-                  <Text style={styles.legalLabel}>Ultima Inspecție DOT:</Text>
+                  <Text style={styles.legalLabel}>Ultima Inspecție Tehnică:</Text>
                   <Text style={styles.legalValue}>
                     {formatDate(truckData.legal_condition.dot_inspection)}
                   </Text>
                 </View>
                 <View style={styles.legalItem}>
-                  <Text style={styles.legalLabel}>Polița Asigurare:</Text>
+                  <Text style={styles.legalLabel}>Poliță Asigurare:</Text>
                   <Text style={styles.legalValue}>
-                    {truckData.legal_condition.insurance_policy}
+                    {truckData.legal_condition.insurance_policy || 'N/A'}
                   </Text>
                 </View>
                 <View style={styles.legalItem}>
-                  <Text style={styles.legalLabel}>Expirare Înregistrare:</Text>
+                  <Text style={styles.legalLabel}>Expirare Înmatriculare:</Text>
                   <Text style={styles.legalValue}>
                     {formatDate(truckData.legal_condition.registration_expiry)}
                   </Text>
@@ -316,7 +330,7 @@ const TruckPageScreen = ({ navigation }) => {
                       <Text style={styles.documentCategory}>Categorie: {doc.category}</Text>
                       {doc.expiration_date && (
                         <Text style={styles.documentExpiry}>
-                          Expiră: {formatDate(doc.expiration_date)}
+                          Expiră în: {formatDate(doc.expiration_date)}
                         </Text>
                       )}
                       {doc.description && (
@@ -356,7 +370,7 @@ const TruckPageScreen = ({ navigation }) => {
               </View>
               <View style={styles.cardContent}>
                 <View style={styles.maintenanceItem}>
-                  <Text style={styles.maintenanceLabel}>Ultima Revizie:</Text>
+                  <Text style={styles.maintenanceLabel}>Ultima Revizie Tehnică:</Text>
                   <Text style={styles.maintenanceValue}>
                     {formatDate(truckData.last_service_date)}
                   </Text>
