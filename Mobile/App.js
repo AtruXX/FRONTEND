@@ -93,8 +93,27 @@ function FluidTabBar({ state, descriptors, navigation }) {
       canPreventDefault: true,
     });
 
-    if (!isFocused && !event.defaultPrevented) {
-      navigation.navigate(route.name);
+    if (!event.defaultPrevented) {
+      if (isFocused) {
+        // If already on this tab, reset to the root screen of the stack
+        navigation.navigate(route.name, { screen: getMainScreen(route.name) });
+      } else {
+        // If not focused, navigate to this tab's main screen
+        navigation.navigate(route.name, { screen: getMainScreen(route.name) });
+      }
+    }
+  };
+
+  const getMainScreen = (tabName) => {
+    switch (tabName) {
+      case 'Home':
+        return 'HomeScreen';
+      case 'Transports':
+        return 'TransportsScreen';
+      case 'Profile':
+        return 'ProfileScreen';
+      default:
+        return undefined;
     }
   };
   
@@ -245,6 +264,11 @@ function ProfileStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+      <Stack.Screen
+        name="TransportsScreen"
+        component={Transports}
+        options={slideTransitionOptions}
+      />
       <Stack.Screen
         name="NotificationsScreen"
         component={NotificationsScreen}

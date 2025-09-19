@@ -12,9 +12,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
-import { 
-  useGetTransportsQuery, 
-  useSetActiveTransportMutation 
+import {
+  useGetDriverTransportsQuery,
+  useSetActiveTransportMutation
 } from '../../services/transportService';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
@@ -108,14 +108,24 @@ const TransportDetails = React.memo(({ transport }) => {
   );
 });
 
-const TransportActionButton = React.memo(({ 
-  transport, 
-  isActive, 
-  canStartTransport, 
-  isStarting, 
-  isSettingActive, 
-  onStartTransport 
+const TransportActionButton = React.memo(({
+  transport,
+  isActive,
+  canStartTransport,
+  isStarting,
+  isSettingActive,
+  onStartTransport,
+  isCompleted = false
 }) => {
+  if (isCompleted) {
+    return (
+      <View style={[styles.startButton, styles.completedButton]}>
+        <Ionicons name="checkmark-done-circle" size={20} color="white" style={styles.buttonIcon} />
+        <Text style={styles.startButtonText}>TRANSPORT FINALIZAT</Text>
+      </View>
+    );
+  }
+
   if (isActive) {
     return (
       <View style={[styles.startButton, styles.activeButton]}>
@@ -148,27 +158,29 @@ const TransportActionButton = React.memo(({
   );
 });
 
-const TransportItem = React.memo(({ 
-  item, 
-  activeTransportId, 
-  hasActiveTransport, 
-  startingTransport, 
-  isSettingActive, 
-  onStartTransport, 
-  onViewDetails 
+const TransportItem = React.memo(({
+  item,
+  activeTransportId,
+  hasActiveTransport,
+  startingTransport,
+  isSettingActive,
+  onStartTransport,
+  onViewDetails,
+  activeTab
 }) => {
   const isActive = activeTransportId === item.id;
   const isStarting = startingTransport === item.id;
   const canStartTransport = !hasActiveTransport || isActive;
+  const isCompleted = activeTab === 'completed' || item.is_finished;
 
   return (
     <View style={[styles.transportCard, !canStartTransport && styles.disabledCard]}>
-      <TransportHeader 
+      <TransportHeader
         transport={item}
         onViewDetails={() => onViewDetails(item)}
         canStartTransport={canStartTransport}
       />
-      
+
       <TransportDetails transport={item} />
 
       <View style={styles.actionSection}>
@@ -179,19 +191,31 @@ const TransportItem = React.memo(({
           isStarting={isStarting}
           isSettingActive={isSettingActive}
           onStartTransport={onStartTransport}
+          isCompleted={isCompleted}
         />
       </View>
     </View>
   );
 });
 
-const EmptyState = React.memo(({ onRefresh, refreshing }) => (
+const EmptyState = React.memo(({ onRefresh, refreshing, activeTab }) => (
   <View style={styles.emptyContainer}>
     <View style={styles.emptyIconContainer}>
-      <Ionicons name="car-outline" size={40} color="#6366F1" />
+      <Ionicons
+        name={activeTab === 'active' ? "car-outline" : "checkmark-done-circle-outline"}
+        size={40}
+        color="#6366F1"
+      />
     </View>
-    <Text style={styles.emptyTitle}>Niciun transport atribuit</Text>
-    <Text style={styles.emptyText}>Nu există transporturi atribuite în acest moment</Text>
+    <Text style={styles.emptyTitle}>
+      {activeTab === 'active' ? 'Niciun transport activ' : 'Niciun transport finalizat'}
+    </Text>
+    <Text style={styles.emptyText}>
+      {activeTab === 'active'
+        ? 'Nu există transporturi active atribuite în acest moment'
+        : 'Nu ai finalizat încă niciun transport'
+      }
+    </Text>
     <TouchableOpacity
       style={styles.refreshButton}
       onPress={onRefresh}
@@ -209,7 +233,15 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
       <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
     </View>
     <Text style={styles.errorTitle}>Eroare la încărcarea transporturilor</Text>
-    <Text style={styles.errorText}>{error.message || error.toString()}</Text>
+    <Text style={styles.errorText}>
+      {error.message?.includes('401')
+        ? 'Sesiunea a expirat. Te rugăm să te autentifici din nou.'
+        : error.message?.includes('404')
+        ? 'Endpoint-ul pentru transporturi nu a fost găsit.'
+        : error.message?.includes('500')
+        ? 'Eroare server. Te rugăm să încerci din nou mai târziu.'
+        : error.message || 'Nu s-au putut încărca transporturile'}
+    </Text>
     <TouchableOpacity
       style={styles.retryButton}
       onPress={onRefresh}
@@ -223,6 +255,7 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
 const TransportsScreen = React.memo(({ navigation, route }) => {
   const { showLoading, hideLoading } = useLoading();
   const [startingTransport, setStartingTransport] = useState(null);
+  const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
 
   // Use the transport service hooks
   const {
@@ -231,7 +264,7 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     isFetching: transportsFetching,
     error: transportsError,
     refetch: refetchTransports
-  } = useGetTransportsQuery();
+  } = useGetDriverTransportsQuery();
 
   const {
     data: profileData,
@@ -253,13 +286,24 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
   }, [transportsLoading, profileLoading, isSettingActive, showLoading, hideLoading]);
 
   // Memoized data extraction
-  const { transports, activeTransportId, loading, refreshing, error } = useMemo(() => ({
-    transports: transportsData?.transports || [],
-    activeTransportId: profileData?.active_transport || null,
-    loading: transportsLoading || profileLoading,
-    refreshing: transportsFetching || profileFetching,
-    error: transportsError || profileError
-  }), [transportsData, profileData, transportsLoading, profileLoading, transportsFetching, profileFetching, transportsError, profileError]);
+  const { transports, activeTransportId, loading, refreshing, error, stats } = useMemo(() => {
+    const currentTransports = activeTab === 'active'
+      ? transportsData?.activeTransports || []
+      : transportsData?.completedTransports || [];
+
+    return {
+      transports: currentTransports,
+      activeTransportId: profileData?.active_transport || null,
+      loading: transportsLoading || profileLoading,
+      refreshing: transportsFetching || profileFetching,
+      error: transportsError || profileError,
+      stats: {
+        active: transportsData?.activeCount || 0,
+        completed: transportsData?.completedCount || 0,
+        total: transportsData?.totalTransports || 0
+      }
+    };
+  }, [activeTab, transportsData, profileData, transportsLoading, profileLoading, transportsFetching, profileFetching, transportsError, profileError]);
 
   // Memoized handlers
   const onRefresh = useCallback(async () => {
@@ -337,8 +381,9 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       isSettingActive={isSettingActive}
       onStartTransport={handleStartTransport}
       onViewDetails={handleViewDetails}
+      activeTab={activeTab}
     />
-  ), [activeTransportId, startingTransport, isSettingActive, handleStartTransport, handleViewDetails]);
+  ), [activeTransportId, startingTransport, isSettingActive, handleStartTransport, handleViewDetails, activeTab]);
 
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
@@ -352,12 +397,32 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <PageHeader
-          title="TRANSPORTURI"
+          title="TRANSPORTURILE MELE"
           onBack={() => navigation.goBack()}
           onRetry={handleRetry}
           showRetry={true}
           showBack={true}
         />
+
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'active' && styles.activeTab]}
+            onPress={() => setActiveTab('active')}
+          >
+            <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>
+              Active ({stats.active})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
+            onPress={() => setActiveTab('completed')}
+          >
+            <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>
+              Finalizate ({stats.completed})
+            </Text>
+          </TouchableOpacity>
+        </View>
         
         {error ? (
           <ErrorState error={error} onRefresh={onRefresh} />
@@ -384,7 +449,7 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
             showsVerticalScrollIndicator={false}
           />
         ) : (
-          <EmptyState onRefresh={onRefresh} refreshing={refreshing} />
+          <EmptyState onRefresh={onRefresh} refreshing={refreshing} activeTab={activeTab} />
         )}
       </View>
     </SafeAreaView>

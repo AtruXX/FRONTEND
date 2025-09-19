@@ -46,6 +46,44 @@ export const styles = StyleSheet.create({
       borderRadius: 8,
       backgroundColor: '#EFF6FF',
     },
+    // Tab Navigation Styles
+    tabContainer: {
+      flexDirection: 'row',
+      backgroundColor: 'white',
+      marginHorizontal: 16,
+      marginTop: 8,
+      borderRadius: 12,
+      padding: 4,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    activeTab: {
+      backgroundColor: '#6366F1',
+      shadowColor: '#6366F1',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    tabText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: '#666',
+    },
+    activeTabText: {
+      color: 'white',
+    },
     listContainer: {
       padding: 16,
     },
@@ -214,7 +252,10 @@ export const styles = StyleSheet.create({
   
     // Active button state (TRANSPORT ACTIV)
     activeButton: {
-      backgroundColor: '#10B981', // Green color
+      backgroundColor: '#10B981',
+    },
+    completedButton: {
+      backgroundColor: '#6B7280', // Green color
     },
   
     // Disabled button state

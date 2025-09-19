@@ -641,9 +641,9 @@ const ProfileScreen = React.memo(() => {
             <SettingItem
               iconName="truck"
               title="Transporturile Mele"
-              subtitle="Vezi istoricul transporturilor tale"
-              onPress={() => navigation.navigate('MyTransports')}
-              badge={profileData?.driver?.id_transports?.length || 0}
+              subtitle="Vezi transporturile tale atribuite"
+              onPress={() => navigation.navigate('TransportsScreen')}
+              badge={profileData?.driver?.id_transports?.length || transportsData?.totalTransports || 0}
               showChevron={true}
             />
           </View>

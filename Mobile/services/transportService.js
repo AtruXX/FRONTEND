@@ -386,6 +386,196 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
   };
 };
 
+// Custom hook for getting driver's assigned transports (for My Transports page)
+export const useGetDriverTransportsQuery = (options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchDriverTransports = useCallback(async () => {
+    if (options.skip) return;
+
+    setIsFetching(true);
+    setError(null);
+
+    try {
+      const token = await waitForAuthToken();
+      const driverId = await AsyncStorage.getItem('driverId');
+
+      let response;
+      let endpointUsed = '';
+
+      // Primary: Use driver-specific endpoint (should return ALL driver's transports)
+      if (driverId) {
+        response = await fetch(`${BASE_URL}transport/driver/${driverId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        endpointUsed = 'driver-specific';
+
+        // If driver-specific fails, try assigned-transports
+        if (!response.ok) {
+          response = await fetch(`${BASE_URL}assigned-transports/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          endpointUsed = 'assigned-transports';
+
+          // If both fail, try general transports as last resort
+          if (!response.ok) {
+            response = await fetch(`${BASE_URL}transports`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            endpointUsed = 'general-transports';
+
+            if (!response.ok) {
+              const errorData = await response.text();
+              throw new Error(`All endpoints failed. Last: ${endpointUsed} - HTTP ${response.status}: ${errorData}`);
+            }
+          }
+        }
+      } else {
+        throw new Error('Driver ID not found in storage');
+      }
+
+      const transportData = await response.json();
+
+      // Handle different response structures from different endpoints
+      let transports = [];
+
+      if (endpointUsed === 'driver-specific') {
+        // Response from /transport/driver/{driver_id}
+        if (transportData.transports && Array.isArray(transportData.transports)) {
+          transports = transportData.transports;
+        } else if (Array.isArray(transportData)) {
+          transports = transportData;
+        }
+      } else if (endpointUsed === 'assigned-transports') {
+        if (transportData.assigned_transports && Array.isArray(transportData.assigned_transports)) {
+          // Response with full transport objects
+          transports = transportData.assigned_transports;
+        } else if (transportData.id_transports && Array.isArray(transportData.id_transports)) {
+          // Response with transport IDs only - need to fetch details
+          const transportIds = transportData.id_transports;
+          const transportPromises = transportIds.map(async (transportId) => {
+            try {
+              const transportResponse = await fetch(`${BASE_URL}transports/${transportId}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Token ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              if (transportResponse.ok) {
+                return await transportResponse.json();
+              }
+              return null;
+            } catch (error) {
+              return null;
+            }
+          });
+          const transportDetails = await Promise.all(transportPromises);
+          transports = transportDetails.filter(transport => transport !== null);
+        }
+      } else {
+        // General transports endpoint
+        if (transportData.transports && Array.isArray(transportData.transports)) {
+          transports = transportData.transports;
+        } else if (Array.isArray(transportData)) {
+          transports = transportData;
+        }
+      }
+
+      // Transform all transports
+      const transformedTransports = transports.map(transport => {
+        const isFinished = transport.is_finished ||
+                          transport.status === 'completed' ||
+                          transport.status === 'finished' ||
+                          transport.status === 'delivered' ||
+                          false;
+
+        return {
+          id: transport.id,
+          origin: transport.origin || 'N/A',
+          destination: transport.destination || transport.email_destinatar || 'N/A',
+          status: transport.status || transport.status_transport || 'not_started',
+          is_finished: isFinished,
+          email_expeditor: transport.email_expeditor,
+          email_destinatar: transport.email_destinatar,
+          pickup_date: transport.pickup_date,
+          delivery_date: transport.delivery_date,
+          cargo_details: transport.cargo_details,
+          dispatcher: transport.dispatcher,
+          truck: transport.truck,
+          trailer: transport.trailer,
+          route: transport.route,
+          company: transport.company,
+          created_at: transport.created_at,
+          updated_at: transport.updated_at,
+          // Status fields for the UI
+          status_truck: transport.status_truck || (isFinished ? 'completed' : 'not started'),
+          status_goods: transport.status_goods || (isFinished ? 'completed' : 'not started'),
+          status_trailer: transport.status_trailer || (isFinished ? 'completed' : 'not started'),
+          status_transport: transport.status_transport || (isFinished ? 'completed' : 'not started'),
+          status_coupling: transport.status_coupling || (isFinished ? 'completed' : 'not started'),
+          status_loaded_truck: transport.status_loaded_truck || (isFinished ? 'completed' : 'not started'),
+          delay_estimation: transport.delay_estimation,
+          // Additional transformed fields for UI
+          truck_combination: `Truck #${transport.truck || 'N/A'} + Trailer #${transport.trailer || 'N/A'}`,
+        };
+      });
+
+      // Separate active and completed transports
+      const activeTransports = transformedTransports.filter(t => !t.is_finished);
+      const completedTransports = transformedTransports.filter(t => t.is_finished);
+
+
+      setData({
+        allTransports: transformedTransports,
+        activeTransports: activeTransports,
+        completedTransports: completedTransports,
+        totalTransports: transformedTransports.length,
+        activeCount: activeTransports.length,
+        completedCount: completedTransports.length,
+      });
+    } catch (err) {
+      console.error('Driver transports fetch error:', err);
+      setError(err);
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+    }
+  }, [options.skip]);
+
+  // Initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDriverTransports();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [fetchDriverTransports]);
+
+  return {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch: fetchDriverTransports,
+  };
+};
+
 // Custom hook for getting total transports count for profile
 export const useGetTotalTransportsQuery = (options = {}) => {
   const [data, setData] = useState(null);
