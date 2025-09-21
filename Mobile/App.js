@@ -18,6 +18,10 @@ import CMRDigitalForm from "./Screens/TransportActualCMRDigital";
 import StatusTransportForm from "./Screens/TransportActualStatus";
 import PhotoCMRForm from "./Screens/TransportActualCMRPhoto";
 import QueueScreen from "./Screens/QueueScreen";
+import LeaveManagement from "./Screens/LeaveManagement";
+import LeaveRequestScreen from "./Screens/LeaveRequestScreen";
+import LeaveHistoryScreen from "./Screens/LeaveHistoryScreen";
+import LeaveCalendarScreen from "./Screens/LeaveCalendarScreen";
 import { NavigationContainer } from '@react-navigation/native';
 import { Pressable, View, StyleSheet, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -219,6 +223,26 @@ function HomeStackNavigator() {
         component={QueueScreen}
         options={slideTransitionOptions}
       />
+      <Stack.Screen
+        name="LeaveManagement"
+        component={LeaveManagement}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="LeaveRequestScreen"
+        component={LeaveRequestScreen}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="LeaveHistoryScreen"
+        component={LeaveHistoryScreen}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="LeaveCalendarScreen"
+        component={LeaveCalendarScreen}
+        options={slideTransitionOptions}
+      />
     </Stack.Navigator>
   );
 }
@@ -265,6 +289,26 @@ function TransportsStackNavigator() {
       <Stack.Screen
         name="QueueScreen"
         component={QueueScreen}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="LeaveManagement"
+        component={LeaveManagement}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="LeaveRequestScreen"
+        component={LeaveRequestScreen}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="LeaveHistoryScreen"
+        component={LeaveHistoryScreen}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="LeaveCalendarScreen"
+        component={LeaveCalendarScreen}
         options={slideTransitionOptions}
       />
     </Stack.Navigator>

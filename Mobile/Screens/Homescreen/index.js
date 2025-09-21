@@ -185,6 +185,7 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     goToTransportMain: () => navigation.navigate('TransportMainPage'),
     goToExpiredDocuments: () => navigation.navigate('ExpiredDocuments'),
     goToQueue: () => navigation.navigate('QueueScreen'),
+    goToLeaveManagement: () => navigation.navigate('LeaveManagement'),
   }), [navigation]);
 
   // Memoized action cards data
@@ -200,6 +201,12 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
       label: "Transporturi",
       onPress: navigationHandlers.goToTransports,
       iconColor: COLORS.primary
+    },
+    {
+      iconName: "calendar-outline",
+      label: "Concedii",
+      onPress: navigationHandlers.goToLeaveManagement,
+      iconColor: '#10B981'
     },
     {
       iconName: "map-outline",
