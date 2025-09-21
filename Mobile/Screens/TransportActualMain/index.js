@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
-import { useFinalizeTransportMutation, useGetTransportByIdQuery } from '../../services/transportService';
+import { useFinalizeTransportMutation, useGetTransportByIdQuery, useGetDriverQueueQuery } from '../../services/transportService';
 import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
@@ -24,23 +24,73 @@ const TransportMainPage = ({ navigation }) => {
     refetch: refetchProfile
   } = useGetUserProfileQuery();
 
+  // Queue system hook to get current transport
+  const {
+    data: queueData,
+    isLoading: queueLoading,
+    error: queueError,
+    refetch: refetchQueue
+  } = useGetDriverQueueQuery();
+
   // Mutations - always call these hooks
   const [finalizeTransport, { isLoading: isFinalizing }] = useFinalizeTransportMutation();
   const [downloadCMR, { isLoading: isDownloading }] = useDownloadCMRDocumentMutation();
   const [updateCMRData, { isLoading: isUpdatingCMR }] = useUpdateCMRDataMutation();
 
-  // FIXED: Get active transport ID from the correct path
-  const activeTransportId = profileData?.active_transport;
+  // SMART: Get active transport ID with intelligent fallback logic
+  const getActiveTransportId = () => {
+    // Priority 1: Queue system current transport
+    if (queueData?.current_transport_id) {
+      return queueData.current_transport_id;
+    }
+
+    // Priority 2: Profile active transport (legacy system)
+    if (profileData?.active_transport) {
+      return profileData.active_transport;
+    }
+
+    // Priority 3: Check if queue has properly ordered transports and use first one
+    if (queueData?.queue && queueData.queue.length > 0) {
+      // Find transport with position 1 or lowest position
+      const sortedQueue = [...queueData.queue].sort((a, b) => a.queue_position - b.queue_position);
+      const firstTransport = sortedQueue[0];
+
+      // If positions are properly set (>= 1) and can start, use it
+      if (firstTransport.queue_position >= 1 && firstTransport.can_start) {
+        console.log('🔄 Using first startable transport from queue:', firstTransport.transport_id);
+        return firstTransport.transport_id;
+      }
+
+      // FALLBACK: If queue positions are malformed (0, 0, 0) but we have transports,
+      // assume first transport should be startable for better UX
+      if (sortedQueue.length > 0 && sortedQueue.every(t => t.queue_position === 0)) {
+        console.log('⚠️ Queue positions malformed, using first transport as fallback:', firstTransport.transport_id);
+        return firstTransport.transport_id;
+      }
+    }
+
+    return null;
+  };
+
+  const activeTransportId = getActiveTransportId();
+
+  console.log('🔧 TransportActualMain Debug:');
+  console.log('  - Queue current_transport_id:', queueData?.current_transport_id);
+  console.log('  - Profile active_transport:', profileData?.active_transport);
+  console.log('  - Queue data:', queueData?.queue?.map(t => `ID:${t.transport_id} Pos:${t.queue_position} CanStart:${t.can_start}`));
+  console.log('  - Final activeTransportId:', activeTransportId);
+  console.log('  - Profile loading:', profileLoading);
+  console.log('  - Queue loading:', queueLoading);
   
 
-  // Fetch full transport details - skip if no transportId OR profile is still loading
+  // Fetch full transport details - skip if no transportId OR profile/queue is still loading
   const {
     data: transportData,
     isLoading: transportLoading,
     error: transportError,
     refetch: refetchTransport
   } = useGetTransportByIdQuery(activeTransportId, {
-    skip: !activeTransportId || profileLoading || profileError
+    skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
 
   // Fetch CMR data to get UIT code
@@ -50,17 +100,17 @@ const TransportMainPage = ({ navigation }) => {
     error: cmrError,
     refetch: refetchCMR
   } = useGetCMRDataQuery(activeTransportId, {
-    skip: !activeTransportId || profileLoading || profileError
+    skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || transportLoading || cmrLoading || isFinalizing || isDownloading || isUpdatingCMR) {
+    if (profileLoading || queueLoading || transportLoading || cmrLoading || isFinalizing || isDownloading || isUpdatingCMR) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, isUpdatingCMR, showLoading, hideLoading]);
+  }, [profileLoading, queueLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, isUpdatingCMR, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
@@ -147,10 +197,14 @@ const TransportMainPage = ({ navigation }) => {
 
   const handleRetry = useCallback(async () => {
     await refetchProfile();
+    await refetchQueue();
     if (refetchTransport) {
       await refetchTransport();
     }
-  }, [refetchProfile, refetchTransport]);
+    if (refetchCMR) {
+      await refetchCMR();
+    }
+  }, [refetchProfile, refetchQueue, refetchTransport, refetchCMR]);
 
   // Handle UIT edit button press
   const handleEditUIT = () => {
@@ -222,7 +276,7 @@ const TransportMainPage = ({ navigation }) => {
   };
 
   // Handle error state
-  if (profileError) {
+  if (profileError || queueError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -235,7 +289,11 @@ const TransportMainPage = ({ navigation }) => {
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
           <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
-          <Text style={styles.emptyText}>Nu s-au putut încărca datele transportului</Text>
+          <Text style={styles.emptyText}>
+            {profileError ? 'Nu s-au putut încărca datele profilului' :
+             queueError ? 'Nu s-au putut încărca datele cozii de transporturi' :
+             'Nu s-au putut încărca datele transportului'}
+          </Text>
           <TouchableOpacity
             style={styles.backToHomeButton}
             onPress={() => navigation.navigate('Home')}
@@ -247,8 +305,28 @@ const TransportMainPage = ({ navigation }) => {
     );
   }
 
-  // Handle no active transport
+  // Handle no active transport with intelligent messaging
   if (!activeTransportId) {
+    // Determine the reason and provide helpful message
+    let emptyTitle = "Niciun transport activ";
+    let emptyText = "Nu aveți un transport activ asignat în acest moment";
+    let showQueueButton = false;
+
+    if (queueData && queueData.queue_count > 0) {
+      const allPositionsZero = queueData.queue.every(t => t.queue_position === 0);
+      const noCanStart = queueData.queue.every(t => !t.can_start);
+
+      if (allPositionsZero && noCanStart) {
+        emptyTitle = "Transporturi în coadă neordonate";
+        emptyText = `Aveți ${queueData.queue_count} transporturi în coadă, dar acestea nu sunt încă ordonate de dispecer. Contactați dispecerul pentru a organiza coada.`;
+        showQueueButton = true;
+      } else if (noCanStart) {
+        emptyTitle = "Transporturi în așteptare";
+        emptyText = `Aveți ${queueData.queue_count} transporturi în coadă, dar niciun transport nu poate fi început încă.`;
+        showQueueButton = true;
+      }
+    }
+
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -258,11 +336,22 @@ const TransportMainPage = ({ navigation }) => {
           showRetry={true}
           showBack={true}
         />
-        
+
         <View style={styles.emptyContainer}>
           <Ionicons name="car-outline" size={60} color="#5A5BDE" />
-          <Text style={styles.emptyTitle}>Niciun transport activ</Text>
-          <Text style={styles.emptyText}>Nu aveți un transport activ asignat în acest moment</Text>
+          <Text style={styles.emptyTitle}>{emptyTitle}</Text>
+          <Text style={styles.emptyText}>{emptyText}</Text>
+
+          {/* Queue Button */}
+          {showQueueButton && (
+            <TouchableOpacity
+              style={[styles.backToHomeButton, { backgroundColor: '#6366F1', marginBottom: 12 }]}
+              onPress={() => navigation.navigate('QueueScreen')}
+            >
+              <Text style={[styles.backToHomeText, { color: 'white' }]}>Vezi Coada de Transporturi</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={styles.backToHomeButton}
             onPress={() => navigation.navigate('Home')}

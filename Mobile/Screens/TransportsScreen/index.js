@@ -14,7 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
 import {
   useGetDriverTransportsQuery,
-  useSetActiveTransportMutation
+  useSetActiveTransportMutation,
+  useGetDriverQueueQuery,
+  useStartNextTransportMutation
 } from '../../services/transportService';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
@@ -116,7 +118,10 @@ const TransportActionButton = React.memo(({
   isStarting,
   isSettingActive,
   onStartTransport,
-  isCompleted = false
+  isCompleted = false,
+  queuePosition = null,
+  isNextInQueue = false,
+  useQueueSystem = false
 }) => {
   if (isCompleted) {
     return (
@@ -136,6 +141,42 @@ const TransportActionButton = React.memo(({
     );
   }
 
+  // Queue system logic
+  if (useQueueSystem) {
+    if (queuePosition !== null && queuePosition > 1) {
+      return (
+        <View style={[styles.startButton, styles.queueButton]}>
+          <Ionicons name="list-outline" size={20} color="white" style={styles.buttonIcon} />
+          <Text style={styles.startButtonText}>
+            ÎN COADĂ - POZIȚIA #{queuePosition}
+          </Text>
+        </View>
+      );
+    }
+
+    if (isNextInQueue && canStartTransport) {
+      return (
+        <TouchableOpacity
+          style={[styles.startButton, styles.nextInQueueButton]}
+          onPress={() => onStartTransport(transport)}
+          disabled={isStarting || isSettingActive}
+        >
+          {isStarting || isSettingActive ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <>
+              <Ionicons name="play-forward-circle" size={20} color="white" style={styles.buttonIcon} />
+              <Text style={styles.startButtonText}>
+                ÎNCEPE URMĂTORUL TRANSPORT
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      );
+    }
+  }
+
+  // Fallback to original logic
   return (
     <TouchableOpacity
       style={[
@@ -167,20 +208,47 @@ const TransportItem = React.memo(({
   isSettingActive,
   onStartTransport,
   onViewDetails,
-  activeTab
+  activeTab,
+  queueData = null,
+  useQueueSystem = false
 }) => {
   const isActive = activeTransportId === item.id;
   const isStarting = startingTransport === item.id;
-  const canStartTransport = !hasActiveTransport || isActive;
+
+  // Queue system logic
+  let queuePosition = null;
+  let isNextInQueue = false;
+  let canStartTransport = !hasActiveTransport || isActive;
+
+  if (useQueueSystem && queueData) {
+    const queueItem = queueData.queue?.find(q => q.id === item.id);
+    if (queueItem) {
+      queuePosition = queueItem.queue_position;
+      isNextInQueue = queueItem.can_start && queuePosition === 1;
+      canStartTransport = queueItem.can_start;
+    }
+  }
+
   const isCompleted = activeTab === 'completed' || item.is_finished;
 
   return (
-    <View style={[styles.transportCard, !canStartTransport && styles.disabledCard]}>
+    <View style={[styles.transportCard, !canStartTransport && !isActive && styles.disabledCard]}>
       <TransportHeader
         transport={item}
         onViewDetails={() => onViewDetails(item)}
         canStartTransport={canStartTransport}
       />
+
+      {/* Queue position indicator */}
+      {useQueueSystem && queuePosition && (
+        <View style={styles.queuePositionContainer}>
+          <Ionicons name="list-outline" size={16} color="#6366F1" />
+          <Text style={styles.queuePositionText}>
+            Poziție în coadă: #{queuePosition}
+            {queuePosition === 1 ? ' (Următorul!)' : ''}
+          </Text>
+        </View>
+      )}
 
       <TransportDetails transport={item} />
 
@@ -193,6 +261,9 @@ const TransportItem = React.memo(({
           isSettingActive={isSettingActive}
           onStartTransport={onStartTransport}
           isCompleted={isCompleted}
+          queuePosition={queuePosition}
+          isNextInQueue={isNextInQueue}
+          useQueueSystem={useQueueSystem}
         />
       </View>
     </View>
@@ -259,6 +330,7 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
   const [selectedTransport, setSelectedTransport] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [useQueueSystem, setUseQueueSystem] = useState(true); // Toggle for queue vs legacy
 
   // Use the transport service hooks
   const {
@@ -277,59 +349,108 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     refetch: refetchProfile
   } = useGetUserProfileQuery();
 
+  // Queue system hooks
+  const {
+    data: queueData,
+    isLoading: queueLoading,
+    isFetching: queueFetching,
+    error: queueError,
+    refetch: refetchQueue
+  } = useGetDriverQueueQuery({ skip: !useQueueSystem });
+
   const [setActiveTransportMutation, { isLoading: isSettingActive }] = useSetActiveTransportMutation();
+  const [startNextTransportMutation, { isLoading: isStartingNext }] = useStartNextTransportMutation();
 
   // Update global loading state
   useEffect(() => {
-    if (transportsLoading || profileLoading || isSettingActive) {
+    if (transportsLoading || profileLoading || isSettingActive || queueLoading || isStartingNext) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [transportsLoading, profileLoading, isSettingActive, showLoading, hideLoading]);
+  }, [transportsLoading, profileLoading, isSettingActive, queueLoading, isStartingNext, showLoading, hideLoading]);
 
   // Memoized data extraction
   const { transports, activeTransportId, loading, refreshing, error, stats } = useMemo(() => {
-    const currentTransports = activeTab === 'active'
-      ? transportsData?.activeTransports || []
-      : transportsData?.completedTransports || [];
+    let currentTransports = [];
+
+    if (useQueueSystem && queueData && activeTab === 'active') {
+      // Use queue data for active transports when queue system is enabled
+      currentTransports = queueData.queue || [];
+    } else {
+      // Use legacy transport data
+      currentTransports = activeTab === 'active'
+        ? transportsData?.activeTransports || []
+        : transportsData?.completedTransports || [];
+    }
 
     return {
       transports: currentTransports,
-      activeTransportId: profileData?.active_transport || null,
-      loading: transportsLoading || profileLoading,
-      refreshing: transportsFetching || profileFetching,
-      error: transportsError || profileError,
+      activeTransportId: useQueueSystem
+        ? queueData?.current_transport_id || profileData?.active_transport || null
+        : profileData?.active_transport || null,
+      loading: transportsLoading || profileLoading || queueLoading,
+      refreshing: transportsFetching || profileFetching || queueFetching,
+      error: transportsError || profileError || queueError,
       stats: {
-        active: transportsData?.activeCount || 0,
+        active: useQueueSystem
+          ? queueData?.queue_count || 0
+          : transportsData?.activeCount || 0,
         completed: transportsData?.completedCount || 0,
-        total: transportsData?.totalTransports || 0
+        total: (transportsData?.totalTransports || 0) + (queueData?.queue_count || 0)
       }
     };
-  }, [activeTab, transportsData, profileData, transportsLoading, profileLoading, transportsFetching, profileFetching, transportsError, profileError]);
+  }, [
+    activeTab,
+    transportsData,
+    profileData,
+    queueData,
+    useQueueSystem,
+    transportsLoading,
+    profileLoading,
+    queueLoading,
+    transportsFetching,
+    profileFetching,
+    queueFetching,
+    transportsError,
+    profileError,
+    queueError
+  ]);
 
   // Memoized handlers
   const onRefresh = useCallback(async () => {
     try {
-      await Promise.all([
+      const refreshPromises = [
         refetchProfile(),
         refetchTransports()
-      ]);
+      ];
+
+      if (useQueueSystem) {
+        refreshPromises.push(refetchQueue());
+      }
+
+      await Promise.all(refreshPromises);
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
-  }, [refetchProfile, refetchTransports]);
+  }, [refetchProfile, refetchTransports, refetchQueue, useQueueSystem]);
 
   const handleRetry = useCallback(async () => {
     try {
-      await Promise.all([
+      const retryPromises = [
         refetchProfile(),
         refetchTransports()
-      ]);
+      ];
+
+      if (useQueueSystem) {
+        retryPromises.push(refetchQueue());
+      }
+
+      await Promise.all(retryPromises);
     } catch (error) {
       console.error('Error during retry:', error);
     }
-  }, [refetchProfile, refetchTransports]);
+  }, [refetchProfile, refetchTransports, refetchQueue, useQueueSystem]);
 
   const handleStartTransport = useCallback(async (transport) => {
     if (activeTransportId && activeTransportId !== transport.id) {
@@ -342,28 +463,52 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     }
 
     setStartingTransport(transport.id);
-    
+
     try {
-      await setActiveTransportMutation(transport.id).unwrap();
-      
-      Alert.alert(
-        'Succes!',
-        'TRANSPORT ÎNCEPUT CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
-        [{ text: 'OK' }]
-      );
+      if (useQueueSystem) {
+        // Use the new queue system
+        const result = await startNextTransportMutation().unwrap();
+
+        Alert.alert(
+          'Succes!',
+          'TRANSPORT ÎNCEPUT CU SUCCES! URMĂTORUL TRANSPORT DIN COADĂ A FOST ACTIVAT! DISPECERUL TĂU VA FI ANUNȚAT!',
+          [{ text: 'OK' }]
+        );
+      } else {
+        // Fallback to legacy system
+        await setActiveTransportMutation(transport.id).unwrap();
+
+        Alert.alert(
+          'Succes!',
+          'TRANSPORT ÎNCEPUT CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
+          [{ text: 'OK' }]
+        );
+      }
 
       await onRefresh();
     } catch (error) {
       console.error('Error starting transport:', error);
+
+      // Parse error messages for better user feedback
+      let errorMessage = 'Nu s-a putut începe transportul. Încearcă din nou.';
+
+      if (error.message?.includes('No transport available')) {
+        errorMessage = 'Nu există transporturi disponibile în coadă.';
+      } else if (error.message?.includes('queue')) {
+        errorMessage = 'Eroare la sistemul de coadă. Încearcă din nou.';
+      } else if (error.message?.includes('401')) {
+        errorMessage = 'Sesiunea a expirat. Te rugăm să te autentifici din nou.';
+      }
+
       Alert.alert(
         'Eroare',
-        'Nu s-a putut începe transportul. Încearcă din nou.',
+        errorMessage,
         [{ text: 'OK' }]
       );
     } finally {
       setStartingTransport(null);
     }
-  }, [activeTransportId, setActiveTransportMutation, onRefresh]);
+  }, [activeTransportId, useQueueSystem, startNextTransportMutation, setActiveTransportMutation, onRefresh]);
 
   const handleViewDetails = useCallback((transport) => {
     setSelectedTransport(transport);
@@ -382,12 +527,24 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       activeTransportId={activeTransportId}
       hasActiveTransport={activeTransportId !== null}
       startingTransport={startingTransport}
-      isSettingActive={isSettingActive}
+      isSettingActive={isSettingActive || isStartingNext}
       onStartTransport={handleStartTransport}
       onViewDetails={handleViewDetails}
       activeTab={activeTab}
+      queueData={queueData}
+      useQueueSystem={useQueueSystem && activeTab === 'active'}
     />
-  ), [activeTransportId, startingTransport, isSettingActive, handleStartTransport, handleViewDetails, activeTab]);
+  ), [
+    activeTransportId,
+    startingTransport,
+    isSettingActive,
+    isStartingNext,
+    handleStartTransport,
+    handleViewDetails,
+    activeTab,
+    queueData,
+    useQueueSystem
+  ]);
 
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
@@ -407,6 +564,30 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
           showRetry={true}
           showBack={true}
         />
+
+        {/* Queue System Info */}
+        {useQueueSystem && queueData && activeTab === 'active' && (
+          <View style={styles.queueInfoContainer}>
+            <View style={styles.queueInfoHeader}>
+              <Ionicons name="list" size={20} color="#6366F1" />
+              <Text style={styles.queueInfoTitle}>Sistem de Coadă Activ</Text>
+            </View>
+            <Text style={styles.queueInfoText}>
+              {queueData.queue_count > 0
+                ? `${queueData.queue_count} transport${queueData.queue_count > 1 ? 'uri' : ''} în coadă`
+                : 'Niciun transport în coadă'
+              }
+              {queueData.next_transport_id && (
+                ` • Următorul: #${queueData.next_transport_id}`
+              )}
+            </Text>
+            {queueData.queue_count === 0 && (
+              <Text style={styles.queueEmptyText}>
+                Dispecerul va adăuga transporturi în coada ta
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Tab Navigation */}
         <View style={styles.tabContainer}>

@@ -184,10 +184,17 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     goToTruck: () => navigation.navigate('Truck'),
     goToTransportMain: () => navigation.navigate('TransportMainPage'),
     goToExpiredDocuments: () => navigation.navigate('ExpiredDocuments'),
+    goToQueue: () => navigation.navigate('QueueScreen'),
   }), [navigation]);
 
   // Memoized action cards data
   const actionCards = useMemo(() => [
+    {
+      iconName: "list-outline",
+      label: "Coada Transporturi",
+      onPress: navigationHandlers.goToQueue,
+      iconColor: '#6366F1'
+    },
     {
       iconName: "subway-outline",
       label: "Transporturi",
@@ -195,10 +202,10 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
       iconColor: COLORS.primary
     },
     {
-      iconName: "file-tray-full-outline",
-      label: "Documente",
-      onPress: navigationHandlers.goToDocuments,
-      iconColor: COLORS.secondary
+      iconName: "map-outline",
+      label: "Transport actual",
+      onPress: navigationHandlers.goToTransportMain,
+      iconColor: COLORS.success
     },
     {
       iconName: "bus-outline",
@@ -207,10 +214,10 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
       iconColor: COLORS.danger
     },
     {
-      iconName: "map-outline",
-      label: "Transport actual",
-      onPress: navigationHandlers.goToTransportMain,
-      iconColor: COLORS.success
+      iconName: "file-tray-full-outline",
+      label: "Documente",
+      onPress: navigationHandlers.goToDocuments,
+      iconColor: COLORS.secondary
     },
     {
       iconName: "alert-circle-outline",

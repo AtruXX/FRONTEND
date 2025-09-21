@@ -364,4 +364,68 @@ export const styles = StyleSheet.create({
       fontWeight: 'bold',
       fontSize: 16,
     },
+
+    // Queue system styles
+    queueInfoContainer: {
+      backgroundColor: '#EFF6FF',
+      marginHorizontal: 16,
+      marginTop: 8,
+      borderRadius: 12,
+      padding: 16,
+      borderLeftWidth: 4,
+      borderLeftColor: '#6366F1',
+    },
+
+    queueInfoHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+
+    queueInfoTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#1F2937',
+      marginLeft: 8,
+    },
+
+    queueInfoText: {
+      fontSize: 14,
+      color: '#4B5563',
+      lineHeight: 20,
+    },
+
+    queueEmptyText: {
+      fontSize: 13,
+      color: '#6B7280',
+      fontStyle: 'italic',
+      marginTop: 4,
+    },
+
+    queuePositionContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F3F4F6',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginHorizontal: 16,
+      borderRadius: 6,
+      marginBottom: 8,
+    },
+
+    queuePositionText: {
+      fontSize: 14,
+      color: '#374151',
+      marginLeft: 6,
+      fontWeight: '500',
+    },
+
+    // Queue button styles
+    queueButton: {
+      backgroundColor: '#F59E0B',
+    },
+
+    nextInQueueButton: {
+      backgroundColor: '#059669',
+    },
   });

@@ -37,6 +37,7 @@ export const useGetUserProfileQuery = (options = {}) => {
       }
 
       const profileData = await response.json();
+      console.log('🔍 Profile API Response:', JSON.stringify(profileData, null, 2));
 
       // Store profile data in AsyncStorage (as you were doing before)
       const storagePromises = [];
@@ -92,11 +93,12 @@ export const useGetUserProfileQuery = (options = {}) => {
         hire_date: profileData.hire_date,
         dob: profileData.dob,
         
-        // Driver specific data - FIXED TO USE CORRECT FIELD NAMES
+        // Driver specific data - FIXED TO USE CORRECT FIELD NAMES (with queue system support)
         driver: profileData.driver ? {
           average_rating: profileData.driver.average_rating,
           on_road: profileData.driver.on_road,
-          active_transport_id: profileData.driver.active_transport_id, // THIS IS THE CORRECT FIELD
+          active_transport_id: profileData.driver.active_transport_id, // Legacy field
+          current_transport_id: profileData.driver.current_transport_id, // Queue system field
           id_transports: profileData.driver.id_transports
         } : null,
         
@@ -107,10 +109,16 @@ export const useGetUserProfileQuery = (options = {}) => {
         role: profileData.is_driver ? "Driver" : (profileData.is_dispatcher ? "Dispatcher" : "User"),
         initials: profileData.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '',
         
-        // FIXED: Use the correct field name from API response
-        active_transport: profileData.driver?.active_transport_id || null,
+        // FIXED: Use both legacy and queue system fields for active transport
+        active_transport: profileData.driver?.current_transport_id ||
+                         profileData.driver?.active_transport_id ||
+                         profileData.current_transport_id ||
+                         null,
         on_road: profileData.driver?.on_road || false,
       };
+
+      console.log('🚀 Transformed Profile Data:', JSON.stringify(transformedProfile, null, 2));
+      console.log('📋 Active Transport ID:', transformedProfile.active_transport);
 
       setData(transformedProfile);
     } catch (err) {

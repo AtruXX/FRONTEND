@@ -590,9 +590,9 @@ export const useGetTotalTransportsQuery = (options = {}) => {
     setError(null);
 
     try {
-      
+
       const token = await waitForAuthToken();
-      
+
       const response = await fetch(`${BASE_URL}active-transports`, {
         method: 'GET',
         headers: {
@@ -609,7 +609,7 @@ export const useGetTotalTransportsQuery = (options = {}) => {
 
       const transportData = await response.json();
 
-      setData({ 
+      setData({
         totalTransports: transportData.number_of_active_transports || (transportData.active_transports || []).length,
         allTransports: transportData.active_transports || []
       });
@@ -636,5 +636,206 @@ export const useGetTotalTransportsQuery = (options = {}) => {
     isFetching,
     error,
     refetch: fetchTotalTransports,
+  };
+};
+
+// ===============================
+// QUEUE TRANSPORT SYSTEM HOOKS
+// ===============================
+
+// Custom hook for getting driver's transport queue
+export const useGetDriverQueueQuery = (options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchDriverQueue = useCallback(async () => {
+    if (options.skip) return;
+
+    setIsFetching(true);
+    setError(null);
+
+    try {
+      const token = await waitForAuthToken();
+
+      const response = await fetch(`${BASE_URL}queue/my-queue/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+
+        if (response.status === 401) {
+          const isTokenValid = await verifyTokenValidity(token);
+          if (!isTokenValid) {
+            await AsyncStorage.multiRemove([
+              'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
+            ]);
+          }
+        }
+
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const queueData = await response.json();
+      console.log('🔄 Queue API Response:', JSON.stringify(queueData, null, 2));
+
+      // Transform queue data for better UI handling
+      const transformedQueue = (queueData.queue || []).map(transport => ({
+        id: transport.transport_id,
+        queue_position: transport.queue_position,
+        can_start: transport.can_start,
+        is_current: transport.is_current,
+        status: transport.status || transport.transport_status,
+        expeditor_email: transport.expeditor_email,
+        // Add other transport details if available
+        ...transport
+      }));
+
+      const finalData = {
+        queue_count: queueData.queue_count || 0,
+        next_transport_id: queueData.next_transport_id,
+        current_transport_id: queueData.current_transport_id,
+        has_transportable: queueData.has_transportable || false,
+        queue: transformedQueue,
+        raw_response: queueData
+      };
+
+      console.log('🎯 Final Queue Data:', JSON.stringify(finalData, null, 2));
+      console.log('🚚 Current Transport ID from Queue:', finalData.current_transport_id);
+
+      setData(finalData);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+    }
+  }, [options.skip]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchDriverQueue();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [fetchDriverQueue]);
+
+  return {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch: fetchDriverQueue,
+  };
+};
+
+// Custom hook for starting next transport in queue
+export const useStartNextTransportMutation = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const startNextTransport = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await waitForAuthToken();
+
+      const response = await fetch(`${BASE_URL}queue/start-next/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+
+        if (response.status === 401) {
+          // Token validation logic here if needed
+        }
+
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const data = await response.json();
+      setIsLoading(false);
+      return data;
+    } catch (err) {
+      setIsLoading(false);
+      setError(err);
+      throw err;
+    }
+  }, []);
+
+  const startNextTransportMutation = useCallback(() => {
+    const promise = startNextTransport();
+    promise.unwrap = () => promise;
+    return promise;
+  }, [startNextTransport]);
+
+  return [startNextTransportMutation, { isLoading, error }];
+};
+
+// Custom hook for getting next available transport
+export const useGetNextTransportQuery = (options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState(null);
+
+  const fetchNextTransport = useCallback(async () => {
+    if (options.skip) return;
+
+    setIsFetching(true);
+    setError(null);
+
+    try {
+      const token = await waitForAuthToken();
+
+      const response = await fetch(`${BASE_URL}queue/next-transport/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const nextTransportData = await response.json();
+      setData(nextTransportData);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+      setIsFetching(false);
+    }
+  }, [options.skip]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchNextTransport();
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [fetchNextTransport]);
+
+  return {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    refetch: fetchNextTransport,
   };
 };

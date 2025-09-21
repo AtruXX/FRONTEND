@@ -17,6 +17,7 @@ import TransportMainPage from "./Screens/TransportActualMain";
 import CMRDigitalForm from "./Screens/TransportActualCMRDigital";
 import StatusTransportForm from "./Screens/TransportActualStatus";
 import PhotoCMRForm from "./Screens/TransportActualCMRPhoto";
+import QueueScreen from "./Screens/QueueScreen";
 import { NavigationContainer } from '@react-navigation/native';
 import { Pressable, View, StyleSheet, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -167,34 +168,34 @@ function HomeStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeScreen" component={HomeScreen} />
-      <Stack.Screen 
-        name="Truck" 
-        component={Truck} 
+      <Stack.Screen
+        name="Truck"
+        component={Truck}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="DocumentsGeneral" 
-        component={DocumentsScreen} 
+      <Stack.Screen
+        name="DocumentsGeneral"
+        component={DocumentsScreen}
         options={slideTransitionOptions}
       />
       {/* Add TransportMainPage to Home stack as well */}
-      <Stack.Screen 
-        name="TransportMainPage" 
+      <Stack.Screen
+        name="TransportMainPage"
         component={TransportMainPage}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="CMRDigitalForm" 
+      <Stack.Screen
+        name="CMRDigitalForm"
         component={CMRDigitalForm}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="StatusTransportForm" 
+      <Stack.Screen
+        name="StatusTransportForm"
         component={StatusTransportForm}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="PhotoCMRForm" 
+      <Stack.Screen
+        name="PhotoCMRForm"
         component={PhotoCMRForm}
         options={slideTransitionOptions}
       />
@@ -213,6 +214,11 @@ function HomeStackNavigator() {
         component={NotificationsScreen}
         options={slideTransitionOptions}
       />
+      <Stack.Screen
+        name="QueueScreen"
+        component={QueueScreen}
+        options={slideTransitionOptions}
+      />
     </Stack.Navigator>
   );
 }
@@ -221,28 +227,28 @@ function TransportsStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="TransportsScreen" component={Transports} />
-      <Stack.Screen 
-        name="Transport_Update" 
+      <Stack.Screen
+        name="Transport_Update"
         component={Transport_Update}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="TransportMainPage" 
+      <Stack.Screen
+        name="TransportMainPage"
         component={TransportMainPage}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="CMRDigitalForm" 
+      <Stack.Screen
+        name="CMRDigitalForm"
         component={CMRDigitalForm}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="StatusTransportForm" 
+      <Stack.Screen
+        name="StatusTransportForm"
         component={StatusTransportForm}
         options={slideTransitionOptions}
       />
-      <Stack.Screen 
-        name="PhotoCMRForm" 
+      <Stack.Screen
+        name="PhotoCMRForm"
         component={PhotoCMRForm}
         options={slideTransitionOptions}
       />
@@ -254,6 +260,11 @@ function TransportsStackNavigator() {
       <Stack.Screen
         name="NotificationsScreen"
         component={NotificationsScreen}
+        options={slideTransitionOptions}
+      />
+      <Stack.Screen
+        name="QueueScreen"
+        component={QueueScreen}
         options={slideTransitionOptions}
       />
     </Stack.Navigator>
