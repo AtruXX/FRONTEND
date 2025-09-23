@@ -36,7 +36,24 @@ export const useGetPersonalDocumentsQuery = (options = {}) => {
       if (!response.ok) {
         const errorData = await response.text();
         console.log('Personal documents error response:', errorData);
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+
+        // Create user-friendly error messages
+        let userFriendlyMessage = 'Nu s-au putut încărca documentele.';
+
+        if (response.status === 401) {
+          userFriendlyMessage = 'Sesiunea a expirat. Conectați-vă din nou.';
+        } else if (response.status === 403) {
+          userFriendlyMessage = 'Nu aveți permisiunea să vizualizați aceste documente.';
+        } else if (response.status >= 500) {
+          userFriendlyMessage = 'Problemă pe server. Încercați din nou mai târziu.';
+        } else if (response.status === 0) {
+          userFriendlyMessage = 'Problemă de conexiune. Verificați internetul.';
+        }
+
+        const error = new Error(userFriendlyMessage);
+        error.originalMessage = `HTTP ${response.status}: ${errorData}`;
+        error.status = response.status;
+        throw error;
       }
 
       const documentsData = await response.json();
@@ -172,7 +189,18 @@ export const useUploadPersonalDocumentMutation = () => {
       if (!response.ok) {
         const errorData = await response.text();
         console.log('Upload personal document error response:', errorData);
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+
+        // Import and use specific error handler for document uploads
+        const { getDocumentUploadErrorMessage } = await import('../utils/errorHandler.js');
+        const userFriendlyMessage = getDocumentUploadErrorMessage({
+          status: response.status,
+          message: errorData
+        });
+
+        const error = new Error(userFriendlyMessage);
+        error.originalMessage = `HTTP ${response.status}: ${errorData}`;
+        error.status = response.status;
+        throw error;
       }
 
       const data = await response.json();
@@ -227,7 +255,18 @@ export const useDeletePersonalDocumentMutation = () => {
       if (!response.ok) {
         const errorData = await response.text();
         console.log('Delete personal document error response:', errorData);
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+
+        // Import and use specific error handler for document deletion
+        const { getDocumentDeleteErrorMessage } = await import('../utils/errorHandler.js');
+        const userFriendlyMessage = getDocumentDeleteErrorMessage({
+          status: response.status,
+          message: errorData
+        });
+
+        const error = new Error(userFriendlyMessage);
+        error.originalMessage = `HTTP ${response.status}: ${errorData}`;
+        error.status = response.status;
+        throw error;
       }
 
       console.log('Personal document deleted successfully');

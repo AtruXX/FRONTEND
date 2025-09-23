@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Alert, ActivityIndicator, TouchableOpacity, ScrollView, Image, Platform, Linking, Modal } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
-import {styles} from './styles'; 
+import {styles} from './styles';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import PageHeader from '../../components/General/Header';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import Calendar from '../../components/General/Calendar';
@@ -128,16 +129,16 @@ const DocumentsScreen = ({ navigation, route }) => {
         await Linking.openURL(url);
       } else {
         Alert.alert(
-          'Error',
-          'Cannot open this document. The URL may be invalid or expired.',
+          'Eroare',
+          'Nu se poate deschide documentul. Linkul poate fi invalid sau expirat.',
           [{ text: 'OK' }]
         );
       }
     } catch (error) {
       console.error('Error opening document URL:', error);
       Alert.alert(
-        'Error',
-        'Failed to open the document. Please try again later.',
+        'Eroare',
+        'Nu s-a putut deschide documentul. Încercați din nou mai târziu.',
         [{ text: 'OK' }]
       );
     }
@@ -149,24 +150,24 @@ const DocumentsScreen = ({ navigation, route }) => {
       'Choose an action',
       [
         {
-          text: 'Open',
+          text: 'Deschide',
           onPress: () => openDocument(document.url)
         },
         {
-          text: 'Share',
+          text: 'Distribuie',
           onPress: () => shareDocument(document)
         },
         {
-          text: 'Download',
+          text: 'Descarcă',
           onPress: () => downloadDocument(document)
         },
         {
-          text: 'Delete',
+          text: 'Șterge',
           style: 'destructive',
           onPress: () => confirmDeleteDocument(document)
         },
         {
-          text: 'Cancel',
+          text: 'Anulează',
           style: 'cancel'
         }
       ]
@@ -175,26 +176,26 @@ const DocumentsScreen = ({ navigation, route }) => {
 
   const shareDocument = (document) => {
     // Implementation for sharing document
-    Alert.alert('Share', `Sharing ${document.name} functionality would be implemented here`);
+    Alert.alert('Distribuire', `Funcționalitatea de distribuire pentru ${document.name} va fi implementată aici`);
   };
 
   // Function to download document (placeholder)
   const downloadDocument = (document) => {
     // Implementation for downloading document
-    Alert.alert('Download', `Downloading ${document.name} functionality would be implemented here`);
+    Alert.alert('Descărcare', `Funcționalitatea de descărcare pentru ${document.name} va fi implementată aici`);
   };
 
   const confirmDeleteDocument = (document) => {
     Alert.alert(
-      'Delete Document',
-      `Are you sure you want to delete "${document.name}"? This action cannot be undone.`,
+      'Șterge Document',
+      `Sunteți sigur că doriți să ștergeți "${document.name}"? Această acțiune nu poate fi anulată.`,
       [
         {
-          text: 'Cancel',
+          text: 'Anulează',
           style: 'cancel'
         },
         {
-          text: 'Delete',
+          text: 'Șterge',
           style: 'destructive',
           onPress: () => deleteDocument(document.id)
         }
@@ -205,12 +206,12 @@ const DocumentsScreen = ({ navigation, route }) => {
   const deleteDocument = async (documentId) => {
     try {
       await deleteDocumentMutation(documentId).unwrap();
-      Alert.alert('Success', 'Document deleted successfully!');
+      Alert.alert('Succes', 'Documentul a fost șters cu succes!');
       // Refresh the documents list
       await refetchDocuments();
     } catch (error) {
       console.error('Error deleting document:', error);
-      Alert.alert('Error', 'Failed to delete the document. Please try again.');
+      Alert.alert('Eroare', 'Nu s-a putut șterge documentul. Încercați din nou.');
     }
   };
 
@@ -221,7 +222,7 @@ const DocumentsScreen = ({ navigation, route }) => {
         const { status: libraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         
         if (cameraStatus !== 'granted' || libraryStatus !== 'granted') {
-          Alert.alert('Permission required', 'Camera and media library permissions are needed to use this feature.');
+          Alert.alert('Permisiune necesară', 'Sunt necesare permisiunile pentru cameră și galeria foto pentru a utiliza această funcție.');
         }
       }
     })();
@@ -250,16 +251,24 @@ const DocumentsScreen = ({ navigation, route }) => {
 
       const fileInfo = result.assets[0];
       const fileSize = await getFileSize(fileInfo.uri);
-      
-      if (fileSize > 10 * 1024 * 1024) { // 10MB limit
-        Alert.alert('File too large', 'Please select a file smaller than 10MB.');
+
+      // Backend accepts up to 20MB
+      if (fileSize > 20 * 1024 * 1024) {
+        Alert.alert('Fișier prea mare', 'Fișierul este prea mare. Dimensiunea maximă acceptată este 20MB.');
+        return;
+      }
+
+      // Validate file type more strictly
+      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+      if (!allowedTypes.includes(fileInfo.mimeType)) {
+        Alert.alert('Format neacceptat', 'Formatul fișierului nu este acceptat. Folosiți doar PDF, DOCX, JPG sau PNG.');
         return;
       }
 
       setSelectedFile(fileInfo);
     } catch (error) {
       console.error('Error picking document:', error);
-      Alert.alert('Error', 'An error occurred while picking the document.');
+      Alert.alert('Eroare', 'A apărut o eroare la selectarea documentului.');
     }
   };
 
@@ -282,16 +291,17 @@ const DocumentsScreen = ({ navigation, route }) => {
 
       const fileInfo = result.assets[0];
       const fileSize = await getFileSize(fileInfo.uri);
-      
-      if (fileSize > 10 * 1024 * 1024) { // 10MB limit
-        Alert.alert('File too large', 'Please select a file smaller than 10MB.');
+
+      // Backend accepts up to 20MB
+      if (fileSize > 20 * 1024 * 1024) {
+        Alert.alert('Fișier prea mare', 'Fișierul este prea mare. Dimensiunea maximă acceptată este 20MB.');
         return;
       }
 
       setSelectedFile(fileInfo);
     } catch (error) {
       console.error('Error taking picture:', error);
-      Alert.alert('Error', 'An error occurred while taking the picture.');
+      Alert.alert('Eroare', 'A apărut o eroare la realizarea fotografiei.');
     }
   };
 
@@ -311,7 +321,7 @@ const DocumentsScreen = ({ navigation, route }) => {
 
   const uploadDocument = async () => {
     if (!selectedFile) {
-      Alert.alert('No file selected', 'Please select a document to upload.');
+      Alert.alert('Niciun fișier selectat', 'Vă rugăm să selectați un document pentru încărcare.');
       return;
     }
 
@@ -328,18 +338,21 @@ const DocumentsScreen = ({ navigation, route }) => {
         expiration_date: expirationDate || null
       }).unwrap();
 
-      Alert.alert('Success', 'Document uploaded successfully!');
-      
+      Alert.alert('Succes', 'Documentul a fost încărcat cu succes!');
+
       // Reset the form
       setSelectedFile(null);
       setCategory('');
       setExpirationDate('');
-      
+
       // Refresh the documents list
       await refetchDocuments();
     } catch (error) {
       console.error('Error uploading document:', error);
-      Alert.alert('Error', error.message || 'An error occurred while uploading the document. Please try again.');
+
+      // Use the error message from the service which already uses our enhanced error handler
+      const userMessage = error.message || 'A apărut o eroare la încărcarea documentului. Încercați din nou.';
+      Alert.alert('Eroare', userMessage);
     }
   };
 
@@ -355,103 +368,145 @@ const DocumentsScreen = ({ navigation, route }) => {
       />
 
       <ScrollView style={styles.scrollContainer}>
-        {/* Upload Section */}
+        {/* Upload Section - Redesigned */}
         <View style={styles.uploadSection}>
-          <Text style={styles.sectionTitle}>Încarcă sau fotografiază</Text>
-          
-          {/* Document Type Selector */}
-          <TouchableOpacity 
-            style={[styles.categorySelector, !category && styles.categorySelectorEmpty]}
-            onPress={() => setShowCategoryModal(true)}
-          >
-            <Text style={[styles.documentName, !category && styles.placeholderText]}>
-              {getDocumentTitle()}
-            </Text>
-            <MaterialIcons name="keyboard-arrow-down" size={24} color="#666" />
-          </TouchableOpacity>
-
-          {/* Expiration Date Selector */}
-          <TouchableOpacity 
-            style={[styles.categorySelector, styles.expirationDateSelector]}
-            onPress={() => setShowCalendar(true)}
-          >
-            <View style={styles.expirationDateContainer}>
-              <Ionicons name="calendar-outline" size={20} color="#666" />
-              <Text style={[styles.documentName, !expirationDate && styles.placeholderText]}>
-                {expirationDate ? `Expiră: ${new Date(expirationDate).toLocaleDateString('ro-RO')}` : 'Selectează data expirării (opțional)'}
-              </Text>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionIconContainer}>
+              <Ionicons name="cloud-upload-outline" size={24} color="#FFFFFF" />
             </View>
-            <MaterialIcons name="keyboard-arrow-down" size={24} color="#666" />
-          </TouchableOpacity>
-
-          <Text style={styles.helpText}>
-            Acest lucru te ajută pe tine și pe dispatcher să accesați mai ușor toate documentele dacă este necesar.
-            Îl poți găsi întotdeauna în dosarul său din secțiunea "Acte".
-          </Text>
-          
-          {selectedFile ? (
-            <View style={styles.filePreviewContainer}>
-              <MaterialCommunityIcons name="file-check" size={40} color="#4285F4" />
-              <Text style={styles.selectedFileName} numberOfLines={1} ellipsizeMode="middle">
-                {getFileName(selectedFile.uri)}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.filePreviewContainer}>
-              <MaterialCommunityIcons name="file" size={40} color="#4285F4" />
-            </View>
-          )}
-          
-          <TouchableOpacity 
-            style={[styles.uploadArea, !category && styles.disabledUploadArea]} 
-            onPress={pickDocument}
-            disabled={!category}
-          >
-            <Ionicons name="add-circle-outline" size={32} color={category ? "#4285F4" : "#ccc"} />
-            <Text style={[styles.uploadText, !category && styles.disabledText]}>
-              Apasă pentru a încărca
-            </Text>
-          </TouchableOpacity>
-          
-          <View style={styles.fileTypesContainer}>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>PDF</Text>
-            </View>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>DOCX</Text>
-            </View>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>JPG</Text>
-            </View>
-            <View style={styles.fileType}>
-              <Text style={styles.fileTypeText}>&lt; 10 MB</Text>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>Încarcă Document</Text>
+              <Text style={styles.sectionSubtitle}>Selectează și încarcă documentele personale</Text>
             </View>
           </View>
-          
-          <Text style={styles.orText}>Sau</Text>
-          
-          <TouchableOpacity 
-            style={[styles.cameraButton, !category && styles.disabledCameraButton]} 
-            onPress={takePicture}
-            disabled={!category}
-          >
-            <Ionicons name="camera" size={20} color={category ? "#4285F4" : "#ccc"} />
-            <Text style={[styles.cameraButtonText, !category && styles.disabledText]}>
-              Deschide Camera & Fă o Poză
-            </Text>
-          </TouchableOpacity>
-          
+
+          {/* Quick Action Cards */}
+          <View style={styles.actionCardsContainer}>
+            {/* Document Type Selector Card */}
+            <TouchableOpacity
+              style={[styles.actionCard, category && styles.actionCardSelected]}
+              onPress={() => setShowCategoryModal(true)}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: category ? '#6366F1' : '#E5E7EB' }]}>
+                <Ionicons name="document-outline" size={28} color={category ? "#FFFFFF" : "#9CA3AF"} />
+              </View>
+              <Text style={styles.actionLabel}>Tip Document</Text>
+              <Text style={[styles.actionDescription, category && styles.actionDescriptionSelected]} numberOfLines={2}>
+                {category ? getDocumentTitle() : 'Selectează tipul'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Expiration Date Card */}
+            <TouchableOpacity
+              style={[styles.actionCard, expirationDate && styles.actionCardSelected]}
+              onPress={() => setShowCalendar(true)}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: expirationDate ? '#10B981' : '#E5E7EB' }]}>
+                <Ionicons name="calendar-outline" size={28} color={expirationDate ? "#FFFFFF" : "#9CA3AF"} />
+              </View>
+              <Text style={styles.actionLabel}>Data Expirării</Text>
+              <Text style={[styles.actionDescription, expirationDate && styles.actionDescriptionSelected]} numberOfLines={2}>
+                {expirationDate ? new Date(expirationDate).toLocaleDateString('ro-RO') : 'Opțional'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* File Preview Section */}
+          {selectedFile && (
+            <View style={styles.filePreviewSection}>
+              <View style={styles.filePreviewContent}>
+                <View style={styles.fileIconWrapper}>
+                  <MaterialCommunityIcons name="file-check" size={32} color="#10B981" />
+                </View>
+                <View style={styles.fileDetails}>
+                  <Text style={styles.fileName} numberOfLines={1} ellipsizeMode="middle">
+                    {getFileName(selectedFile.uri)}
+                  </Text>
+                  <Text style={styles.fileStatus}>Document selectat ✓</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.removeFileButton}
+                  onPress={() => setSelectedFile(null)}
+                >
+                  <Ionicons name="close-circle" size={24} color="#EF4444" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Upload Methods */}
+          <View style={styles.uploadMethodsContainer}>
+            <Text style={styles.uploadMethodsTitle}>Alege modul de încărcare</Text>
+
+            {/* File Upload Option */}
+            <TouchableOpacity
+              style={[styles.uploadMethodCard, !category && styles.disabledUploadMethod]}
+              onPress={pickDocument}
+              disabled={!category}
+            >
+              <View style={styles.uploadMethodIcon}>
+                <Ionicons name="folder-open-outline" size={24} color={category ? "#6366F1" : "#9CA3AF"} />
+              </View>
+              <View style={styles.uploadMethodContent}>
+                <Text style={[styles.uploadMethodTitle, !category && styles.disabledText]}>
+                  Selectează din fișiere
+                </Text>
+                <Text style={[styles.uploadMethodSubtitle, !category && styles.disabledText]}>
+                  PDF, DOCX, JPG, PNG (max 10MB)
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={category ? "#6366F1" : "#9CA3AF"} />
+            </TouchableOpacity>
+
+            {/* Camera Option */}
+            <TouchableOpacity
+              style={[styles.uploadMethodCard, !category && styles.disabledUploadMethod]}
+              onPress={takePicture}
+              disabled={!category}
+            >
+              <View style={styles.uploadMethodIcon}>
+                <Ionicons name="camera-outline" size={24} color={category ? "#EF4444" : "#9CA3AF"} />
+              </View>
+              <View style={styles.uploadMethodContent}>
+                <Text style={[styles.uploadMethodTitle, !category && styles.disabledText]}>
+                  Fotografiază documentul
+                </Text>
+                <Text style={[styles.uploadMethodSubtitle, !category && styles.disabledText]}>
+                  Deschide camera și fă o poză
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={category ? "#EF4444" : "#9CA3AF"} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Upload Button */}
           <TouchableOpacity
-            style={[styles.uploadDocumentButton, (!selectedFile || !category || isUploading) && styles.disabledButton]}
+            style={[styles.uploadButton, (!selectedFile || !category || isUploading) && styles.disabledUploadButton]}
             onPress={uploadDocument}
             disabled={!selectedFile || !category || isUploading}
           >
-            {isUploading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.uploadDocumentButtonText}>Încarcă documentul</Text>
-            )}
+            <View style={styles.uploadButtonContent}>
+              {isUploading ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.uploadButtonText}>Se încarcă...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="cloud-upload" size={20} color="#FFFFFF" />
+                  <Text style={styles.uploadButtonText}>Încarcă Documentul</Text>
+                </>
+              )}
+            </View>
           </TouchableOpacity>
+
+          {/* Help Text */}
+          <View style={styles.helpContainer}>
+            <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
+            <Text style={styles.helpText}>
+              Documentele încărcate vor fi disponibile în secțiunea "Documente Recente" și vor putea fi accesate de dispatcher.
+            </Text>
+          </View>
         </View>
 
         {/* Recent Documents Section */}
@@ -473,7 +528,9 @@ const DocumentsScreen = ({ navigation, route }) => {
           
           {error ? (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Eroare la încărcarea documentelor: {error.message || error.toString()}</Text>
+              <Text style={styles.errorText}>
+                {error.message || 'Nu s-au putut încărca documentele. Verificați conexiunea și încercați din nou.'}
+              </Text>
               <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
                 <Text style={styles.retryButtonText}>Încearcă din nou</Text>
               </TouchableOpacity>

@@ -37,11 +37,36 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  sectionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  sectionTitleContainer: {
+    flex: 1,
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: COLORS.dark,
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.medium,
+    lineHeight: 20,
   },
   documentName: {
     fontSize: 20,
@@ -86,126 +111,197 @@ export const styles = StyleSheet.create({
     flex: 1,
     gap: 8,
   },
-  helpText: {
-    fontSize: 14,
-    color: COLORS.medium,
-    lineHeight: 22,
-    marginBottom: 20,
+  // Action Cards for Document Type and Date Selection
+  actionCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    gap: 12,
   },
-  filePreviewContainer: {
-    alignSelf: "center",
-    marginVertical: 20,
-    padding: 24,
-    backgroundColor: COLORS.selected,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+  actionCard: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.dark,
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowRadius: 3,
     elevation: 1,
+    minHeight: 120,
   },
-  selectedFileName: {
-    marginTop: 10,
+  actionCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.selected,
+  },
+  actionIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  actionLabel: {
     fontSize: 14,
+    fontWeight: '600',
     color: COLORS.dark,
-    fontWeight: "500",
+    marginBottom: 4,
     textAlign: 'center',
   },
-  uploadArea: {
-    height: 180,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    borderRadius: 16,
-    borderStyle: "dashed",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    backgroundColor: COLORS.background,
-  },
-  disabledUploadArea: {
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.border,
-  },
-  uploadText: {
-    marginTop: 10,
-    fontSize: 16,
+  actionDescription: {
+    fontSize: 12,
     color: COLORS.medium,
-    fontWeight: "500",
+    textAlign: 'center',
+    lineHeight: 16,
   },
-  disabledText: {
-    color: COLORS.light,
+  actionDescriptionSelected: {
+    color: COLORS.primary,
+    fontWeight: '500',
   },
-  fileTypesContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
+
+  // File Preview Section
+  filePreviewSection: {
     marginBottom: 24,
   },
-  fileType: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: COLORS.selected,
-    borderRadius: 8,
-    marginHorizontal: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  fileTypeText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    fontWeight: "500",
-  },
-  orText: {
-    textAlign: "center",
-    fontSize: 16,
-    color: COLORS.medium,
-    marginVertical: 16,
-    fontWeight: "500",
-  },
-  cameraButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  filePreviewContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.selected,
     borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.success + '30',
+  },
+  fileIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.success + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  fileDetails: {
+    flex: 1,
+  },
+  fileName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 4,
+  },
+  fileStatus: {
+    fontSize: 14,
+    color: COLORS.success,
+    fontWeight: '500',
+  },
+  removeFileButton: {
+    padding: 4,
+  },
+
+  // Upload Methods
+  uploadMethodsContainer: {
     marginBottom: 24,
-    shadowColor: "#000",
+  },
+  uploadMethodsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 16,
+  },
+  uploadMethodCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: COLORS.dark,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
   },
-  disabledCameraButton: {
-    backgroundColor: COLORS.border,
+  disabledUploadMethod: {
+    backgroundColor: COLORS.background,
+    opacity: 0.6,
   },
-  cameraButtonText: {
+  uploadMethodIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  uploadMethodContent: {
+    flex: 1,
+  },
+  uploadMethodTitle: {
     fontSize: 16,
-    color: COLORS.secondary,
-    marginLeft: 10,
-    fontWeight: "500",
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: 2,
   },
-  uploadDocumentButton: {
+  uploadMethodSubtitle: {
+    fontSize: 14,
+    color: COLORS.medium,
+  },
+
+  // Upload Button
+  uploadButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: "center",
-    shadowColor: "#000",
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  disabledButton: {
+  disabledUploadButton: {
     backgroundColor: COLORS.light,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  uploadDocumentButtonText: {
+  uploadButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  uploadButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
     color: COLORS.card,
+  },
+
+  // Help Container
+  helpContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+  },
+  helpText: {
+    fontSize: 13,
+    color: COLORS.medium,
+    lineHeight: 18,
+    flex: 1,
+  },
+  disabledText: {
+    color: COLORS.light,
   },
   recentDocumentsSection: {
     padding: 20,

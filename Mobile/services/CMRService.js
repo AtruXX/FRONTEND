@@ -52,6 +52,32 @@ const categorizeCMRError = (error, response) => {
   };
 };
 
+// Helper function to check if CMR exists for a transport
+const checkCMRExists = async (transportId, token) => {
+  try {
+    const response = await fetch(`${BASE_URL}cmr-exists/${transportId}/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Token ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { exists: false, canCreate: true };
+      }
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { exists: data.exists || false, canCreate: !data.exists };
+  } catch (error) {
+    console.warn('CMR existence check failed:', error);
+    return { exists: false, canCreate: true };
+  }
+};
+
 // Custom hook for getting CMR data with enhanced error handling
 export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
   const [data, setData] = useState(null);
@@ -61,7 +87,10 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
   const [cmrExists, setCmrExists] = useState(null);
 
   const fetchCMRData = useCallback(async () => {
-    if (options.skip || !activeTransportId) return;
+    if (options.skip || !activeTransportId) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsFetching(true);
     setError(null);
@@ -72,6 +101,25 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
         throw new Error('No auth token found');
       }
 
+      // First, check if CMR exists
+      const existsResult = await checkCMRExists(activeTransportId, token);
+      setCmrExists(existsResult.exists);
+
+      if (!existsResult.exists) {
+        // CMR doesn't exist, create a user-friendly error
+        const notFoundError = {
+          type: CMR_ERROR_TYPES.NOT_FOUND,
+          message: 'CMR nu există pentru acest transport',
+          canCreate: existsResult.canCreate,
+          originalError: new Error('CMR not found')
+        };
+        setError(notFoundError);
+        setIsLoading(false);
+        setIsFetching(false);
+        return;
+      }
+
+      // CMR exists, fetch the data
       const response = await fetch(`${BASE_URL}transport-cmr/${activeTransportId}`, {
         method: 'GET',
         headers: {
@@ -89,14 +137,10 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
           response
         );
 
-        // Set CMR exists status based on error type
-        setCmrExists(categorizedError.type !== CMR_ERROR_TYPES.NOT_FOUND);
-
         throw categorizedError;
       }
 
       const cmrData = await response.json();
-
       setData(cmrData);
       setCmrExists(true);
     } catch (err) {
@@ -193,6 +237,9 @@ export const useCreateCMRDataMutation = () => {
         throw new Error('No auth token found');
       }
 
+      console.log('🚀 Creating CMR for transport:', activeTransportId);
+      console.log('📝 CMR Data:', cmrData);
+
       const response = await fetch(`${BASE_URL}transport-cmr/${activeTransportId}`, {
         method: 'POST',
         headers: {
@@ -202,12 +249,29 @@ export const useCreateCMRDataMutation = () => {
         body: JSON.stringify(cmrData),
       });
 
+      console.log('📡 CMR Creation Response Status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        console.error('❌ CMR Creation Failed:', errorData);
+
+        // Create user-friendly error message
+        let userMessage = 'Nu s-a putut crea CMR-ul.';
+        if (response.status === 400) {
+          userMessage = 'Datele furnizate nu sunt valide pentru crearea CMR-ului.';
+        } else if (response.status === 403) {
+          userMessage = 'Nu aveți permisiuni pentru a crea CMR pentru acest transport.';
+        } else if (response.status === 404) {
+          userMessage = 'Transportul specificat nu a fost găsit.';
+        } else if (response.status >= 500) {
+          userMessage = 'Eroare de server. Încercați din nou peste câteva momente.';
+        }
+
+        throw new Error(userMessage);
       }
 
       const data = await response.json();
+      console.log('✅ CMR Created Successfully:', data);
 
       setIsLoading(false);
       return data;

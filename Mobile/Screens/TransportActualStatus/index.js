@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useGetUserProfileQuery } from '../../services/profileService';
+import { useGetDriverQueueQuery } from '../../services/transportService';
 import { 
   useGetActiveTransportStatusQuery, 
   useUpdateTransportStatusMutation,
@@ -234,38 +235,90 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     data: profileData,
     isLoading: profileLoading,
     error: profileError,
-    refetch: refetchProfile 
+    refetch: refetchProfile
   } = useGetUserProfileQuery();
 
-  const activeTransportId = profileData?.active_transport;
+  // Also get queue data for new transport system
+  const {
+    data: queueData,
+    isLoading: queueLoading,
+    error: queueError,
+    refetch: refetchQueue
+  } = useGetDriverQueueQuery();
 
-  // Get current transport status
+  // Smart transport ID detection with fallback
+  const getActiveTransportId = () => {
+    // Priority 1: Queue system current transport
+    if (queueData?.current_transport_id) {
+      console.log('🎯 Using queue current transport:', queueData.current_transport_id);
+      return queueData.current_transport_id;
+    }
+
+    // Priority 2: Profile active transport (legacy system)
+    if (profileData?.active_transport) {
+      console.log('📋 Using profile active transport:', profileData.active_transport);
+      return profileData.active_transport;
+    }
+
+    // Priority 3: Check queue for startable transports
+    if (queueData?.queue && queueData.queue.length > 0) {
+      const startableTransport = queueData.queue.find(t => t.can_start || t.is_current);
+      if (startableTransport) {
+        console.log('🚀 Using startable transport from queue:', startableTransport.transport_id);
+        return startableTransport.transport_id;
+      }
+      // Fallback to first transport in queue
+      const firstTransport = queueData.queue[0];
+      console.log('⚠️ Using first transport from queue as fallback:', firstTransport.transport_id);
+      return firstTransport.transport_id;
+    }
+
+    console.log('❌ No active transport found');
+    return null;
+  };
+
+  const activeTransportId = getActiveTransportId();
+
+  // Get current transport status - skip if still loading profile/queue or no transport ID
   const {
     data: transportStatus,
     isLoading: statusLoading,
     error: statusError,
     refetch: refetchStatus
-  } = useGetActiveTransportStatusQuery(activeTransportId);
+  } = useGetActiveTransportStatusQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || queueLoading
+  });
 
-  // Get existing goods photos
+  // Get existing goods photos - skip if still loading profile/queue or no transport ID
   const {
     data: goodsPhotos,
     isLoading: photosLoading,
     refetch: refetchPhotos
-  } = useGetGoodsPhotosQuery(activeTransportId);
+  } = useGetGoodsPhotosQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || queueLoading
+  });
 
   // Mutations
   const [updateTransportStatus, { isLoading: isUpdating }] = useUpdateTransportStatusMutation();
   const [uploadGoodsPhotos, { isLoading: isUploading }] = useUploadGoodsPhotosMutation();
 
-  // Update global loading state
+  // Update global loading state - but only show loading if we actually need the data
   useEffect(() => {
-    if (profileLoading || statusLoading || photosLoading || isUpdating || isUploading) {
+    // Only show loading for profile and queue if they're actually loading
+    // For status and photos, only show loading if we have an active transport ID
+    const shouldShowLoading =
+      profileLoading ||
+      queueLoading ||
+      (activeTransportId && (statusLoading || photosLoading)) ||
+      isUpdating ||
+      isUploading;
+
+    if (shouldShowLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, statusLoading, photosLoading, isUpdating, isUploading, showLoading, hideLoading]);
+  }, [profileLoading, queueLoading, statusLoading, photosLoading, isUpdating, isUploading, activeTransportId, showLoading, hideLoading]);
 
   // Status form data
   const [statusFormData, setStatusFormData] = useState({
@@ -550,21 +603,56 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     try {
       await Promise.all([
         refetchProfile(),
+        refetchQueue(),
         refetchStatus(),
         refetchPhotos()
       ]);
     } catch (error) {
       console.error('Error during retry:', error);
     }
-  }, [refetchProfile, refetchStatus, refetchPhotos]);
+  }, [refetchProfile, refetchQueue, refetchStatus, refetchPhotos]);
 
   const isLastStep = useMemo(() => {
     return currentIndex + 2 >= statusFields.length;
   }, [currentIndex, statusFields.length]);
 
-  if (!activeTransportId) {
+  // Handle errors first
+  if (profileError || queueError) {
     return (
       <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="STATUS"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
+          <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
+          <Text style={styles.emptyText}>Nu s-au putut încărca datele necesare pentru status transport.</Text>
+          <TouchableOpacity
+            style={styles.backToHomeButton}
+            onPress={handleRetry}
+          >
+            <Text style={styles.backToHomeText}>Încearcă din nou</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Handle no active transport - only show if not still loading
+  if (!activeTransportId && !profileLoading && !queueLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="STATUS"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
           <Text style={styles.emptyTitle}>Niciun transport activ</Text>
@@ -574,6 +662,32 @@ const TransportStatusPage = React.memo(({ navigation }) => {
             onPress={() => navigation.navigate('Home')}
           >
             <Text style={styles.backToHomeText}>Înapoi la pagina principală</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Handle transport status errors
+  if (statusError && !statusLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="STATUS"
+          onBack={() => navigation.goBack()}
+          onRetry={handleRetry}
+          showRetry={true}
+          showBack={true}
+        />
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
+          <Text style={styles.emptyTitle}>Eroare la încărcarea statusului</Text>
+          <Text style={styles.emptyText}>Nu s-au putut încărca datele de status pentru acest transport.</Text>
+          <TouchableOpacity
+            style={styles.backToHomeButton}
+            onPress={handleRetry}
+          >
+            <Text style={styles.backToHomeText}>Încearcă din nou</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

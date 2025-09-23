@@ -189,6 +189,11 @@ const LeaveRequestForm = React.memo(({
           numberOfLines={4}
           textAlignVertical="top"
           maxLength={500}
+          returnKeyType="done"
+          blurOnSubmit={true}
+          onSubmitEditing={() => {
+            // Dismiss keyboard when user presses "Done"
+          }}
         />
         <Text style={styles.characterCount}>
           {reason.length}/500 caractere

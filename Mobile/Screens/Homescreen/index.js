@@ -108,34 +108,39 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     } else {
       hideLoading();
     }
-  }, [isProfileLoading]); // Only depend on the loading state
+  }, [isProfileLoading, showLoading, hideLoading]); // Include all dependencies
 
   // Memoized handlers
   const handleStatusChange = useCallback(async () => {
     try {
       showLoading();
-      
+
       // Get current status from profile data
       const currentOnRoadStatus = profileData?.on_road ?? profileData?.driver?.on_road ?? false;
       const newOnRoadStatus = !currentOnRoadStatus;
-      
+
       console.log('Current status:', currentOnRoadStatus ? 'La volan' : 'Parcat');
       console.log('Changing status to:', newOnRoadStatus ? 'La volan' : 'Parcat');
-      
+
       // Use the dedicated status update service
-      await changeDriverStatus({ 
-        on_road: newOnRoadStatus 
+      await changeDriverStatus({
+        on_road: newOnRoadStatus
       }).unwrap();
 
       console.log('✅ Driver status updated successfully to:', newOnRoadStatus);
-      
+
       // Refetch profile to get updated data
-      await refetchProfile();
-      
+      try {
+        await refetchProfile();
+      } catch (refetchError) {
+        console.warn('Profile refetch failed:', refetchError);
+        // Don't show error for refetch failure, status update was successful
+      }
+
     } catch (error) {
       console.error('💥 Driver status update error:', error);
       Alert.alert(
-        'Eroare', 
+        'Eroare',
         'Nu s-a putut actualiza statusul. Verifică conexiunea și încearcă din nou.',
         [
           { text: 'OK', style: 'default' }
@@ -144,7 +149,7 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     } finally {
       hideLoading();
     }
-  }, [profileData, changeDriverStatus, memoizedRefetchProfile]); // Use memoized refetch
+  }, [profileData, changeDriverStatus, refetchProfile, showLoading, hideLoading]);
 
   // Update the profileInfo calculation to handle both data structures:
   const profileInfo = useMemo(() => {
@@ -199,7 +204,7 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
   const actionCards = useMemo(() => [
     {
       iconName: "list",
-      label: "Coada Transporturi",
+      label: "Ordine Transporturi",
       onPress: navigationHandlers.goToQueue,
       iconColor: '#6366F1'
     },

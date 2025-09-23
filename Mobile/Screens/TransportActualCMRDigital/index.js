@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
+import { useGetDriverQueueQuery } from '../../services/transportService';
 import {
   useGetCMRDataQuery,
   useUpdateCMRDataMutation,
@@ -244,16 +245,51 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     refetch: refetchProfile
   } = useGetUserProfileQuery();
 
-  const activeTransportId = profileData?.active_transport;
+  // Also get queue data for new transport system
+  const {
+    data: queueData,
+    isLoading: queueLoading,
+    error: queueError,
+    refetch: refetchQueue
+  } = useGetDriverQueueQuery();
 
-  // Get CMR data with enhanced error handling
+  // Smart transport ID detection with fallback
+  const getActiveTransportId = () => {
+    // Priority 1: Queue system current transport
+    if (queueData?.current_transport_id) {
+      return queueData.current_transport_id;
+    }
+
+    // Priority 2: Profile active transport (legacy system)
+    if (profileData?.active_transport) {
+      return profileData.active_transport;
+    }
+
+    // Priority 3: Check queue for startable transports
+    if (queueData?.queue && queueData.queue.length > 0) {
+      const startableTransport = queueData.queue.find(t => t.can_start || t.is_current);
+      if (startableTransport) {
+        return startableTransport.transport_id;
+      }
+      // Fallback to first transport in queue
+      return queueData.queue[0]?.transport_id;
+    }
+
+    return null;
+  };
+
+  const activeTransportId = getActiveTransportId();
+
+  // Get CMR data with enhanced error handling - skip if still loading profile/queue
   const {
     data: cmrData,
     isLoading: cmrLoading,
     error: cmrError,
     cmrExists,
     refetch: refetchCMR
-  } = useGetCMRDataQuery(activeTransportId);
+  } = useGetCMRDataQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || queueLoading
+  });
 
   // Mutations
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
@@ -261,12 +297,12 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || cmrLoading || isUpdating || isCreating) {
+    if (profileLoading || queueLoading || cmrLoading || isUpdating || isCreating) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, cmrLoading, isUpdating, isCreating, showLoading, hideLoading]);
+  }, [profileLoading, queueLoading, cmrLoading, isUpdating, isCreating, showLoading, hideLoading]);
 
   // European countries in Romanian
   const europeanCountries = useMemo(() => [
@@ -396,12 +432,13 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     try {
       await Promise.all([
         refetchProfile(),
+        refetchQueue(),
         refetchCMR()
       ]);
     } catch (error) {
       console.error('Error during retry:', error);
     }
-  }, [refetchProfile, refetchCMR]);
+  }, [refetchProfile, refetchQueue, refetchCMR]);
 
   // Handle creating new CMR with empty data
   const handleCreateNewCMR = useCallback(async () => {
@@ -485,8 +522,8 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     />
   ), [localFormData, editingMode, updateFieldValue, handleFieldTouch]);
 
-  // Error state - handle profile errors first
-  if (profileError) {
+  // Error state - handle profile/queue errors first
+  if (profileError || queueError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -498,8 +535,8 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
         />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
-          <Text style={styles.errorTitle}>Eroare de profil</Text>
-          <Text style={styles.errorText}>Nu s-au putut încărca datele profilului</Text>
+          <Text style={styles.errorTitle}>Eroare la încărcare</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca datele necesare</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Încearcă din nou</Text>
           </TouchableOpacity>
@@ -609,8 +646,8 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     );
   }
 
-  // No active transport
-  if (!activeTransportId) {
+  // No active transport - only show this if we're not still loading
+  if (!activeTransportId && !profileLoading && !queueLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader

@@ -41,11 +41,13 @@ const TransportMainPage = ({ navigation }) => {
   const getActiveTransportId = () => {
     // Priority 1: Queue system current transport
     if (queueData?.current_transport_id) {
+      console.log('🎯 Using queue current transport:', queueData.current_transport_id);
       return queueData.current_transport_id;
     }
 
     // Priority 2: Profile active transport (legacy system)
     if (profileData?.active_transport) {
+      console.log('📋 Using profile active transport:', profileData.active_transport);
       return profileData.active_transport;
     }
 
@@ -61,14 +63,22 @@ const TransportMainPage = ({ navigation }) => {
         return firstTransport.transport_id;
       }
 
-      // FALLBACK: If queue positions are malformed (0, 0, 0) but we have transports,
-      // assume first transport should be startable for better UX
-      if (sortedQueue.length > 0 && sortedQueue.every(t => t.queue_position === 0)) {
-        console.log('⚠️ Queue positions malformed, using first transport as fallback:', firstTransport.transport_id);
+      // ENHANCED FALLBACK: If queue positions are malformed (0, 0, 0) but we have transports,
+      // try to find a transport that's actually startable or in progress
+      const startableTransport = sortedQueue.find(t => t.can_start || t.is_current);
+      if (startableTransport) {
+        console.log('🚀 Using startable transport from queue:', startableTransport.transport_id);
+        return startableTransport.transport_id;
+      }
+
+      // Last resort: use first transport but log warning
+      if (sortedQueue.length > 0) {
+        console.log('⚠️ Queue positions malformed, using first transport as last resort:', firstTransport.transport_id);
         return firstTransport.transport_id;
       }
     }
 
+    console.log('❌ No active transport found');
     return null;
   };
 
@@ -103,14 +113,24 @@ const TransportMainPage = ({ navigation }) => {
     skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
 
-  // Update global loading state
+  // Update global loading state - but only show loading if we actually need the data
   useEffect(() => {
-    if (profileLoading || queueLoading || transportLoading || cmrLoading || isFinalizing || isDownloading || isUpdatingCMR) {
+    // Only show loading for profile and queue if they're actually loading
+    // For transport and CMR, only show loading if we have an active transport ID
+    const shouldShowLoading =
+      profileLoading ||
+      queueLoading ||
+      (activeTransportId && (transportLoading || cmrLoading)) ||
+      isFinalizing ||
+      isDownloading ||
+      isUpdatingCMR;
+
+    if (shouldShowLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, queueLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, isUpdatingCMR, showLoading, hideLoading]);
+  }, [profileLoading, queueLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, isUpdatingCMR, activeTransportId, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
@@ -232,7 +252,7 @@ const TransportMainPage = ({ navigation }) => {
             text: 'Mergi la CMR',
             onPress: () => {
               setShowUitModal(false);
-              navigation.navigate('TransportActualCMRDigital');
+              navigation.navigate('CMRDigitalForm');
             }
           }
         ]

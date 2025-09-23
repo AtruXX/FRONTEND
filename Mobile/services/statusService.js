@@ -11,7 +11,10 @@ export const useGetActiveTransportStatusQuery = (activeTransportId, options = {}
   const [error, setError] = useState(null);
 
   const fetchActiveTransportStatus = useCallback(async () => {
-    if (options.skip || !activeTransportId) return;
+    if (options.skip || !activeTransportId) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsFetching(true);
     setError(null);
@@ -22,7 +25,7 @@ export const useGetActiveTransportStatusQuery = (activeTransportId, options = {}
         throw new Error('No auth token found');
       }
 
-      console.log('Fetching active transport status for ID:', activeTransportId);
+      console.log('📊 Fetching active transport status for ID:', activeTransportId);
       const response = await fetch(`${BASE_URL}transports/${activeTransportId}`, {
         method: 'GET',
         headers: {
@@ -31,20 +34,31 @@ export const useGetActiveTransportStatusQuery = (activeTransportId, options = {}
         },
       });
 
-      console.log('Active transport status response status:', response.status);
+      console.log('📁 Active transport status response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Active transport status error response:', errorData);
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        console.log('❌ Active transport status error response:', errorData);
+
+        // Create user-friendly error message
+        let userMessage = 'Nu s-au putut încărca datele transportului.';
+        if (response.status === 404) {
+          userMessage = 'Transportul nu a fost găsit.';
+        } else if (response.status === 403) {
+          userMessage = 'Nu aveți permisiuni pentru acest transport.';
+        } else if (response.status >= 500) {
+          userMessage = 'Eroare de server. Încercați din nou.';
+        }
+
+        throw new Error(userMessage);
       }
 
       const statusData = await response.json();
-      console.log('Active transport status data received:', statusData);
+      console.log('✅ Active transport status data received:', statusData);
 
       setData(statusData);
     } catch (err) {
-      console.error('Active transport status fetch error:', err);
+      console.error('❌ Active transport status fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -196,7 +210,10 @@ export const useGetGoodsPhotosQuery = (activeTransportId, options = {}) => {
   const [error, setError] = useState(null);
 
   const fetchGoodsPhotos = useCallback(async () => {
-    if (options.skip || !activeTransportId) return;
+    if (options.skip || !activeTransportId) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsFetching(true);
     setError(null);
@@ -207,7 +224,7 @@ export const useGetGoodsPhotosQuery = (activeTransportId, options = {}) => {
         throw new Error('No auth token found');
       }
 
-      console.log('Fetching goods photos for transport:', activeTransportId);
+      console.log('📷 Fetching goods photos for transport:', activeTransportId);
       const response = await fetch(`${BASE_URL}transport/goods-photos/${activeTransportId}`, {
         method: 'GET',
         headers: {
@@ -216,20 +233,30 @@ export const useGetGoodsPhotosQuery = (activeTransportId, options = {}) => {
         },
       });
 
-      console.log('Goods photos response status:', response.status);
+      console.log('📁 Goods photos response status:', response.status);
 
       if (!response.ok) {
         const errorData = await response.text();
-        console.log('Goods photos error response:', errorData);
+        console.log('❌ Goods photos error response:', errorData);
+
+        // For photos, 404 is acceptable (no photos uploaded yet)
+        if (response.status === 404) {
+          console.log('📷 No goods photos found, setting empty array');
+          setData([]);
+          setIsLoading(false);
+          setIsFetching(false);
+          return;
+        }
+
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const photosData = await response.json();
-      console.log('Goods photos data received:', photosData);
+      console.log('✅ Goods photos data received:', photosData);
 
       setData(photosData);
     } catch (err) {
-      console.error('Goods photos fetch error:', err);
+      console.error('❌ Goods photos fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);

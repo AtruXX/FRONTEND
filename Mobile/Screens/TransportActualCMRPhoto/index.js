@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useGetUserProfileQuery } from '../../services/profileService';
+import { useGetDriverQueueQuery } from '../../services/transportService';
 import { useUploadCMRDocumentsMutation } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
@@ -21,22 +22,55 @@ const PhotoCMRForm = ({ navigation }) => {
     refetch: refetchProfile
   } = useGetUserProfileQuery();
 
+  // Also get queue data for new transport system
+  const {
+    data: queueData,
+    isLoading: queueLoading,
+    error: queueError,
+    refetch: refetchQueue
+  } = useGetDriverQueueQuery();
+
   // Upload mutation
   const [uploadCMRDocuments, { isLoading: isUploading }] = useUploadCMRDocumentsMutation();
 
-  const activeTransportId = profileData?.active_transport;
+  // Smart transport ID detection with fallback
+  const getActiveTransportId = () => {
+    // Priority 1: Queue system current transport
+    if (queueData?.current_transport_id) {
+      return queueData.current_transport_id;
+    }
+
+    // Priority 2: Profile active transport (legacy system)
+    if (profileData?.active_transport) {
+      return profileData.active_transport;
+    }
+
+    // Priority 3: Check queue for startable transports
+    if (queueData?.queue && queueData.queue.length > 0) {
+      const startableTransport = queueData.queue.find(t => t.can_start || t.is_current);
+      if (startableTransport) {
+        return startableTransport.transport_id;
+      }
+      // Fallback to first transport in queue
+      return queueData.queue[0]?.transport_id;
+    }
+
+    return null;
+  };
+
+  const activeTransportId = getActiveTransportId();
 
   const screenWidth = Dimensions.get('window').width;
   const imageSize = (screenWidth - 60) / 2; // 2 images per row with margins
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || isUploading) {
+    if (profileLoading || queueLoading || isUploading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, isUploading, showLoading, hideLoading]);
+  }, [profileLoading, queueLoading, isUploading, showLoading, hideLoading]);
 
   // Handle camera capture
   const handleCameraCapture = async () => {
@@ -184,11 +218,14 @@ const PhotoCMRForm = ({ navigation }) => {
 
   const handleRetry = useCallback(async () => {
     try {
-      await refetchProfile();
+      await Promise.all([
+        refetchProfile(),
+        refetchQueue()
+      ]);
     } catch (error) {
       // Retry failed, but we don't need to log it
     }
-  }, [refetchProfile]);
+  }, [refetchProfile, refetchQueue]);
 
   // Render image preview
   const renderImagePreview = (image) => {
@@ -228,7 +265,7 @@ const PhotoCMRForm = ({ navigation }) => {
   };
 
   // Error handling
-  if (profileError) {
+  if (profileError || queueError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -251,7 +288,7 @@ const PhotoCMRForm = ({ navigation }) => {
   }
 
   // No active transport
-  if (!activeTransportId && !profileLoading) {
+  if (!activeTransportId && !profileLoading && !queueLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
