@@ -160,15 +160,29 @@ export const NotificationsProvider = ({ children }) => {
       currentUserId: currentUserId
     });
 
-    // TRUST THE BACKEND: According to the README, the backend sends notifications
-    // to individual user channels and handles all the filtering logic.
-    // If we receive a notification on our individual channel, we should process it.
-    console.log(`✅ ${userRole.toUpperCase()} received notification via individual channel: ${notificationType}`);
+    // DEFENSIVE FILTERING: While the backend should handle notification routing,
+    // we'll add client-side filtering to prevent dispatcher notifications from showing in driver app
+    if (userRole === 'driver') {
+      // Driver should only receive notifications relevant to their work
+      const allowedTypesForDriver = [
+        'document_expiration',     // Document expiration alerts
+        'transport_update',        // Transport-related updates
+        'system_alert'            // General system notifications
+      ];
 
-    // However, log if this seems unexpected for debugging
-    if (userRole === 'driver' && notificationType === 'driver_status_change') {
-      console.log('⚠️ UNEXPECTED: Driver received driver status change notification - check backend logic or user permissions');
+      if (!allowedTypesForDriver.includes(notificationType)) {
+        console.log(`🚫 FILTERED: Driver received ${notificationType} notification - rejecting as it's not relevant for drivers`);
+        return; // Don't process this notification
+      }
+
+      // Special case: Reject driver_status_change notifications for drivers
+      if (notificationType === 'driver_status_change') {
+        console.log('🚫 FILTERED: Driver received driver_status_change notification - this should only go to dispatchers');
+        return; // Don't process this notification
+      }
     }
+
+    console.log(`✅ ${userRole.toUpperCase()} received valid notification via individual channel: ${notificationType}`);
 
     // Transform backend notification format to frontend format
     const newNotification = {

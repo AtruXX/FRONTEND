@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView, Alert, RefreshControl } from "react-native";
 import { useNavigation } from '@react-navigation/native';
-import Ionicons from "react-native-vector-icons/Ionicons";
+import { Ionicons } from '@expo/vector-icons';
 
 import { styles } from "./styles";
 import COLORS from "../../utils/COLORS.js";
@@ -62,12 +62,19 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     isFetching: isProfileFetching,
     refetch: refetchProfile,
   } = useGetProfileQuery(undefined, {
-    refetchOnFocus: true,
+    refetchOnFocus: false,  // Prevent constant refetching when navigating
     refetchOnReconnect: true,
+    pollingInterval: 0,     // Disable polling to prevent infinite requests
+    refetchOnMountOrArgChange: 30,  // Only refetch if data is older than 30 seconds
   });
 
   const [updateProfile] = useUpdateProfileMutation();
   const [logout, { isLoading: isLogoutLoading }] = useLogoutMutation();
+
+  // Memoize refetch to prevent unnecessary re-renders
+  const memoizedRefetchProfile = useCallback(() => {
+    refetchProfile();
+  }, [refetchProfile]);
 
   // Memoized date calculations
   const dateInfo = useMemo(() => {
@@ -94,14 +101,14 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     return () => clearInterval(intervalId);
   }, []);
 
-  // Optimized loading management
+  // Optimized loading management - removed unstable dependencies
   useEffect(() => {
     if (isProfileLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [isProfileLoading, showLoading, hideLoading]);
+  }, [isProfileLoading]); // Only depend on the loading state
 
   // Memoized handlers
   const handleStatusChange = useCallback(async () => {
@@ -137,7 +144,7 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     } finally {
       hideLoading();
     }
-  }, [profileData, changeDriverStatus, showLoading, hideLoading, refetchProfile]);
+  }, [profileData, changeDriverStatus, memoizedRefetchProfile]); // Use memoized refetch
 
   // Update the profileInfo calculation to handle both data structures:
   const profileInfo = useMemo(() => {
@@ -188,46 +195,46 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     goToLeaveManagement: () => navigation.navigate('LeaveManagement'),
   }), [navigation]);
 
-  // Memoized action cards data
+  // Memoized action cards data with ultra-basic guaranteed icons
   const actionCards = useMemo(() => [
     {
-      iconName: "list-outline",
+      iconName: "list",
       label: "Coada Transporturi",
       onPress: navigationHandlers.goToQueue,
       iconColor: '#6366F1'
     },
     {
-      iconName: "subway-outline",
+      iconName: "car",
       label: "Transporturi",
       onPress: navigationHandlers.goToTransports,
       iconColor: COLORS.primary
     },
     {
-      iconName: "calendar-outline",
+      iconName: "calendar",
       label: "Concedii",
       onPress: navigationHandlers.goToLeaveManagement,
       iconColor: '#10B981'
     },
     {
-      iconName: "map-outline",
+      iconName: "location",
       label: "Transport actual",
       onPress: navigationHandlers.goToTransportMain,
       iconColor: COLORS.success
     },
     {
-      iconName: "bus-outline",
+      iconName: "bus",
       label: "Camion",
       onPress: navigationHandlers.goToTruck,
       iconColor: COLORS.danger
     },
     {
-      iconName: "file-tray-full-outline",
+      iconName: "folder",
       label: "Documente",
       onPress: navigationHandlers.goToDocuments,
       iconColor: COLORS.secondary
     },
     {
-      iconName: "alert-circle-outline",
+      iconName: "warning",
       label: "Documente Expirate",
       onPress: navigationHandlers.goToExpiredDocuments,
       iconColor: COLORS.warning
@@ -243,7 +250,7 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
         </Text>
         <TouchableOpacity
           style={styles.retryButton}
-          onPress={refetchProfile}
+          onPress={memoizedRefetchProfile}
         >
           <Text style={styles.retryButtonText}>Încearcă din nou</Text>
         </TouchableOpacity>
@@ -258,7 +265,7 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
         refreshControl={
           <RefreshControl
             refreshing={isProfileFetching && !isProfileLoading}
-            onRefresh={refetchProfile}
+            onRefresh={memoizedRefetchProfile}
             colors={[COLORS.primary]}
           />
         }

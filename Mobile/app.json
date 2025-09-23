@@ -92,7 +92,7 @@
       [
         "expo-background-fetch",
         {
-          "backgroundModes": ["background-fetch"]
+          "backgroundModes": ["background-fetch", "remote-notification"]
         }
       ]
     ],

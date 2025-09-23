@@ -1,5 +1,5 @@
 // Create a new file: LoadingContext.js
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 
 const LoadingContext = createContext();
@@ -19,8 +19,8 @@ export const LoadingProvider = ({ children }) => {
   // Create animated value for circular rotation
   const spinValue = useRef(new Animated.Value(0)).current;
 
-  const showLoading = () => setIsLoading(true);
-  const hideLoading = () => setIsLoading(false);
+  const showLoading = useCallback(() => setIsLoading(true), []);
+  const hideLoading = useCallback(() => setIsLoading(false), []);
 
   useEffect(() => {
     let spinAnimation;

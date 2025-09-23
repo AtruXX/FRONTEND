@@ -155,7 +155,15 @@ class ProductionNotificationService {
 
       // Set up background tasks for both platforms
       if (this.isAndroidDevice || this.isIOSDevice) {
-        await this.setupBackgroundTasks();
+        try {
+          await this.setupBackgroundTasks();
+        } catch (backgroundError) {
+          console.warn('⚠️ Background tasks setup failed but continuing initialization:', backgroundError);
+          // Continue initialization even if background tasks fail
+          // This allows the app to work without background sync
+        }
+      } else {
+        console.log('📱 Skipping background tasks setup - running on simulator/emulator');
       }
 
       this.isInitialized = true;
@@ -459,29 +467,84 @@ class ProductionNotificationService {
     try {
       console.log(`${Platform.OS === 'ios' ? '🍎' : '🤖'} Setting up ${Platform.OS} background tasks...`);
 
+      // Check iOS background fetch status first
+      if (Platform.OS === 'ios') {
+        const backgroundFetchStatus = await BackgroundFetch.getStatusAsync();
+
+        if (backgroundFetchStatus === BackgroundFetch.BackgroundFetchStatus.Denied ||
+            backgroundFetchStatus === BackgroundFetch.BackgroundFetchStatus.Restricted) {
+          console.log('⚠️ iOS Background Fetch is disabled or restricted');
+          console.log('📋 Please ensure UIBackgroundModes includes "background-fetch" in Info.plist');
+          this.backgroundTasksRegistered = false;
+          return;
+        }
+
+        if (backgroundFetchStatus === BackgroundFetch.BackgroundFetchStatus.Available) {
+          console.log('✅ iOS Background Fetch is available');
+        } else {
+          console.log('⚠️ iOS Background Fetch status unknown, proceeding with caution');
+        }
+      }
+
       // Different intervals for iOS vs Android due to platform limitations
       const notificationInterval = Platform.OS === 'ios' ? 60 * 60 : 15 * 60; // iOS: 1 hour, Android: 15 minutes
       const websocketInterval = Platform.OS === 'ios' ? 120 * 60 : 30 * 60; // iOS: 2 hours, Android: 30 minutes
 
       // Register background fetch for notification sync
-      await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
-        minimumInterval: notificationInterval,
-        stopOnTerminate: false, // Continue after app termination
-        startOnBoot: Platform.OS === 'android', // Only Android supports startOnBoot
-      });
+      try {
+        await BackgroundFetch.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK, {
+          minimumInterval: notificationInterval,
+          stopOnTerminate: false, // Continue after app termination
+          startOnBoot: Platform.OS === 'android', // Only Android supports startOnBoot
+        });
+        console.log(`✅ ${Platform.OS} notification background task registered`);
+      } catch (taskError) {
+        console.error(`❌ Failed to register notification task on ${Platform.OS}:`, taskError);
+        if (Platform.OS === 'ios') {
+          console.log('💡 This might be due to missing Info.plist configuration or iOS simulator limitations');
+        }
+        throw taskError;
+      }
 
       // Register WebSocket check task
-      await BackgroundFetch.registerTaskAsync(BACKGROUND_WEBSOCKET_TASK, {
-        minimumInterval: websocketInterval,
-        stopOnTerminate: false,
-        startOnBoot: Platform.OS === 'android',
-      });
+      try {
+        await BackgroundFetch.registerTaskAsync(BACKGROUND_WEBSOCKET_TASK, {
+          minimumInterval: websocketInterval,
+          stopOnTerminate: false,
+          startOnBoot: Platform.OS === 'android',
+        });
+        console.log(`✅ ${Platform.OS} WebSocket background task registered`);
+      } catch (taskError) {
+        console.error(`❌ Failed to register WebSocket task on ${Platform.OS}:`, taskError);
+        if (Platform.OS === 'ios') {
+          console.log('💡 This might be due to missing Info.plist configuration or iOS simulator limitations');
+        }
+        throw taskError;
+      }
 
       this.backgroundTasksRegistered = true;
-      console.log(`✅ ${Platform.OS} background tasks registered`);
+      console.log(`✅ ${Platform.OS} background tasks registered successfully`);
     } catch (error) {
       console.error(`❌ Error setting up ${Platform.OS} background tasks:`, error);
       this.backgroundTasksRegistered = false;
+
+      // On iOS, if background fetch is not configured, provide helpful guidance
+      if (Platform.OS === 'ios' && error.message?.includes('Background Fetch has not been configured')) {
+        console.log('🔧 iOS BACKGROUND FETCH CONFIGURATION ISSUE:');
+        console.log('📋 The app.json is configured but iOS native build may be missing background capabilities.');
+        console.log('🚨 SOLUTION: Rebuild the iOS app with: npx expo run:ios');
+        console.log('💡 Or if using EAS Build: eas build --platform ios');
+        console.log('⚠️ Background notifications will be limited until rebuild is complete.');
+        console.log('');
+        console.log('Current app.json has:');
+        console.log('✅ "UIBackgroundModes": ["background-fetch", "remote-notification"]');
+        console.log('✅ expo-background-fetch plugin configured');
+        console.log('');
+        console.log('If this persists after rebuild, check:');
+        console.log('1. iOS Simulator limitations (test on real device)');
+        console.log('2. iOS Settings > General > Background App Refresh');
+        console.log('3. iOS Settings > Notifications > [App Name] > Allow Notifications');
+      }
     }
   }
 
