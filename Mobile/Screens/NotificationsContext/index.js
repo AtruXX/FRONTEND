@@ -9,6 +9,7 @@ import {
   useDismissAllNotificationsMutation,
   NotificationUtils
 } from '../../services/notificationService';
+import productionNotificationService from '../../services/productionNotificationService';
 
 const NotificationsContext = createContext();
 
@@ -57,6 +58,11 @@ export const NotificationsProvider = ({ children }) => {
       // Use individual user notification channel as per backend specs
       const wsUrl = `wss://atrux-717ecf8763ea.herokuapp.com/ws/notifications-server/${storedUserId}/`;
       console.log('Connecting to WebSocket:', wsUrl);
+
+      // Close existing connection if any
+      if (ws.current && ws.current.readyState !== WebSocket.CLOSED) {
+        ws.current.close();
+      }
 
       ws.current = new WebSocket(wsUrl);
 
@@ -198,7 +204,17 @@ export const NotificationsProvider = ({ children }) => {
       return [newNotification, ...prev];
     });
 
-    setUnreadCount(prev => prev + 1);
+    setUnreadCount(prev => {
+      const newCount = prev + 1;
+      // Update badge count for production notifications
+      productionNotificationService.setBadgeCount(newCount);
+      return newCount;
+    });
+
+    // Show production background notification if available
+    if (productionNotificationService) {
+      productionNotificationService.handleWebSocketNotification(data);
+    }
 
     // Log for debugging
     console.log(`✅ ${userRole.toUpperCase()} received notification:`, newNotification.title, '-', newNotification.message);
@@ -223,7 +239,12 @@ export const NotificationsProvider = ({ children }) => {
         )
       );
 
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount(prev => {
+        const newCount = Math.max(0, prev - 1);
+        // Update badge count for production notifications
+        productionNotificationService.setBadgeCount(newCount);
+        return newCount;
+      });
 
       // Refetch to ensure sync
       refetchNotifications();
@@ -241,7 +262,12 @@ export const NotificationsProvider = ({ children }) => {
         const updated = prev.filter(notification => notification.id !== notificationId);
         const deletedNotification = prev.find(n => n.id === notificationId);
         if (deletedNotification && !deletedNotification.is_read) {
-          setUnreadCount(count => Math.max(0, count - 1));
+          setUnreadCount(count => {
+            const newCount = Math.max(0, count - 1);
+            // Update badge count for production notifications
+            productionNotificationService.setBadgeCount(newCount);
+            return newCount;
+          });
         }
         return updated;
       });
@@ -262,6 +288,8 @@ export const NotificationsProvider = ({ children }) => {
         prev.map(notification => ({ ...notification, is_read: true }))
       );
       setUnreadCount(0);
+      // Clear badge count for production notifications
+      productionNotificationService.clearBadge();
 
       // Refetch to ensure sync
       refetchNotifications();
@@ -277,6 +305,8 @@ export const NotificationsProvider = ({ children }) => {
       // Update local state optimistically
       setNotifications([]);
       setUnreadCount(0);
+      // Clear badge count for production notifications
+      productionNotificationService.clearBadge();
 
       // Refetch to ensure sync
       refetchNotifications();
@@ -296,9 +326,43 @@ export const NotificationsProvider = ({ children }) => {
     }
   };
 
-  // Initialize WebSocket connection when user ID is available
+  // Initialize WebSocket connection and background notifications when user ID is available
   useEffect(() => {
-    connectWebSocket();
+    const initializeNotificationSystem = async () => {
+      try {
+        // Initialize production notification service in background (non-blocking)
+        productionNotificationService.initialize()
+          .then((serviceInitialized) => {
+            if (serviceInitialized) {
+              console.log('✅ Production notification service initialized');
+
+              // Sync with backend in background
+              productionNotificationService.syncWithBackend()
+                .catch(error => console.log('Background sync failed:', error));
+
+              console.log('🔔 Notification system fully initialized');
+            } else {
+              console.log('⚠️ Production notification service failed to initialize');
+            }
+          })
+          .catch(error => {
+            console.error('❌ Failed to initialize production notification service:', error);
+          });
+
+        // Connect to WebSocket immediately (non-blocking)
+        connectWebSocket();
+
+      } catch (error) {
+        console.error('❌ Failed to initialize notification system:', error);
+        // Fallback to basic WebSocket connection
+        connectWebSocket();
+      }
+    };
+
+    // Use setTimeout to make initialization non-blocking
+    setTimeout(() => {
+      initializeNotificationSystem();
+    }, 100);
 
     return () => {
       if (reconnectTimeout.current) {
@@ -307,6 +371,10 @@ export const NotificationsProvider = ({ children }) => {
       if (ws.current) {
         ws.current.close();
       }
+      // Clean up production notification service in background
+      setTimeout(() => {
+        productionNotificationService.cleanup();
+      }, 0);
     };
   }, []);
 

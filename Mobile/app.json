@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "platforms": [
       "ios",
       "android"
@@ -23,7 +23,13 @@
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses camera to scan documents and take photos.",
         "NSPhotoLibraryUsageDescription": "This app accesses photo library to select images.",
-        "NSLocationWhenInUseUsageDescription": "This app uses location to show your position on the map."
+        "NSLocationWhenInUseUsageDescription": "This app uses location to show your position on the map.",
+        "NSUserNotificationsUsageDescription": "This app sends you important notifications about transports, documents, and system updates.",
+        "UIBackgroundModes": [
+          "background-fetch",
+          "remote-notification",
+          "background-processing"
+        ]
       },
       "config": {
         "googleMapsApiKey": "AIzaSyDNAL2kwxRQoohJGIpErP78t3q6FN-9gS4"
@@ -41,7 +47,19 @@
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "WAKE_LOCK",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_EXACT_ALARM",
+        "POST_NOTIFICATIONS",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_DATA_SYNC",
+        "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
       ],
       "config": {
         "googleMaps": {
@@ -59,7 +77,24 @@
       "**/*"
     ],
     "plugins": [
-      "expo-location"
+      "expo-location",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "androidMode": "default",
+          "androidCollapsedTitle": "AtruX Notifications",
+          "sounds": ["./assets/notification-sound.wav"]
+        }
+      ],
+      [
+        "expo-background-fetch",
+        {
+          "backgroundModes": ["background-fetch"]
+        }
+      ]
     ],
     "extra": {
       "eas": {

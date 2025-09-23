@@ -1,10 +1,12 @@
 // App.js - Hermes-compatible optimized version
-import React from "react";
+import React, { useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { Provider } from 'react-redux';
 import { store } from './store';
+import { AppState } from 'react-native';
+import backgroundNotificationService from './services/backgroundNotificationService';
 import LoginScreen from "./Screens/Login";
 import HomeScreen from "./Screens/Homescreen";
 import Transports from "./Screens/TransportsScreen";
@@ -386,6 +388,23 @@ function AppNavigatorContent() {
 
 //aici avem redux provider incorporatt
 function AppNavigator() {
+  useEffect(() => {
+    // Handle app state changes for background notifications
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'active') {
+        // App has come to the foreground
+        console.log('App is now active - clearing badge');
+        backgroundNotificationService.clearBadge();
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
+
   return (
     <Provider store={store}>
       <SafeAreaProvider>
