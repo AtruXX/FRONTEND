@@ -13,7 +13,6 @@ import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
 import {
-  useGetLeaveCalendarQuery,
   useGetLeaveRequestsQuery
 } from '../../services/leaveService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
@@ -171,19 +170,7 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
     return { startDate, endDate };
   }, [selectedMonth]);
 
-  // Fetch leave calendar data
-  const {
-    data: calendarData,
-    isLoading: calendarLoading,
-    isFetching: calendarFetching,
-    error: calendarError,
-    refetch: refetchCalendar
-  } = useGetLeaveCalendarQuery({
-    start_date: monthBoundaries.startDate,
-    end_date: monthBoundaries.endDate
-  });
-
-  // Fetch user's own requests for upcoming leave
+  // Fetch user's own requests for calendar display and upcoming leave
   const {
     data: requestsData,
     isLoading: requestsLoading,
@@ -194,29 +181,29 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
 
   // Update global loading state
   useEffect(() => {
-    if (calendarLoading || requestsLoading) {
+    if (requestsLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [calendarLoading, requestsLoading, showLoading, hideLoading]);
+  }, [requestsLoading, showLoading, hideLoading]);
 
-  // Process calendar data to create marked dates
+  // Process driver's own leave requests to create marked dates
   const markedDates = useMemo(() => {
-    if (!calendarData?.leave_calendar) return {};
+    if (!requestsData?.results) return {};
 
     const marked = {};
 
-    calendarData.leave_calendar.forEach((leave) => {
+    requestsData.results.forEach((leave) => {
       const start = new Date(leave.start_date);
       const end = new Date(leave.end_date);
       const current = new Date(start);
 
-      // Color based on status
+      // Color based on status - green for approved leave as requested
       let color = '#6B7280'; // default
-      if (leave.status === 'approved') color = '#10B981';
-      else if (leave.status === 'pending') color = '#F59E0B';
-      else if (leave.status === 'rejected') color = '#EF4444';
+      if (leave.status === 'approved') color = '#10B981'; // Green for approved
+      else if (leave.status === 'pending') color = '#F59E0B'; // Yellow for pending
+      else if (leave.status === 'rejected') color = '#EF4444'; // Red for rejected
 
       while (current <= end) {
         const dateString = current.toISOString().split('T')[0];
@@ -236,7 +223,7 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
     });
 
     return marked;
-  }, [calendarData, selectedMonth]);
+  }, [requestsData, selectedMonth]);
 
   // Calculate stats for selected month
   const monthStats = useMemo(() => {
@@ -284,14 +271,11 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
 
   const onRefresh = useCallback(async () => {
     try {
-      await Promise.all([
-        refetchCalendar(),
-        refetchRequests()
-      ]);
+      await refetchRequests();
     } catch (error) {
       console.error('Error refreshing calendar data:', error);
     }
-  }, [refetchCalendar, refetchRequests]);
+  }, [refetchRequests]);
 
   const handleMonthChange = useCallback((month) => {
     setSelectedMonth(month.dateString.slice(0, 7));
@@ -300,22 +284,22 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
   const handleDayPress = useCallback((day) => {
     const selectedDate = day.dateString;
 
-    // Find leave for this date
-    const leaveForDate = calendarData?.leave_calendar?.find(leave =>
+    // Find leave for this date from driver's own requests
+    const leaveForDate = requestsData?.results?.find(leave =>
       selectedDate >= leave.start_date && selectedDate <= leave.end_date
     );
 
     if (leaveForDate) {
       Alert.alert(
         'Detalii concediu',
-        `Sofer: ${leaveForDate.driver_name}\nPerioda: ${new Date(leaveForDate.start_date).toLocaleDateString('ro-RO')} - ${new Date(leaveForDate.end_date).toLocaleDateString('ro-RO')}\nStatus: ${leaveForDate.status === 'approved' ? 'Aprobat' : leaveForDate.status === 'pending' ? 'În așteptare' : 'Respins'}\nMotiv: ${leaveForDate.reason}`,
+        `Perioada: ${new Date(leaveForDate.start_date).toLocaleDateString('ro-RO')} - ${new Date(leaveForDate.end_date).toLocaleDateString('ro-RO')}\nStatus: ${leaveForDate.status === 'approved' ? 'Aprobat' : leaveForDate.status === 'pending' ? 'În așteptare' : 'Respins'}\nMotiv: ${leaveForDate.reason}${leaveForDate.rejection_reason ? `\nMotiv respingere: ${leaveForDate.rejection_reason}` : ''}`,
         [{ text: 'OK' }]
       );
     }
-  }, [calendarData]);
+  }, [requestsData]);
 
   // Handle error state
-  if (calendarError || requestsError) {
+  if (requestsError) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <PageHeader
@@ -355,7 +339,7 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
-            refreshing={calendarFetching || requestsFetching}
+            refreshing={requestsFetching}
             onRefresh={onRefresh}
             colors={['#6366F1']}
           />
