@@ -85,8 +85,7 @@
           "color": "#ffffff",
           "defaultChannel": "default",
           "androidMode": "default",
-          "androidCollapsedTitle": "AtruX Notifications",
-          "sounds": ["./assets/notification-sound.wav"]
+          "androidCollapsedTitle": "AtruX Notifications"
         }
       ],
       [
