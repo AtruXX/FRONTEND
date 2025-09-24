@@ -6,7 +6,7 @@ import { BASE_URL } from '../utils/BASE_URL.js';
 // Custom hook for getting specific transport details using transport ID
 export const useGetActiveTransportQuery = (transportId, options = {}) => {
   const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!transportId ? false : true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
 
@@ -81,7 +81,7 @@ export const useGetActiveTransportQuery = (transportId, options = {}) => {
 // Custom hook for getting truck details
 export const useGetTruckQuery = (truckId, options = {}) => {
   const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!truckId ? false : true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
 
@@ -146,7 +146,7 @@ export const useGetTruckQuery = (truckId, options = {}) => {
 // Custom hook for getting truck documents
 export const useGetTruckDocumentsQuery = (truckId, options = {}) => {
   const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!truckId ? false : true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
 
@@ -209,7 +209,7 @@ export const useGetTruckDocumentsQuery = (truckId, options = {}) => {
 // Custom hook for getting trailer details
 export const useGetTrailerQuery = (trailerId, options = {}) => {
   const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!trailerId ? false : true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
 
