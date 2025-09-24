@@ -102,7 +102,7 @@ const LoginScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerCard}>
-        <Image source={require("../../assets/LOGO_ATRUX.jpeg")} style={styles.logo} />
+        <Image source={require("../../assets/LOGO_ATRUX.png")} style={styles.logo} />
         <Text style={styles.headerTitle}>Bine ai venit!</Text>
         <Text style={styles.headerSubtitle}>Logheaza-te pentru a continua</Text>
       </View>
