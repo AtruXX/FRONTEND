@@ -148,7 +148,7 @@ const TransportActionButton = React.memo(({
         <View style={[styles.startButton, styles.queueButton]}>
           <Ionicons name="list-outline" size={20} color="white" style={styles.buttonIcon} />
           <Text style={styles.startButtonText}>
-            ÎN COADĂ - POZIȚIA #{queuePosition}
+            ÎN LISTĂ - POZIȚIA #{queuePosition}
           </Text>
         </View>
       );
@@ -244,7 +244,7 @@ const TransportItem = React.memo(({
         <View style={styles.queuePositionContainer}>
           <Ionicons name="list-outline" size={16} color="#6366F1" />
           <Text style={styles.queuePositionText}>
-            Poziție în coadă: #{queuePosition}
+            Poziție în listă: #{queuePosition}
             {queuePosition === 1 ? ' (Următorul!)' : ''}
           </Text>
         </View>
@@ -471,7 +471,7 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
 
         Alert.alert(
           'Succes!',
-          'TRANSPORT ÎNCEPUT CU SUCCES! URMĂTORUL TRANSPORT DIN COADĂ A FOST ACTIVAT! DISPECERUL TĂU VA FI ANUNȚAT!',
+          'TRANSPORT ÎNCEPUT CU SUCCES! URMĂTORUL TRANSPORT DIN LISTĂ A FOST ACTIVAT! DISPECERUL TĂU VA FI ANUNȚAT!',
           [{ text: 'OK' }]
         );
       } else {
@@ -493,9 +493,9 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       let errorMessage = 'Nu s-a putut începe transportul. Încearcă din nou.';
 
       if (error.message?.includes('No transport available')) {
-        errorMessage = 'Nu există transporturi disponibile în coadă.';
+        errorMessage = 'Nu există transporturi disponibile în listă.';
       } else if (error.message?.includes('queue')) {
-        errorMessage = 'Eroare la sistemul de coadă. Încearcă din nou.';
+        errorMessage = 'Eroare la sistemul de listă. Încearcă din nou.';
       } else if (error.message?.includes('401')) {
         errorMessage = 'Sesiunea a expirat. Te rugăm să te autentifici din nou.';
       }
@@ -569,13 +569,13 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
         {useQueueSystem && queueData && activeTab === 'active' && (
           <View style={styles.queueInfoContainer}>
             <View style={styles.queueInfoHeader}>
-              <Ionicons name="list" size={20} color="#6366F1" />
-              <Text style={styles.queueInfoTitle}>Sistem de Coadă Activ</Text>
+              <Ionicons name="list" size={24} color="#6366F1" />
+              <Text style={styles.queueInfoTitle}>Sistem de Listă Activ</Text>
             </View>
             <Text style={styles.queueInfoText}>
               {queueData.queue_count > 0
-                ? `${queueData.queue_count} transport${queueData.queue_count > 1 ? 'uri' : ''} în coadă`
-                : 'Niciun transport în coadă'
+                ? `${queueData.queue_count} transport${queueData.queue_count > 1 ? 'uri' : ''} în listă`
+                : 'Niciun transport în listă'
               }
               {queueData.next_transport_id && (
                 ` • Următorul: #${queueData.next_transport_id}`
@@ -583,7 +583,7 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
             </Text>
             {queueData.queue_count === 0 && (
               <Text style={styles.queueEmptyText}>
-                Dispecerul va adăuga transporturi în coada ta
+                Dispecerul va adăuga transporturi în lista ta
               </Text>
             )}
           </View>

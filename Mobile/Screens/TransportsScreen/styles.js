@@ -367,39 +367,51 @@ export const styles = StyleSheet.create({
 
     // Queue system styles
     queueInfoContainer: {
-      backgroundColor: '#EFF6FF',
+      backgroundColor: 'white',
       marginHorizontal: 16,
-      marginTop: 8,
-      borderRadius: 12,
-      padding: 16,
-      borderLeftWidth: 4,
-      borderLeftColor: '#6366F1',
+      marginTop: 12,
+      marginBottom: 4,
+      borderRadius: 16,
+      padding: 20,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
     },
 
     queueInfoHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 12,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: '#F3F4F6',
     },
 
     queueInfoTitle: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#1F2937',
-      marginLeft: 8,
+      fontSize: 17,
+      fontWeight: '700',
+      color: '#6366F1',
+      marginLeft: 10,
+      flex: 1,
     },
 
     queueInfoText: {
-      fontSize: 14,
-      color: '#4B5563',
-      lineHeight: 20,
+      fontSize: 15,
+      color: '#1F2937',
+      lineHeight: 22,
+      fontWeight: '500',
     },
 
     queueEmptyText: {
-      fontSize: 13,
-      color: '#6B7280',
+      fontSize: 14,
+      color: '#9CA3AF',
       fontStyle: 'italic',
-      marginTop: 4,
+      marginTop: 8,
+      lineHeight: 20,
     },
 
     queuePositionContainer: {
@@ -426,6 +438,6 @@ export const styles = StyleSheet.create({
     },
 
     nextInQueueButton: {
-      backgroundColor: '#059669',
+      backgroundColor: '#6366F1',
     },
   });

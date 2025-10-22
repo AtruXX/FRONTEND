@@ -73,7 +73,7 @@ export const styles = StyleSheet.create({
 
   readyText: {
     fontSize: 14,
-    color: '#059669',
+    color: '#10B981',
     fontWeight: '500',
     marginLeft: 6,
   },
@@ -129,13 +129,10 @@ export const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
     overflow: 'hidden',
-    borderLeftWidth: 4,
-    borderLeftColor: '#E5E7EB',
   },
 
   nextQueueItem: {
-    borderLeftColor: '#059669',
-    backgroundColor: '#FAFFFE',
+    backgroundColor: '#F8F9FF',
   },
 
   queueItemHeader: {
@@ -189,6 +186,61 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  queueItemContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+
+  detailText: {
+    fontSize: 14,
+    color: '#374151',
+    marginLeft: 8,
+    flex: 1,
+  },
+
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+
+  statusItem: {
+    width: '48%',
+    marginBottom: 12,
+  },
+
+  statusLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+
+  statusIcon: {
+    marginRight: 4,
+  },
+
+  statusText: {
+    fontWeight: '500',
+    fontSize: 12,
+  },
+
   queueItemActions: {
     paddingHorizontal: 16,
     paddingBottom: 16,
@@ -212,7 +264,7 @@ export const styles = StyleSheet.create({
 
   // Start Button
   startButton: {
-    backgroundColor: '#059669',
+    backgroundColor: '#6366F1',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
