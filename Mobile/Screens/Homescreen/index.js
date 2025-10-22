@@ -201,6 +201,13 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
   }), [navigation]);
 
   // Memoized action cards data with ultra-basic guaranteed icons
+  const primaryActionCard = useMemo(() => ({
+    iconName: "location",
+    label: "Transportul meu",
+    onPress: navigationHandlers.goToTransportMain,
+    iconColor: COLORS.success
+  }), [navigationHandlers]);
+
   const actionCards = useMemo(() => [
     {
       iconName: "list",
@@ -219,12 +226,6 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
       label: "Concedii",
       onPress: navigationHandlers.goToLeaveManagement,
       iconColor: '#10B981'
-    },
-    {
-      iconName: "location",
-      label: "Transport actual",
-      onPress: navigationHandlers.goToTransportMain,
-      iconColor: COLORS.success
     },
     {
       iconName: "bus",
@@ -329,6 +330,19 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
             <Text style={styles.sectionTitle}>Acțiuni rapide</Text>
           </View>
 
+          {/* Primary Action - Full Width */}
+          <TouchableOpacity
+            style={styles.primaryActionCard}
+            onPress={primaryActionCard.onPress}
+          >
+            <View style={[styles.primaryActionIconContainer, { backgroundColor: primaryActionCard.iconColor }]}>
+              <Ionicons name={primaryActionCard.iconName} size={32} color="white" />
+            </View>
+            <Text style={styles.primaryActionLabel}>{primaryActionCard.label}</Text>
+            <Ionicons name="chevron-forward" size={24} color={COLORS.primary} />
+          </TouchableOpacity>
+
+          {/* Secondary Actions Grid */}
           <View style={styles.actionsGrid}>
             {actionCards.map((card, index) => (
               <ActionCard
