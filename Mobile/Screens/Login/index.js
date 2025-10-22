@@ -171,18 +171,6 @@ const LoginScreen = () => {
           </Text>
         </Text>
 
-        {/* Debug info - Remove this in production */}
-        {__DEV__ && (
-          <View style={{ marginTop: 20, padding: 10, backgroundColor: '#f0f0f0' }}>
-            <Text style={{ fontSize: 12, color: '#666' }}>Debug Info:</Text>
-            <Text style={{ fontSize: 10, color: '#666' }}>Phone: {phone_number}</Text>
-            <Text style={{ fontSize: 10, color: '#666' }}>Password length: {password.length}</Text>
-            <Text style={{ fontSize: 10, color: '#666' }}>Loading: {isLoginLoading.toString()}</Text>
-            {loginError && (
-              <Text style={{ fontSize: 10, color: 'red' }}>Error: {loginError.message}</Text>
-            )}
-          </View>
-        )}
       </View>
     </View>
   );

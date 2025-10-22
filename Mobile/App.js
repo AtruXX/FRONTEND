@@ -35,6 +35,7 @@ import { NotificationsProvider } from './Screens/NotificationsContext/index.js';
 import { LoadingProvider } from './components/General/loadingSpinner.js';
 import { NotificationManager } from './components/Notifications/index.js';
 import Route from './Screens/RoutePrincipal/index.js';
+import { ensureFirebaseInitialized, ensureFirebaseAuth } from './services/firebaseApp';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -388,6 +389,11 @@ function AppNavigatorContent() {
 
 //aici avem redux provider incorporatt
 function AppNavigator() {
+  useEffect(() => {
+    ensureFirebaseInitialized();
+    ensureFirebaseAuth();
+  }, []);
+
   useEffect(() => {
     // Handle app state changes for background notifications
     const handleAppStateChange = (nextAppState) => {

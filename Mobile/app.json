@@ -20,6 +20,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.atrux.AtruXMobileVers",
       "buildNumber": "1",
+      "googleServicesFile": "./ios/GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses camera to scan documents and take photos.",
         "NSPhotoLibraryUsageDescription": "This app accesses photo library to select images.",
@@ -38,6 +39,7 @@
     "android": {
       "package": "com.atrux.atruxmobilevers",
       "versionCode": 1,
+      "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/LOGO_ATRUX.png",
         "backgroundColor": "#ffffff"
@@ -99,7 +101,16 @@
       "eas": {
         "projectId": "09176c5b-b9aa-49be-a276-3caafe324102"
       },
-      "googleMapsApiKey": "AIzaSyDNAL2kwxRQoohJGIpErP78t3q6FN-9gS4"
+      "googleMapsApiKey": "AIzaSyDNAL2kwxRQoohJGIpErP78t3q6FN-9gS4",
+      "firebase": {
+        "apiKey": "AIzaSyDvIqOVsgsXnUPCCrQ6RL_q1E__WG4qeKc",
+        "authDomain": "atrux-1cccf.firebaseapp.com",
+        "projectId": "atrux-1cccf",
+        "storageBucket": "atrux-1cccf.firebasestorage.app",
+        "messagingSenderId": "1003712693359",
+        "appId": "1:1003712693359:android:198f4c5d6dd18d0e02f99a",
+        "measurementId": ""
+      }
     }
   }
 }

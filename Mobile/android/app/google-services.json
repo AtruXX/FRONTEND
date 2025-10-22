@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1003712693359",
+    "project_id": "atrux-1cccf",
+    "storage_bucket": "atrux-1cccf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1003712693359:android:198f4c5d6dd18d0e02f99a",
+        "android_client_info": {
+          "package_name": "com.atrux.atruxmobilevers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvIqOVsgsXnUPCCrQ6RL_q1E__WG4qeKc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,43 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply plugin: "com.google.gms.google-services"
+
+def enableFirebaseDistribution = (findProperty("firebaseAppDistributionEnabled") ?: "false").toBoolean()
+if (enableFirebaseDistribution) {
+    apply plugin: "com.google.firebase.appdistribution"
+
+    firebaseAppDistribution {
+        def appDistributionAppId = findProperty("firebaseAppDistributionAppId")
+        def serviceCredentials = findProperty("firebaseAppDistributionCredentialsFile")
+        if (!appDistributionAppId) {
+            throw new GradleException("Missing firebaseAppDistributionAppId project property. Set it in android/gradle.properties or pass with -P.")
+        }
+        if (!serviceCredentials) {
+            throw new GradleException("Missing firebaseAppDistributionCredentialsFile project property. Set it in android/gradle.properties or pass with -P.")
+        }
+
+        appId = appDistributionAppId
+        serviceCredentialsFile = serviceCredentials
+
+        def testersProp = findProperty("firebaseAppDistributionTesters")
+        if (testersProp) {
+            testers = testersProp
+        }
+
+        def groupsProp = findProperty("firebaseAppDistributionGroups")
+        if (groupsProp) {
+            groups = groupsProp
+        }
+
+        def releaseNotesProp = findProperty("firebaseAppDistributionReleaseNotesFile")
+        if (releaseNotesProp) {
+            releaseNotesFile = releaseNotesProp
+        }
+
+        artifactType = findProperty("firebaseAppDistributionArtifactType") ?: "APK"
+    }
+}
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
@@ -150,6 +187,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-analytics")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
