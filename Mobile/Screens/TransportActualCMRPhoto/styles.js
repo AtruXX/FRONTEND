@@ -624,4 +624,91 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+
+  // Existing photos section
+  existingPhotosSection: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 20,
+    margin: 20,
+    marginTop: 0,
+    shadowColor: '#A7A9AF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
+  },
+
+  photoTitleOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 8,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+
+  photoTitleText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // Full screen modal styles
+  fullScreenModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  closeFullScreenButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    padding: 8,
+  },
+
+  fullScreenImageContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 100,
+  },
+
+  fullScreenImage: {
+    width: '100%',
+    height: '80%',
+  },
+
+  fullScreenPhotoInfo: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+
+  fullScreenPhotoTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+
+  fullScreenPhotoDate: {
+    color: '#D1D5DB',
+    fontSize: 14,
+    textAlign: 'center',
+  },
 });

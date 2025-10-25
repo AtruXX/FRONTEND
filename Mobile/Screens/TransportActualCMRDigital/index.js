@@ -1,17 +1,18 @@
 // TransportActualCMRDigital/index.js - Updated with useLoading
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  TextInput, 
-  SafeAreaView, 
-  Alert, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Modal, 
-  FlatList, 
-  ScrollView 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  SafeAreaView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+  FlatList,
+  ScrollView,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
@@ -20,6 +21,8 @@ import {
   useGetCMRDataQuery,
   useUpdateCMRDataMutation,
   useCreateCMRDataMutation,
+  useGetCMRCompleteQuery,
+  useGetCMRStatusQuery,
   CMR_ERROR_TYPES
 } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
@@ -280,16 +283,33 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
 
   const activeTransportId = getActiveTransportId();
 
-  // Get CMR data with enhanced error handling - skip if still loading profile/queue
+  // Get complete CMR data (digital + physical) using new endpoint
   const {
-    data: cmrData,
-    isLoading: cmrLoading,
-    error: cmrError,
-    cmrExists,
-    refetch: refetchCMR
-  } = useGetCMRDataQuery(activeTransportId, {
+    data: cmrCompleteData,
+    isLoading: cmrCompleteLoading,
+    error: cmrCompleteError,
+    refetch: refetchCMRComplete
+  } = useGetCMRCompleteQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading
   });
+
+  // Get CMR status
+  const {
+    data: cmrStatus,
+    isLoading: cmrStatusLoading,
+    refetch: refetchCMRStatus
+  } = useGetCMRStatusQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || queueLoading
+  });
+
+  // Extract digital CMR from complete data
+  const cmrData = cmrCompleteData?.digital_cmr;
+  const cmrLoading = cmrCompleteLoading || cmrStatusLoading;
+  const cmrError = cmrCompleteError;
+  const cmrExists = cmrStatus?.has_digital_cmr || false;
+  const refetchCMR = async () => {
+    await Promise.all([refetchCMRComplete(), refetchCMRStatus()]);
+  };
 
   // Mutations
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
@@ -670,7 +690,7 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
       >
@@ -682,30 +702,114 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
           showBack={true}
         />
 
-        {/* More visible edit button */}
-        {!editingMode && (
-          <View style={styles.editButtonContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                console.log('🔧 Edit button pressed, enabling editing mode');
-                setEditingMode(true);
-              }}
-              style={styles.prominentEditButton}
-              disabled={isUpdating}
-            >
-              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.editButtonText}>Editează CMR</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <ProgressIndicator completedPercentage={cmrData?.completed_percentage} />
-
-        <ScrollView 
-          style={styles.formContainer} 
+        <ScrollView
+          style={styles.formContainer}
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={true}
+          contentContainerStyle={{ paddingBottom: editingMode ? 80 : 20 }}
         >
+          {/* More visible edit button */}
+          {!editingMode && (
+            <View style={styles.editButtonContainer}>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('🔧 Edit button pressed, enabling editing mode');
+                  setEditingMode(true);
+                }}
+                style={styles.prominentEditButton}
+                disabled={isUpdating}
+              >
+                <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.editButtonText}>Editează CMR</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* CMR Status Summary */}
+          {cmrStatus && (
+            <View style={[styles.progressContainer, { marginBottom: 8 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons
+                  name={
+                    cmrStatus.status === 'both' ? 'checkmark-circle' :
+                    cmrStatus.status === 'digital_only' ? 'document-text' :
+                    cmrStatus.status === 'physical_only' ? 'camera' :
+                    'alert-circle'
+                  }
+                  size={20}
+                  color={
+                    cmrStatus.status === 'both' ? '#10B981' :
+                    cmrStatus.status === 'digital_only' ? '#3B82F6' :
+                    cmrStatus.status === 'physical_only' ? '#F59E0B' :
+                    '#EF4444'
+                  }
+                />
+                <Text style={[styles.progressLabel, { marginLeft: 8, fontSize: 14, fontWeight: 'bold' }]}>
+                  Status: {
+                    cmrStatus.status === 'both' ? 'Complet' :
+                    cmrStatus.status === 'digital_only' ? 'Doar Digital' :
+                    cmrStatus.status === 'physical_only' ? 'Doar Fizic' :
+                    'Lipsă'
+                  }
+                </Text>
+              </View>
+              <Text style={[styles.progressText, { textAlign: 'left', fontSize: 12 }]}>
+                {cmrStatus.has_digital_cmr && `Digital: ${cmrStatus.digital_cmr_completed_percentage || '0%'}${cmrStatus.has_physical_cmr ? ' • ' : ''}`}
+                {cmrStatus.has_physical_cmr && `Fizic: ${cmrStatus.physical_cmr_count} doc.`}
+              </Text>
+            </View>
+          )}
+
+          <ProgressIndicator completedPercentage={cmrData?.completed_percentage} />
+
+          {/* Physical CMR Documents */}
+          {cmrCompleteData?.physical_cmrs && cmrCompleteData.physical_cmrs.length > 0 && (
+            <View style={[styles.progressContainer, { marginBottom: 12 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Ionicons name="camera" size={20} color="#F59E0B" />
+                <Text style={[styles.progressLabel, { marginLeft: 8, fontSize: 14, fontWeight: 'bold' }]}>
+                  CMR-uri Fizice ({cmrCompleteData.physical_cmrs.length})
+                </Text>
+              </View>
+              {cmrCompleteData.physical_cmrs.map((doc, index) => (
+                <View key={doc.id} style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 4,
+                  borderBottomWidth: index < cmrCompleteData.physical_cmrs.length - 1 ? 1 : 0,
+                  borderBottomColor: '#E5E7EB'
+                }}>
+                  <Ionicons
+                    name={doc.document?.endsWith('.pdf') ? 'document-text' : 'image'}
+                    size={16}
+                    color="#6B7280"
+                  />
+                  <Text style={[styles.progressText, { flex: 1, marginLeft: 8, textAlign: 'left' }]} numberOfLines={1}>
+                    {doc.title}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={async () => {
+                      if (doc.document) {
+                        try {
+                          const supported = await Linking.canOpenURL(doc.document);
+                          if (supported) {
+                            await Linking.openURL(doc.document);
+                          } else {
+                            Alert.alert('Eroare', 'Nu se poate deschide documentul.');
+                          }
+                        } catch (error) {
+                          Alert.alert('Eroare', 'Nu s-a putut deschide documentul.');
+                        }
+                      }
+                    }}
+                    style={{ padding: 4 }}
+                  >
+                    <Ionicons name="open-outline" size={18} color="#5A5BDE" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+
           {Object.entries(sections).map(renderSection)}
         </ScrollView>
 

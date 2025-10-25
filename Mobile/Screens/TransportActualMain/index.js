@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, T
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation, useGetTransportByIdQuery, useGetDriverQueueQuery } from '../../services/transportService';
-import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation } from '../../services/CMRService';
+import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation, useGetCMRStatusQuery } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
@@ -113,6 +113,16 @@ const TransportMainPage = ({ navigation }) => {
     skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
 
+  // Fetch CMR status to check for photos and digital CMR
+  const {
+    data: cmrStatus,
+    isLoading: cmrStatusLoading,
+    error: cmrStatusError,
+    refetch: refetchCMRStatus
+  } = useGetCMRStatusQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || queueLoading || profileError
+  });
+
   // Update global loading state - but only show loading if we actually need the data
   useEffect(() => {
     // Only show loading for profile and queue if they're actually loading
@@ -120,7 +130,7 @@ const TransportMainPage = ({ navigation }) => {
     const shouldShowLoading =
       profileLoading ||
       queueLoading ||
-      (activeTransportId && (transportLoading || cmrLoading)) ||
+      (activeTransportId && (transportLoading || cmrLoading || cmrStatusLoading)) ||
       isFinalizing ||
       isDownloading ||
       isUpdatingCMR;
@@ -130,7 +140,7 @@ const TransportMainPage = ({ navigation }) => {
     } else {
       hideLoading();
     }
-  }, [profileLoading, queueLoading, transportLoading, cmrLoading, isFinalizing, isDownloading, isUpdatingCMR, activeTransportId, showLoading, hideLoading]);
+  }, [profileLoading, queueLoading, transportLoading, cmrLoading, cmrStatusLoading, isFinalizing, isDownloading, isUpdatingCMR, activeTransportId, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
@@ -138,15 +148,34 @@ const TransportMainPage = ({ navigation }) => {
       return;
     }
 
+    // Check if digital CMR exists before attempting download
+    if (!cmrStatus?.has_digital_cmr && !cmrStatus?.has_physical_cmr) {
+      Alert.alert(
+        'CMR nu există',
+        'Nu există un document CMR disponibil pentru descărcare. Vă rugăm să așteptați ca dispecerul să genereze CMR-ul sau completați un CMR digital.',
+        [
+          { text: 'OK', style: 'cancel' }
+        ]
+      );
+      return;
+    }
+
     try {
       await downloadCMR(activeTransportId).unwrap();
-      Alert.alert(
-        'Descărcare CMR',
-        'Descărcarea documentului CMR a început.',
-        [{ text: 'OK' }]
-      );
+      // PDF opens automatically, no need for success alert
     } catch (error) {
-      Alert.alert('Eroare', 'Nu s-a putut descărca documentul CMR.');
+      console.error('Download CMR Error:', error);
+
+      // Show user-friendly error message
+      let errorMessage = 'Nu s-a putut deschide documentul CMR.';
+
+      if (error?.message?.includes('Nu există niciun document')) {
+        errorMessage = 'Dispecerul nu a generat încă documentul CMR PDF. Vă rugăm să așteptați sau să contactați dispecerul.';
+      } else if (error?.message?.includes('Network') || error?.message?.includes('network')) {
+        errorMessage = 'Verificați conexiunea la internet și încercați din nou.';
+      }
+
+      Alert.alert('Eroare', errorMessage);
     }
   };
 
@@ -224,7 +253,36 @@ const TransportMainPage = ({ navigation }) => {
     if (refetchCMR) {
       await refetchCMR();
     }
-  }, [refetchProfile, refetchQueue, refetchTransport, refetchCMR]);
+    if (refetchCMRStatus) {
+      await refetchCMRStatus();
+    }
+  }, [refetchProfile, refetchQueue, refetchTransport, refetchCMR, refetchCMRStatus]);
+
+  // Handle viewing CMR photos
+  const handleViewCMRPhotos = () => {
+    if (!activeTransportId) {
+      Alert.alert('Eroare', 'Nu există un transport activ.');
+      return;
+    }
+
+    if (!cmrStatus?.has_physical_cmr) {
+      Alert.alert(
+        'Fără fotografii CMR',
+        'Nu există fotografii CMR încărcate pentru acest transport. Doriți să adăugați fotografii?',
+        [
+          { text: 'Nu', style: 'cancel' },
+          {
+            text: 'Da, adaugă',
+            onPress: () => navigation.navigate('PhotoCMRForm')
+          }
+        ]
+      );
+      return;
+    }
+
+    // Navigate to photo viewing screen
+    navigation.navigate('PhotoCMRForm');
+  };
 
   // Handle UIT edit button press
   const handleEditUIT = () => {
@@ -478,6 +536,22 @@ const TransportMainPage = ({ navigation }) => {
               Încarcă o fotografie cu CMR-ul în format fizic
             </Text>
           </TouchableOpacity>
+
+          {/* View CMR Photos Button - only show if photos exist */}
+          {cmrStatus?.has_physical_cmr && (
+            <TouchableOpacity
+              style={[styles.selectionButton, { marginBottom: 20, backgroundColor: '#10B981' }]}
+              onPress={handleViewCMRPhotos}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: '#059669' }]}>
+                <Ionicons name="images-outline" size={32} color="#FFFFFF" />
+              </View>
+              <Text style={styles.selectionButtonText}>Vezi Fotografii CMR</Text>
+              <Text style={styles.selectionDescription}>
+                Vizualizează fotografiile CMR încărcate ({cmrStatus.physical_cmr_count} {cmrStatus.physical_cmr_count === 1 ? 'fotografie' : 'fotografii'})
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {/* Download CMR Button */}
           <TouchableOpacity 

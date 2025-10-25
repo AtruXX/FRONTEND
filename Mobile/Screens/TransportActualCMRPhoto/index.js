@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ScrollView, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert, ScrollView, Image, Dimensions, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetDriverQueueQuery } from '../../services/transportService';
-import { useUploadCMRDocumentsMutation } from '../../services/CMRService';
+import { useUploadCMRFizicMutation, useGetCMRStatusQuery, useGetCMRCompleteQuery } from '../../services/CMRService';
 import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
@@ -13,6 +13,7 @@ import PageHeader from "../../components/General/Header";
 const PhotoCMRForm = ({ navigation }) => {
   const { showLoading, hideLoading } = useLoading();
   const [selectedImages, setSelectedImages] = useState([]);
+  const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
 
   // Get user profile to access active transport data
   const {
@@ -30,8 +31,25 @@ const PhotoCMRForm = ({ navigation }) => {
     refetch: refetchQueue
   } = useGetDriverQueueQuery();
 
-  // Upload mutation
-  const [uploadCMRDocuments, { isLoading: isUploading }] = useUploadCMRDocumentsMutation();
+  // Upload mutation - using new dedicated endpoint
+  const [uploadCMRFizic, { isLoading: isUploading }] = useUploadCMRFizicMutation();
+
+  // Get CMR status to show current state
+  const {
+    data: cmrStatus,
+    refetch: refetchCMRStatus
+  } = useGetCMRStatusQuery(activeTransportId, {
+    skip: !activeTransportId
+  });
+
+  // Get complete CMR data including physical photos
+  const {
+    data: cmrCompleteData,
+    isLoading: cmrCompleteLoading,
+    refetch: refetchCMRComplete
+  } = useGetCMRCompleteQuery(activeTransportId, {
+    skip: !activeTransportId
+  });
 
   // Smart transport ID detection with fallback
   const getActiveTransportId = () => {
@@ -65,12 +83,12 @@ const PhotoCMRForm = ({ navigation }) => {
 
   // Update global loading state
   useEffect(() => {
-    if (profileLoading || queueLoading || isUploading) {
+    if (profileLoading || queueLoading || isUploading || cmrCompleteLoading) {
       showLoading();
     } else {
       hideLoading();
     }
-  }, [profileLoading, queueLoading, isUploading, showLoading, hideLoading]);
+  }, [profileLoading, queueLoading, isUploading, cmrCompleteLoading, showLoading, hideLoading]);
 
   // Handle camera capture
   const handleCameraCapture = async () => {
@@ -178,7 +196,7 @@ const PhotoCMRForm = ({ navigation }) => {
     );
   };
 
-  // Handle upload
+  // Handle upload using new dedicated endpoint
   const handleUpload = async () => {
     if (selectedImages.length === 0) {
       Alert.alert('Nicio imagine selectată', 'Vă rugăm să adăugați cel puțin o imagine sau document CMR.');
@@ -191,22 +209,53 @@ const PhotoCMRForm = ({ navigation }) => {
     }
 
     try {
-      await uploadCMRDocuments({
-        activeTransportId,
-        documents: selectedImages
-      }).unwrap();
+      let uploadedCount = 0;
+      const errors = [];
 
-      Alert.alert(
-        'Upload reușit',
-        'Documentele CMR au fost încărcate cu succes!',
-        [{
-          text: 'OK',
-          onPress: () => navigation.goBack()
-        }]
-      );
+      // Upload each document individually using the new endpoint
+      for (let i = 0; i < selectedImages.length; i++) {
+        const doc = selectedImages[i];
+        try {
+          await uploadCMRFizic({
+            transportId: activeTransportId,
+            document: doc,
+            title: doc.title || `CMR Fizic ${i + 1}`
+          }).unwrap();
+          uploadedCount++;
+        } catch (error) {
+          errors.push(`${doc.title || doc.name}: ${error.message}`);
+        }
+      }
 
-      // Clear selected images after successful upload
-      setSelectedImages([]);
+      // Refresh CMR status and complete data after upload
+      await refetchCMRStatus();
+      await refetchCMRComplete();
+
+      if (uploadedCount === selectedImages.length) {
+        Alert.alert(
+          'Upload reușit',
+          `${uploadedCount} document${uploadedCount > 1 ? 'e' : ''} CMR încărcat${uploadedCount > 1 ? 'e' : ''} cu succes!`,
+          [{
+            text: 'OK',
+            onPress: () => navigation.goBack()
+          }]
+        );
+        setSelectedImages([]);
+      } else if (uploadedCount > 0) {
+        Alert.alert(
+          'Upload parțial',
+          `${uploadedCount} documente încărcate. ${errors.length} eșuate:\n${errors.join('\n')}`,
+          [{ text: 'OK' }]
+        );
+        // Keep only failed images
+        setSelectedImages(selectedImages.slice(uploadedCount));
+      } else {
+        Alert.alert(
+          'Eroare upload',
+          `Nu s-au putut încărca documentele:\n${errors.join('\n')}`,
+          [{ text: 'OK' }]
+        );
+      }
     } catch (error) {
       Alert.alert(
         'Eroare upload',
@@ -220,12 +269,21 @@ const PhotoCMRForm = ({ navigation }) => {
     try {
       await Promise.all([
         refetchProfile(),
-        refetchQueue()
+        refetchQueue(),
+        refetchCMRComplete()
       ]);
     } catch (error) {
       // Retry failed, but we don't need to log it
     }
-  }, [refetchProfile, refetchQueue]);
+  }, [refetchProfile, refetchQueue, refetchCMRComplete]);
+
+  // Handle viewing a photo in full screen
+  const handleViewPhoto = (photo) => {
+    setSelectedPhotoForView(photo);
+  };
+
+  // Get existing CMR photos from complete data
+  const existingPhotos = cmrCompleteData?.physical_cmrs || [];
 
   // Render image preview
   const renderImagePreview = (image) => {
@@ -319,6 +377,84 @@ const PhotoCMRForm = ({ navigation }) => {
       />
 
       <ScrollView style={styles.photoFormContainer} contentContainerStyle={styles.photoFormContent}>
+        {/* CMR Status Badge */}
+        {cmrStatus && (
+          <View style={[styles.instructionsContainer, { borderLeftColor:
+            cmrStatus.status === 'both' ? '#10B981' :
+            cmrStatus.status === 'digital_only' ? '#3B82F6' :
+            cmrStatus.status === 'physical_only' ? '#F59E0B' :
+            '#EF4444'
+          }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <Ionicons
+                name={
+                  cmrStatus.status === 'both' ? 'checkmark-circle' :
+                  cmrStatus.status === 'digital_only' ? 'document-text' :
+                  cmrStatus.status === 'physical_only' ? 'camera' :
+                  'alert-circle'
+                }
+                size={24}
+                color={
+                  cmrStatus.status === 'both' ? '#10B981' :
+                  cmrStatus.status === 'digital_only' ? '#3B82F6' :
+                  cmrStatus.status === 'physical_only' ? '#F59E0B' :
+                  '#EF4444'
+                }
+              />
+              <Text style={[styles.instructionsTitle, { marginLeft: 8, marginBottom: 0 }]}>
+                Status CMR: {
+                  cmrStatus.status === 'both' ? 'Complet (Digital + Fizic)' :
+                  cmrStatus.status === 'digital_only' ? 'Doar Digital' :
+                  cmrStatus.status === 'physical_only' ? 'Doar Fizic' :
+                  'Lipsă'
+                }
+              </Text>
+            </View>
+            <Text style={styles.instructionsText}>
+              {cmrStatus.has_digital_cmr && `• CMR Digital: ${cmrStatus.digital_cmr_completed_percentage || '0%'}\n`}
+              {cmrStatus.has_physical_cmr && `• CMR Fizice: ${cmrStatus.physical_cmr_count} document(e)\n`}
+              {!cmrStatus.has_digital_cmr && !cmrStatus.has_physical_cmr && '• Nu există CMR pentru acest transport'}
+            </Text>
+          </View>
+        )}
+
+        {/* Existing CMR Photos Section */}
+        {existingPhotos.length > 0 && (
+          <View style={styles.existingPhotosSection}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+              <Ionicons name="images" size={24} color="#10B981" />
+              <Text style={[styles.instructionsTitle, { marginLeft: 8, marginBottom: 0, color: '#10B981' }]}>
+                Fotografii CMR Existente ({existingPhotos.length})
+              </Text>
+            </View>
+            <View style={styles.imagesGrid}>
+              {existingPhotos.map((photo, index) => (
+                <TouchableOpacity
+                  key={photo.id || index}
+                  style={[styles.imagePreviewContainer, { width: imageSize, height: imageSize }]}
+                  onPress={() => handleViewPhoto(photo)}
+                >
+                  <Image
+                    source={{ uri: photo.document }}
+                    style={styles.imagePreview}
+                    resizeMode="cover"
+                  />
+                  <View style={[styles.imageTypeIndicator, { backgroundColor: '#10B981' }]}>
+                    <Ionicons name="checkmark" size={16} color="white" />
+                  </View>
+                  {photo.title && (
+                    <View style={styles.photoTitleOverlay}>
+                      <Text style={styles.photoTitleText} numberOfLines={1}>
+                        {photo.title}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
           <Ionicons name="information-circle" size={24} color="#3B82F6" />
@@ -328,7 +464,7 @@ const PhotoCMRForm = ({ navigation }) => {
             • Fotografiați într-o zonă bine luminată{'\n'}
             • Evitați umbrele sau reflexii{'\n'}
             • Puteți adăuga multiple pagini sau documente{'\n'}
-            • Acceptăm și fișiere PDF
+            • Acceptăm imagini (JPEG, PNG, GIF, WebP) și fișiere PDF
           </Text>
         </View>
 
@@ -411,6 +547,45 @@ const PhotoCMRForm = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
+
+      {/* Full Screen Photo Viewer Modal */}
+      <Modal
+        visible={selectedPhotoForView !== null}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setSelectedPhotoForView(null)}
+      >
+        <View style={styles.fullScreenModalOverlay}>
+          <TouchableOpacity
+            style={styles.closeFullScreenButton}
+            onPress={() => setSelectedPhotoForView(null)}
+          >
+            <Ionicons name="close-circle" size={40} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {selectedPhotoForView && (
+            <View style={styles.fullScreenImageContainer}>
+              <Image
+                source={{ uri: selectedPhotoForView.document }}
+                style={styles.fullScreenImage}
+                resizeMode="contain"
+              />
+              {selectedPhotoForView.title && (
+                <View style={styles.fullScreenPhotoInfo}>
+                  <Text style={styles.fullScreenPhotoTitle}>
+                    {selectedPhotoForView.title}
+                  </Text>
+                  {selectedPhotoForView.uploaded_at && (
+                    <Text style={styles.fullScreenPhotoDate}>
+                      Încărcat: {new Date(selectedPhotoForView.uploaded_at).toLocaleDateString('ro-RO')}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

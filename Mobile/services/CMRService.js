@@ -292,7 +292,179 @@ export const useCreateCMRDataMutation = () => {
   return [createCMRDataMutation, { isLoading, error }];
 };
 
-// Custom hook for uploading CMR documents/photos as transport documents
+// Custom hook for checking CMR status (digital/physical/both/none)
+export const useGetCMRStatusQuery = (transportId, options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchCMRStatus = useCallback(async () => {
+    if (options.skip || !transportId) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      const response = await fetch(`${BASE_URL}cmr-status/${transportId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const statusData = await response.json();
+      setData(statusData);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [transportId, options.skip]);
+
+  useEffect(() => {
+    fetchCMRStatus();
+  }, [fetchCMRStatus]);
+
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: fetchCMRStatus,
+  };
+};
+
+// Custom hook for uploading physical CMR documents using new dedicated endpoint
+export const useUploadCMRFizicMutation = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const uploadCMRFizic = useCallback(async ({ transportId, document, title }) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      const formData = new FormData();
+
+      // Add document to form data
+      formData.append('document', {
+        uri: document.uri,
+        type: document.type || document.mimeType || 'image/jpeg',
+        name: document.name || `cmr_fizic_${Date.now()}.${document.type?.includes('pdf') ? 'pdf' : 'jpg'}`,
+      });
+
+      // Add optional title
+      if (title) {
+        formData.append('title', title);
+      }
+
+      const response = await fetch(`${BASE_URL}cmr-fizic/${transportId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Token ${token}`,
+          // Don't set Content-Type - browser will set it automatically with boundary
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      setIsLoading(false);
+      return data;
+    } catch (err) {
+      setIsLoading(false);
+      setError(err);
+      throw err;
+    }
+  }, []);
+
+  const uploadCMRFizicMutation = useCallback((variables) => {
+    const promise = uploadCMRFizic(variables);
+    promise.unwrap = () => promise;
+    return promise;
+  }, [uploadCMRFizic]);
+
+  return [uploadCMRFizicMutation, { isLoading, error }];
+};
+
+// Custom hook for getting complete CMR data (digital + physical)
+export const useGetCMRCompleteQuery = (transportId, options = {}) => {
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchCMRComplete = useCallback(async () => {
+    if (options.skip || !transportId) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No auth token found');
+      }
+
+      const response = await fetch(`${BASE_URL}cmr-complete/${transportId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorData}`);
+      }
+
+      const completeData = await response.json();
+      setData(completeData);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [transportId, options.skip]);
+
+  useEffect(() => {
+    fetchCMRComplete();
+  }, [fetchCMRComplete]);
+
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: fetchCMRComplete,
+  };
+};
+
+// LEGACY: Keep for backward compatibility but deprecated in favor of useUploadCMRFizicMutation
 export const useUploadCMRDocumentsMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -307,36 +479,32 @@ export const useUploadCMRDocumentsMutation = () => {
         throw new Error('No auth token found');
       }
 
-      // Upload each document separately as the backend expects individual uploads
+      // Upload each document using the new cmr-fizic endpoint
       const uploadResults = [];
 
       for (let i = 0; i < documents.length; i++) {
         const document = documents[i];
         const formData = new FormData();
 
-        // Add document to form data with correct field name
         formData.append('document', {
           uri: document.uri,
           type: document.type || (document.mimeType || 'image/jpeg'),
           name: document.name || `cmr_document_${i + 1}.${document.type === 'document' ? 'pdf' : 'jpg'}`,
         });
 
-        // Add required fields for transport document
-        formData.append('title', document.title || `CMR Document ${i + 1}`);
-        formData.append('category', 'cmr');
+        formData.append('title', document.title || `CMR Fizic ${i + 1}`);
 
-        const response = await fetch(`${BASE_URL}transport-documents/${activeTransportId}`, {
+        const response = await fetch(`${BASE_URL}cmr-fizic/${activeTransportId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Token ${token}`,
-            'Content-Type': 'multipart/form-data',
           },
           body: formData,
         });
 
         if (!response.ok) {
-          const errorData = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errorData}`);
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
         const data = await response.json();
@@ -356,7 +524,6 @@ export const useUploadCMRDocumentsMutation = () => {
     }
   }, []);
 
-  // Return the mutation function with unwrap method
   const uploadCMRDocumentsMutation = useCallback((variables) => {
     const promise = uploadCMRDocuments(variables);
     promise.unwrap = () => promise;
@@ -366,7 +533,7 @@ export const useUploadCMRDocumentsMutation = () => {
   return [uploadCMRDocumentsMutation, { isLoading, error }];
 };
 
-// Custom hook for downloading CMR document
+// Custom hook for downloading CMR document (PDF generated by dispatcher)
 export const useDownloadCMRDocumentMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -381,10 +548,14 @@ export const useDownloadCMRDocumentMutation = () => {
         throw new Error('No auth token found');
       }
 
-      const response = await fetch(`${BASE_URL}cmr/download/${activeTransportId}`, {
+      console.log('📥 Fetching CMR complete data for transport:', activeTransportId);
+
+      // Get complete CMR data which includes physical CMR PDFs
+      const response = await fetch(`${BASE_URL}cmr-complete/${activeTransportId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Token ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
@@ -393,16 +564,52 @@ export const useDownloadCMRDocumentMutation = () => {
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
-      // Handle the file download response
-      const blob = await response.blob();
-      
+      const cmrCompleteData = await response.json();
+      console.log('📄 CMR Complete Data:', cmrCompleteData);
+
+      // Find PDF documents (auto-saved by dispatcher)
+      const physicalCMRs = cmrCompleteData.physical_cmrs || [];
+      const pdfDocuments = physicalCMRs.filter(doc =>
+        doc.document && (
+          doc.document.toLowerCase().endsWith('.pdf') ||
+          doc.title?.includes('CMR Digital')
+        )
+      );
+
+      console.log('📋 Found PDF documents:', pdfDocuments.length);
+
+      if (pdfDocuments.length === 0) {
+        throw new Error('Nu există niciun document CMR PDF disponibil pentru descărcare.');
+      }
+
+      // Get the most recent PDF (they are usually ordered by creation date)
+      const latestPDF = pdfDocuments[pdfDocuments.length - 1];
+      const pdfUrl = latestPDF.document;
+
+      console.log('📥 Opening PDF from:', pdfUrl);
+
+      // Import required React Native modules
+      const { Linking } = require('react-native');
+
+      // Open the PDF URL directly in the browser or PDF viewer
+      const canOpen = await Linking.canOpenURL(pdfUrl);
+
+      if (!canOpen) {
+        throw new Error('Nu se poate deschide documentul PDF');
+      }
+
+      await Linking.openURL(pdfUrl);
+
+      console.log('✅ PDF opened successfully');
+
       setIsLoading(false);
       return {
-        blob,
-        filename: `CMR_Transport_${activeTransportId}.pdf`,
-        url: URL.createObjectURL(blob)
+        success: true,
+        url: pdfUrl,
+        pdfCount: pdfDocuments.length
       };
     } catch (err) {
+      console.error('❌ CMR Download Error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
