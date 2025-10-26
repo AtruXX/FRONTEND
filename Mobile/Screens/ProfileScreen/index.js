@@ -17,7 +17,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetTotalTransportsQuery } from '../../services/transportService';
 import { useGetPersonalDocumentsQuery } from '../../services/documentsService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL";
 import PageHeader from "../../components/General/Header";
@@ -147,8 +146,7 @@ const AlertItem = React.memo(({ doc }) => {
 
 const ProfileScreen = React.memo(() => {
   const navigation = useNavigation();
-  const { showLoading, hideLoading } = useLoading();
-  
+
   // Get user profile using the service
   const {
     data: profileData,
@@ -177,17 +175,8 @@ const ProfileScreen = React.memo(() => {
   const [contactExpanded, setContactExpanded] = useState(false);
   const [documentsExpanded, setDocumentsExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
-  const dispatcherNumber = '0745346397';
 
-  // Update global loading state based on profile, transports, and documents loading
-  useEffect(() => {
-    if (profileLoading || transportsLoading || documentsLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [profileLoading, transportsLoading, documentsLoading, showLoading, hideLoading]);
+  const dispatcherNumber = '0745346397';
 
   // Process documents to identify expiring ones
   useEffect(() => {
@@ -389,7 +378,6 @@ const ProfileScreen = React.memo(() => {
           style: 'destructive',
           onPress: async () => {
             try {
-              showLoading();
               const token = await AsyncStorage.getItem('authToken');
 
               // Clear local storage first
@@ -429,14 +417,12 @@ const ProfileScreen = React.memo(() => {
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Eroare', 'A apărut o eroare în timpul delogării. Încearcă din nou.');
-            } finally {
-              hideLoading();
             }
           },
         },
       ]
     );
-  }, [navigation, showLoading, hideLoading]);
+  }, [navigation]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

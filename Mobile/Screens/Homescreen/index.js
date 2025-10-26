@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { styles } from "./styles";
 import COLORS from "../../utils/COLORS.js";
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import { useChangeDriverStatusMutation } from "../../services/statusUpdateService";
 import { useNotifications } from "../NotificationsContext/index.js";
 import { NotificationBadge } from "../../components/Notifications/index.js";
@@ -49,7 +48,6 @@ const StatusDisplay = React.memo(({ isOnRoad, currentStatus }) => (
 
 const HomeScreen = React.memo(() => {
   const navigation = useNavigation();
-  const { showLoading, hideLoading } = useLoading();
   const { unreadCount } = useNotifications();
   const [currentDate, setCurrentDate] = useState(new Date());
 const [changeDriverStatus] = useChangeDriverStatusMutation();
@@ -101,19 +99,9 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
     return () => clearInterval(intervalId);
   }, []);
 
-  // Optimized loading management - removed unstable dependencies
-  useEffect(() => {
-    if (isProfileLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [isProfileLoading, showLoading, hideLoading]); // Include all dependencies
-
   // Memoized handlers
   const handleStatusChange = useCallback(async () => {
     try {
-      showLoading();
 
       // Get current status from profile data
       const currentOnRoadStatus = profileData?.on_road ?? profileData?.driver?.on_road ?? false;
@@ -146,10 +134,8 @@ const [changeDriverStatus] = useChangeDriverStatusMutation();
           { text: 'OK', style: 'default' }
         ]
       );
-    } finally {
-      hideLoading();
     }
-  }, [profileData, changeDriverStatus, refetchProfile, showLoading, hideLoading]);
+  }, [profileData, changeDriverStatus, refetchProfile]);
 
   // Update the profileInfo calculation to handle both data structures:
   const profileInfo = useMemo(() => {

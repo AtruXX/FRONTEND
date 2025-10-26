@@ -6,7 +6,6 @@ import { useNavigation } from '@react-navigation/native';
 
 import { styles } from "./styles";
 import COLORS from "../../utils/COLORS.js";
-import { useLoading } from "../../components/General/loadingSpinner.js";
 
 // Import the hooks from authService
 import { useLoginMutation } from "../../services/authService";
@@ -15,7 +14,6 @@ const LoginScreen = () => {
   const [phone_number, setPhoneNumber] = useState('+40 ');
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
-  const { showLoading, hideLoading } = useLoading();
   
   // RTK Query mutation hook
   const [login, { isLoading: isLoginLoading, error: loginError }] = useLoginMutation();
@@ -89,15 +87,6 @@ const LoginScreen = () => {
       Alert.alert('Eroare autentificare', errorMessage);
     }
   };
-
-  // Update global loading state based on RTK Query loading state
-  React.useEffect(() => {
-    if (isLoginLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [isLoginLoading, showLoading, hideLoading]);
 
   return (
     <View style={styles.container}>

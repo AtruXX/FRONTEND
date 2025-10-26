@@ -18,7 +18,6 @@ import {
   useCreateLeaveRequestMutation,
   useUpdateLeaveRequestMutation
 } from '../../services/leaveService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 
 // Date Range Selector Component
@@ -235,7 +234,6 @@ const LeaveRequestForm = React.memo(({
 
 // Main Leave Request Screen
 const LeaveRequestScreen = React.memo(({ navigation, route }) => {
-  const { showLoading, hideLoading } = useLoading();
   const editingRequest = route.params?.request; // For editing existing request
   const isEditing = !!editingRequest;
 
@@ -249,15 +247,6 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
   const [updateLeaveRequest, { isLoading: isUpdating }] = useUpdateLeaveRequestMutation();
 
   const isSubmitting = isCreating || isUpdating;
-
-  // Update global loading state
-  useEffect(() => {
-    if (isSubmitting) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [isSubmitting, showLoading, hideLoading]);
 
   const handleStartDateSelect = useCallback((date) => {
     setStartDate(date);

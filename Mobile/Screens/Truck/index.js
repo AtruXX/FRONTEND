@@ -20,11 +20,9 @@ import {
   useGetTruckDocumentsQuery,
   useGetTrailerQuery
 } from '../../services/vehicleService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 
 const TruckPageScreen = ({ navigation }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [refreshing, setRefreshing] = useState(false);
 
   // Get user profile
@@ -67,15 +65,6 @@ const TruckPageScreen = ({ navigation }) => {
     error: trailerError,
     refetch: refetchTrailer
   } = useGetTrailerQuery(activeTransport?.trailer);
-
-  // Update global loading state
-  useEffect(() => {
-    if (profileLoading || transportLoading || truckLoading || documentsLoading || trailerLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [profileLoading, transportLoading, truckLoading, documentsLoading, trailerLoading, showLoading, hideLoading]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

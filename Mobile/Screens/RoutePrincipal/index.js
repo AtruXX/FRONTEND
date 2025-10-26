@@ -6,12 +6,10 @@ import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetTransportByIdQuery } from '../../services/transportService';
 import { RouteService } from '../../services/routeService';
 import { MapService } from '../../services/mapService';
-import { useLoading } from '../../components/General/loadingSpinner.js';
 import PageHeader from '../../components/General/Header';
 import { styles } from './styles';
 
 const RoutePrincipalScreen = ({ navigation }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [routeData, setRouteData] = useState(null);
   const [processingRoute, setProcessingRoute] = useState(false);
   const [error, setError] = useState(null);
@@ -32,17 +30,9 @@ const RoutePrincipalScreen = ({ navigation }) => {
     isLoading: transportLoading,
     error: transportError
   } = useGetTransportByIdQuery(activeTransportId, { 
-    skip: !activeTransportId || profileLoading || profileError 
+    skip: !activeTransportId || profileLoading || profileError
   });
 
-  useEffect(() => {
-    if (profileLoading || transportLoading || processingRoute) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [profileLoading, transportLoading, processingRoute, showLoading, hideLoading]);
-  
   useEffect(() => {
     processTransportRoute();
   }, [transportData]);

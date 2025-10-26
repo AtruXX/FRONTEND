@@ -25,7 +25,6 @@ import {
   useGetCMRStatusQuery,
   CMR_ERROR_TYPES
 } from '../../services/CMRService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles';
 import PageHeader from "../../components/General/Header";
 
@@ -229,7 +228,6 @@ const EditingFooter = React.memo(({
 ));
 
 const CMRDigitalForm = React.memo(({ navigation }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [editingMode, setEditingMode] = useState(false);
@@ -314,15 +312,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
   // Mutations
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
   const [createCMRData, { isLoading: isCreating }] = useCreateCMRDataMutation();
-
-  // Update global loading state
-  useEffect(() => {
-    if (profileLoading || queueLoading || cmrLoading || isUpdating || isCreating) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [profileLoading, queueLoading, cmrLoading, isUpdating, isCreating, showLoading, hideLoading]);
 
   // European countries in Romanian
   const europeanCountries = useMemo(() => [

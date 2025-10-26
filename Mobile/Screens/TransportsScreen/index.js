@@ -19,7 +19,6 @@ import {
   useStartNextTransportMutation
 } from '../../services/transportService';
 import { useGetUserProfileQuery } from '../../services/profileService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 import TransportDetailsModal from "../../components/TransportDetailsModal";
 
@@ -325,7 +324,6 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
 ));
 
 const TransportsScreen = React.memo(({ navigation, route }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [startingTransport, setStartingTransport] = useState(null);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
   const [selectedTransport, setSelectedTransport] = useState(null);
@@ -360,15 +358,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
 
   const [setActiveTransportMutation, { isLoading: isSettingActive }] = useSetActiveTransportMutation();
   const [startNextTransportMutation, { isLoading: isStartingNext }] = useStartNextTransportMutation();
-
-  // Update global loading state
-  useEffect(() => {
-    if (transportsLoading || profileLoading || isSettingActive || queueLoading || isStartingNext) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [transportsLoading, profileLoading, isSettingActive, queueLoading, isStartingNext, showLoading, hideLoading]);
 
   // Memoized data extraction
   const { transports, activeTransportId, loading, refreshing, error, stats } = useMemo(() => {

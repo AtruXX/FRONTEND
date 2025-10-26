@@ -17,7 +17,6 @@ import {
   useStartNextTransportMutation,
   useGetNextTransportQuery
 } from '../../services/transportService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 
 // Transport Status Indicator Component
@@ -196,7 +195,6 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
 
 // Main Queue Screen Component
 const QueueScreen = React.memo(({ navigation, route }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [startingTransport, setStartingTransport] = useState(null);
 
   // Queue system hooks
@@ -209,15 +207,6 @@ const QueueScreen = React.memo(({ navigation, route }) => {
   } = useGetDriverQueueQuery();
 
   const [startNextTransportMutation, { isLoading: isStartingNext }] = useStartNextTransportMutation();
-
-  // Update global loading state
-  useEffect(() => {
-    if (queueLoading || isStartingNext) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [queueLoading, isStartingNext, showLoading, hideLoading]);
 
   // Memoized data extraction
   const { queue, nextTransportId, currentTransportId, queueCount, hasTransportable } = useMemo(() => {

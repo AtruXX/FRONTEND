@@ -6,7 +6,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import PageHeader from '../../components/General/Header';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import Calendar from '../../components/General/Calendar';
 import { 
   useGetPersonalDocumentsQuery, 
@@ -16,8 +15,6 @@ import {
 } from '../../services/documentsService';
 
 const DocumentsScreen = ({ navigation, route }) => {
-  const { showLoading, hideLoading } = useLoading();
-  
   // Local state
   const [selectedFile, setSelectedFile] = useState(null);
   const [category, setCategory] = useState(''); // No default category
@@ -42,15 +39,6 @@ const DocumentsScreen = ({ navigation, route }) => {
   const recentDocuments = documents || [];
   const loading = documentsLoading;
   const error = documentsError;
-
-  // Update global loading state based on local loading states
-  useEffect(() => {
-    if (loading || isUploading || isDeleting) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [loading, isUploading, isDeleting, showLoading, hideLoading]);
 
   const handleRetry = useCallback(async () => {
     await refetchDocuments();

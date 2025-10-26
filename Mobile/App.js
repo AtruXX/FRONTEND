@@ -32,7 +32,6 @@ import ExpiredDocuments from "./Screens/ExpiredDocuments/index.js";
 import NotificationsScreen from "./Screens/NotificationsScreen/index.js";
 // Import your notifications context
 import { NotificationsProvider } from './Screens/NotificationsContext/index.js';
-import { LoadingProvider } from './components/General/loadingSpinner.js';
 import { NotificationManager } from './components/Notifications/index.js';
 import Route from './Screens/RoutePrincipal/index.js';
 import { ensureFirebaseInitialized, ensureFirebaseAuth } from './services/firebaseApp';
@@ -415,11 +414,9 @@ function AppNavigator() {
     <Provider store={store}>
       <SafeAreaProvider>
         <NotificationsProvider>
-          <LoadingProvider>
-            <NavigationContainer>
-              <AppNavigatorContent />
-            </NavigationContainer>
-          </LoadingProvider>
+          <NavigationContainer>
+            <AppNavigatorContent />
+          </NavigationContainer>
         </NotificationsProvider>
       </SafeAreaProvider>
     </Provider>

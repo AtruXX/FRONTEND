@@ -6,12 +6,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetDriverQueueQuery } from '../../services/transportService';
 import { useUploadCMRFizicMutation, useGetCMRStatusQuery, useGetCMRCompleteQuery } from '../../services/CMRService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
 
 const PhotoCMRForm = ({ navigation }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
 
@@ -80,15 +78,6 @@ const PhotoCMRForm = ({ navigation }) => {
 
   const screenWidth = Dimensions.get('window').width;
   const imageSize = (screenWidth - 60) / 2; // 2 images per row with margins
-
-  // Update global loading state
-  useEffect(() => {
-    if (profileLoading || queueLoading || isUploading || cmrCompleteLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [profileLoading, queueLoading, isUploading, cmrCompleteLoading, showLoading, hideLoading]);
 
   // Handle camera capture
   const handleCameraCapture = async () => {

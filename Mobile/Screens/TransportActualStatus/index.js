@@ -18,13 +18,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useGetDriverQueueQuery } from '../../services/transportService';
-import { 
-  useGetActiveTransportStatusQuery, 
+import {
+  useGetActiveTransportStatusQuery,
   useUpdateTransportStatusMutation,
   useUploadGoodsPhotosMutation,
-  useGetGoodsPhotosQuery 
+  useGetGoodsPhotosQuery
 } from '../../services/statusService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles';
 import PageHeader from "../../components/General/Header";
 
@@ -223,7 +222,6 @@ const ButtonContainer = React.memo(({
 ));
 
 const TransportStatusPage = React.memo(({ navigation }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [modalOptions, setModalOptions] = useState([]);
@@ -301,24 +299,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
   // Mutations
   const [updateTransportStatus, { isLoading: isUpdating }] = useUpdateTransportStatusMutation();
   const [uploadGoodsPhotos, { isLoading: isUploading }] = useUploadGoodsPhotosMutation();
-
-  // Update global loading state - but only show loading if we actually need the data
-  useEffect(() => {
-    // Only show loading for profile and queue if they're actually loading
-    // For status and photos, only show loading if we have an active transport ID
-    const shouldShowLoading =
-      profileLoading ||
-      queueLoading ||
-      (activeTransportId && (statusLoading || photosLoading)) ||
-      isUpdating ||
-      isUploading;
-
-    if (shouldShowLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [profileLoading, queueLoading, statusLoading, photosLoading, isUpdating, isUploading, activeTransportId, showLoading, hideLoading]);
 
   // Status form data
   const [statusFormData, setStatusFormData] = useState({

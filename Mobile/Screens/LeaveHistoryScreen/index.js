@@ -15,7 +15,6 @@ import {
   useGetLeaveRequestsQuery,
   useDeleteLeaveRequestMutation
 } from '../../services/leaveService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 
 // Status Filter Component
@@ -249,7 +248,6 @@ const EmptyState = React.memo(({ selectedStatus, onCreateNew, onRefresh }) => {
 
 // Main Leave History Screen
 const LeaveHistoryScreen = React.memo(({ navigation, route }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [deletingRequestId, setDeletingRequestId] = useState(null);
 
@@ -265,15 +263,6 @@ const LeaveHistoryScreen = React.memo(({ navigation, route }) => {
   });
 
   const [deleteLeaveRequest] = useDeleteLeaveRequestMutation();
-
-  // Update global loading state
-  useEffect(() => {
-    if (requestsLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [requestsLoading, showLoading, hideLoading]);
 
   // Filter and sort requests
   const requests = useMemo(() => {

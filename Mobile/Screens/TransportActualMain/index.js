@@ -4,13 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation, useGetTransportByIdQuery, useGetDriverQueueQuery } from '../../services/transportService';
 import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation, useGetCMRStatusQuery } from '../../services/CMRService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
 
 const TransportMainPage = ({ navigation }) => {
-  const { showLoading, hideLoading } = useLoading();
-
   // UIT edit modal state
   const [showUitModal, setShowUitModal] = useState(false);
   const [uitInput, setUitInput] = useState('');
@@ -122,25 +119,6 @@ const TransportMainPage = ({ navigation }) => {
   } = useGetCMRStatusQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
-
-  // Update global loading state - but only show loading if we actually need the data
-  useEffect(() => {
-    // Only show loading for profile and queue if they're actually loading
-    // For transport and CMR, only show loading if we have an active transport ID
-    const shouldShowLoading =
-      profileLoading ||
-      queueLoading ||
-      (activeTransportId && (transportLoading || cmrLoading || cmrStatusLoading)) ||
-      isFinalizing ||
-      isDownloading ||
-      isUpdatingCMR;
-
-    if (shouldShowLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [profileLoading, queueLoading, transportLoading, cmrLoading, cmrStatusLoading, isFinalizing, isDownloading, isUpdatingCMR, activeTransportId, showLoading, hideLoading]);
 
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {

@@ -15,7 +15,6 @@ import { styles } from './styles';
 import {
   useGetLeaveRequestsQuery
 } from '../../services/leaveService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 
 // Calendar Legend Component
@@ -156,7 +155,6 @@ const UpcomingLeave = React.memo(({ upcomingLeave, navigation }) => {
 
 // Main Leave Calendar Screen
 const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
-  const { showLoading, hideLoading } = useLoading();
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7) // YYYY-MM format
   );
@@ -178,15 +176,6 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
     error: requestsError,
     refetch: refetchRequests
   } = useGetLeaveRequestsQuery();
-
-  // Update global loading state
-  useEffect(() => {
-    if (requestsLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [requestsLoading, showLoading, hideLoading]);
 
   // Process driver's own leave requests to create marked dates
   const markedDates = useMemo(() => {

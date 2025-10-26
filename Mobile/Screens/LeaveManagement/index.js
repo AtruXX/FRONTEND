@@ -17,7 +17,6 @@ import {
   useGetLeaveCalendarQuery,
   useGetLeaveRequestsQuery
 } from '../../services/leaveService';
-import { useLoading } from "../../components/General/loadingSpinner.js";
 import PageHeader from "../../components/General/Header";
 
 // Quick Stats Component
@@ -208,8 +207,6 @@ const RecentRequests = React.memo(({ requests, navigation, onRefresh }) => {
 
 // Main Leave Management Screen
 const LeaveManagement = React.memo(({ navigation, route }) => {
-  const { showLoading, hideLoading } = useLoading();
-
   // Fetch leave requests for stats and recent display
   const {
     data: requestsData,
@@ -227,15 +224,6 @@ const LeaveManagement = React.memo(({ navigation, route }) => {
     error: calendarError,
     refetch: refetchCalendar
   } = useGetLeaveCalendarQuery();
-
-  // Update global loading state
-  useEffect(() => {
-    if (requestsLoading || calendarLoading) {
-      showLoading();
-    } else {
-      hideLoading();
-    }
-  }, [requestsLoading, calendarLoading, showLoading, hideLoading]);
 
   // Refresh data when screen comes into focus
   useFocusEffect(
