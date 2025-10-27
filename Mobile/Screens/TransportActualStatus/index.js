@@ -429,25 +429,33 @@ const TransportStatusPage = React.memo(({ navigation }) => {
 
   // Memoized calculations
   const pageCalculations = useMemo(() => {
+    // Count total visible fields
     let visibleFieldCount = 0;
-    let i = 0;
-    while (i < statusFields.length) {
+    let visibleFieldsBeforeCurrent = 0;
+
+    for (let i = 0; i < statusFields.length; i++) {
       const field = statusFields[i];
-      if (!field.conditionalDisplay) {
-        visibleFieldCount++;
-      } else {
+      let isVisible = true;
+
+      if (field.conditionalDisplay) {
         const controllingField = statusFields.find(f => f.linkedField === field.key);
-        if (controllingField && controllingField.linkedFieldVisible(statusFormData[controllingField.key])) {
-          visibleFieldCount++;
+        isVisible = controllingField && controllingField.linkedFieldVisible(statusFormData[controllingField.key]);
+      }
+
+      if (isVisible) {
+        visibleFieldCount++;
+        // Count visible fields before the current index
+        if (i < currentIndex) {
+          visibleFieldsBeforeCurrent++;
         }
       }
-      i++;
     }
-    
+
     const totalPages = Math.ceil(visibleFieldCount / 2);
-    const currentPage = Math.floor(currentIndex / 2) + 1;
-    const percentage = (currentPage / totalPages) * 100;
-    
+    // Calculate current page based on visible fields shown so far (including current page)
+    const currentPage = Math.floor(visibleFieldsBeforeCurrent / 2) + 1;
+    const percentage = totalPages > 0 ? (currentPage / totalPages) * 100 : 0;
+
     return { totalPages, currentPage, percentage };
   }, [statusFields, statusFormData, currentIndex]);
 
@@ -596,8 +604,8 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     return currentIndex + 2 >= statusFields.length;
   }, [currentIndex, statusFields.length]);
 
-  // Handle errors first
-  if (profileError || queueError) {
+  // Handle errors - only show error if PROFILE fails (queue is optional)
+  if (profileError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -610,7 +618,7 @@ const TransportStatusPage = React.memo(({ navigation }) => {
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={40} color="#FF7285" />
           <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
-          <Text style={styles.emptyText}>Nu s-au putut încărca datele necesare pentru status transport.</Text>
+          <Text style={styles.emptyText}>Nu s-au putut încărca datele profilului. Verifică conexiunea și încearcă din nou.</Text>
           <TouchableOpacity
             style={styles.backToHomeButton}
             onPress={handleRetry}

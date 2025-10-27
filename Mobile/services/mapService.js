@@ -4,7 +4,52 @@ import { Platform, Linking, Alert } from 'react-native';
  * Service for opening external map applications
  */
 export class MapService {
-  
+
+  /**
+   * Open route in external map application using polyline
+   * @param {string|Object} polyline - GeoJSON polyline string or object
+   * @param {Object} options - Options for map opening
+   */
+  static async openRouteFromPolyline(polyline, options = {}) {
+    if (!polyline) {
+      Alert.alert('Eroare', 'Nu sunt disponibile date despre rută.');
+      return;
+    }
+
+    try {
+      // Parse polyline to get coordinates
+      let coordinates = [];
+
+      if (typeof polyline === 'string') {
+        const parsed = JSON.parse(polyline);
+        coordinates = parsed.coordinates || parsed.geometry?.coordinates || [];
+      } else if (polyline.coordinates) {
+        coordinates = polyline.coordinates;
+      } else if (polyline.geometry?.coordinates) {
+        coordinates = polyline.geometry.coordinates;
+      } else if (Array.isArray(polyline)) {
+        coordinates = polyline;
+      }
+
+      if (!coordinates || coordinates.length === 0) {
+        Alert.alert('Eroare', 'Nu s-au putut extrage coordonatele din rută.');
+        return;
+      }
+
+      // Convert to waypoints format [lng, lat] -> {latitude, longitude}
+      const waypoints = coordinates.map(coord => ({
+        latitude: coord[1],  // lat is second
+        longitude: coord[0]  // lng is first
+      }));
+
+      // Use existing openRouteInMaps with waypoints
+      await this.openRouteInMaps(waypoints, options);
+    } catch (error) {
+      console.error('Error opening route from polyline:', error);
+      Alert.alert('Eroare', 'Nu s-a putut deschide ruta în aplicația de navigație.');
+    }
+  }
+
   /**
    * Open route in external map application
    * @param {Array} waypoints - Array of location objects with latitude/longitude
@@ -205,6 +250,41 @@ export class MapService {
       console.error('Error opening location in maps:', error);
       Alert.alert('Eroare', 'Nu s-a putut deschide locația în hartă.');
     }
+  }
+
+  /**
+   * Show options for opening maps from polyline
+   * @param {string|Object} polyline - GeoJSON polyline
+   * @param {Object} routeData - Route metadata (distance, time, etc.)
+   */
+  static showPolylineMapOptions(polyline, routeData = {}) {
+    if (!polyline) {
+      Alert.alert('Eroare', 'Nu sunt disponibile date despre rută.');
+      return;
+    }
+
+    Alert.alert(
+      'Deschide Ruta',
+      `${routeData.route_distance ? `Distanță: ${(routeData.route_distance / 1000).toFixed(1)} km\n` : ''}${routeData.route_travel_time ? `Timp: ${Math.floor(routeData.route_travel_time / 3600)}h ${Math.floor((routeData.route_travel_time % 3600) / 60)}m\n` : ''}Selectează aplicația de navigație:`,
+      [
+        {
+          text: 'Google Maps',
+          onPress: () => this.openRouteFromPolyline(polyline, { preferredApp: 'Google Maps' }),
+        },
+        {
+          text: 'Waze',
+          onPress: () => this.openRouteFromPolyline(polyline, { preferredApp: 'Waze' }),
+        },
+        {
+          text: 'Altă aplicație',
+          onPress: () => this.openRouteFromPolyline(polyline, { navigation: true }),
+        },
+        {
+          text: 'Anulează',
+          style: 'cancel',
+        },
+      ]
+    );
   }
 
   /**

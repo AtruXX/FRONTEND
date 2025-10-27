@@ -311,8 +311,8 @@ const PhotoCMRForm = ({ navigation }) => {
     );
   };
 
-  // Error handling
-  if (profileError || queueError) {
+  // Error handling - only show error if PROFILE fails (queue is optional)
+  if (profileError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -325,7 +325,7 @@ const PhotoCMRForm = ({ navigation }) => {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
           <Text style={styles.errorTitle}>Eroare de profil</Text>
-          <Text style={styles.errorText}>Nu s-au putut încărca datele profilului</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca datele profilului. Verifică conexiunea și încearcă din nou.</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Încearcă din nou</Text>
           </TouchableOpacity>

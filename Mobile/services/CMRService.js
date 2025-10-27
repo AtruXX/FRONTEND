@@ -323,12 +323,23 @@ export const useGetCMRStatusQuery = (transportId, options = {}) => {
 
       if (!response.ok) {
         const errorData = await response.text();
+
+        // 404 is not an error - it just means CMR doesn't exist yet
+        if (response.status === 404) {
+          console.log('CMR status not found (404) - CMR does not exist yet');
+          setData({ has_digital_cmr: false, has_physical_cmr: false });
+          setError(null); // Don't set error for 404
+          setIsLoading(false);
+          return;
+        }
+
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const statusData = await response.json();
       setData(statusData);
     } catch (err) {
+      console.error('CMR status fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
@@ -440,12 +451,23 @@ export const useGetCMRCompleteQuery = (transportId, options = {}) => {
 
       if (!response.ok) {
         const errorData = await response.text();
+
+        // 404 is not an error - it just means CMR doesn't exist yet
+        if (response.status === 404) {
+          console.log('CMR not found (404) - this is normal for new transports');
+          setData(null);
+          setError(null); // Don't set error for 404
+          setIsLoading(false);
+          return;
+        }
+
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
 
       const completeData = await response.json();
       setData(completeData);
     } catch (err) {
+      console.error('CMR fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);

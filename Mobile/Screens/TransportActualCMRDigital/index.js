@@ -256,13 +256,31 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
 
   // Smart transport ID detection with fallback
   const getActiveTransportId = () => {
+    console.log('🔍 CMR Digital - Getting Active Transport ID');
+    console.log('  📊 Profile loading:', profileLoading, '| Queue loading:', queueLoading);
+    console.log('  ❌ Profile error:', profileError, '| Queue error:', queueError);
+    console.log('  📦 Profile active_transport:', profileData?.active_transport);
+    console.log('  🔄 Queue current_transport_id:', queueData?.current_transport_id);
+
+    // If queue loading or has error, skip queue checks and use profile
+    if (queueLoading || queueError) {
+      if (profileData?.active_transport) {
+        console.log('✅ Using profile active_transport (queue unavailable):', profileData.active_transport);
+        return profileData.active_transport;
+      }
+      console.log('⚠️ Queue unavailable and no profile active transport');
+      return null;
+    }
+
     // Priority 1: Queue system current transport
     if (queueData?.current_transport_id) {
+      console.log('✅ Using queue current_transport_id:', queueData.current_transport_id);
       return queueData.current_transport_id;
     }
 
     // Priority 2: Profile active transport (legacy system)
     if (profileData?.active_transport) {
+      console.log('✅ Using profile active_transport:', profileData.active_transport);
       return profileData.active_transport;
     }
 
@@ -270,16 +288,20 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     if (queueData?.queue && queueData.queue.length > 0) {
       const startableTransport = queueData.queue.find(t => t.can_start || t.is_current);
       if (startableTransport) {
+        console.log('✅ Using startable transport from queue:', startableTransport.transport_id);
         return startableTransport.transport_id;
       }
       // Fallback to first transport in queue
+      console.log('⚠️ Using first transport from queue:', queueData.queue[0]?.transport_id);
       return queueData.queue[0]?.transport_id;
     }
 
+    console.log('❌ No active transport ID found');
     return null;
   };
 
   const activeTransportId = getActiveTransportId();
+  console.log('📋 CMR Digital - Final activeTransportId:', activeTransportId);
 
   // Get complete CMR data (digital + physical) using new endpoint
   const {
@@ -308,6 +330,23 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
   const refetchCMR = async () => {
     await Promise.all([refetchCMRComplete(), refetchCMRStatus()]);
   };
+
+  // Logging CMR state
+  console.log('📄 CMR Digital - CMR State:');
+  console.log('  ⏳ cmrCompleteLoading:', cmrCompleteLoading);
+  console.log('  ⏳ cmrStatusLoading:', cmrStatusLoading);
+  console.log('  ⏳ cmrLoading:', cmrLoading);
+  console.log('  ❌ cmrCompleteError:', cmrCompleteError);
+  console.log('  ❌ cmrError:', cmrError);
+  console.log('  📦 cmrCompleteData:', cmrCompleteData);
+  console.log('  📄 cmrData:', cmrData);
+  console.log('  ✅ cmrStatus:', cmrStatus);
+  console.log('  ✅ cmrExists:', cmrExists);
+
+  // If CMR doesn't exist (404 or not found), don't treat it as an error
+  // Instead, show the "create new CMR" screen
+  const shouldShowCreateScreen = !cmrLoading && !cmrExists && !cmrData;
+  console.log('  🎯 shouldShowCreateScreen:', shouldShowCreateScreen);
 
   // Mutations
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
@@ -531,8 +570,9 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     />
   ), [localFormData, editingMode, updateFieldValue, handleFieldTouch]);
 
-  // Error state - handle profile/queue errors first
-  if (profileError || queueError) {
+  // Error state - only show error if PROFILE fails (queue is optional)
+  if (profileError) {
+    console.log('🚨 CMR Digital - Showing profile error screen');
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -545,7 +585,7 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
           <Text style={styles.errorTitle}>Eroare la încărcare</Text>
-          <Text style={styles.errorText}>Nu s-au putut încărca datele necesare</Text>
+          <Text style={styles.errorText}>Nu s-au putut încărca datele profilului. Verifică conexiunea și încearcă din nou.</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
             <Text style={styles.retryButtonText}>Încearcă din nou</Text>
           </TouchableOpacity>
@@ -554,10 +594,66 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     );
   }
 
-  // Enhanced CMR error handling based on error type
+  // Show "Create CMR" screen if CMR doesn't exist (not an error, just no data yet)
+  if (shouldShowCreateScreen) {
+    console.log('✨ CMR Digital - Showing create CMR screen');
+    return (
+      <SafeAreaView style={styles.container}>
+        <PageHeader
+          title="CMR Digital"
+          onBack={() => navigation.goBack()}
+          showBack={true}
+        />
+        <View style={styles.errorContainer}>
+          <Ionicons name="document-outline" size={60} color="#5A5BDE" />
+          <Text style={styles.errorTitle}>CMR nu există</Text>
+          <Text style={styles.errorText}>
+            Nu există un CMR pentru acest transport. Doriți să creați unul nou?
+          </Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={handleCreateNewCMR}
+              disabled={isCreating}
+            >
+              {isCreating ? (
+                <Ionicons name="hourglass-outline" size={20} color="#FFFFFF" />
+              ) : (
+                <Ionicons name="add" size={20} color="#FFFFFF" />
+              )}
+              <Text style={styles.createButtonText}>
+                {isCreating ? 'Se creează...' : 'Creează CMR'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={handleRetry}
+            >
+              <Text style={styles.retryButtonText}>Reîncarcă</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Enhanced CMR error handling - only for real errors (not 404)
   if (cmrError) {
-    // Handle CMR not found - offer to create new CMR
-    if (cmrError.type === CMR_ERROR_TYPES.NOT_FOUND) {
+    console.log('🚨 CMR Digital - CMR Error detected:', cmrError);
+    console.log('  Error type:', cmrError?.type);
+    console.log('  Error message:', cmrError?.message);
+
+    // Check if it's a "not found" error - if so, it's already handled above
+    const isNotFoundError = cmrError.type === CMR_ERROR_TYPES.NOT_FOUND ||
+                           cmrError?.message?.includes('nu există') ||
+                           cmrError?.message?.includes('not found') ||
+                           cmrError?.message?.includes('404');
+
+    console.log('  Is "not found" error?', isNotFoundError);
+
+    // If it's just a "not found", show create screen instead
+    if (isNotFoundError) {
+      console.log('✨ CMR Digital - Showing create screen for 404 error');
       return (
         <SafeAreaView style={styles.container}>
           <PageHeader

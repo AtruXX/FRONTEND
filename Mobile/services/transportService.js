@@ -355,8 +355,53 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
         driver: transport.driver,
         truck: transport.truck,
         trailer: transport.trailer,
-        route: transport.route
+        route: transport.route,
+        // Route data from PTV API
+        route_id: transport.route_id,
+        route_id_expires_at: transport.route_id_expires_at,
+        route_polyline: transport.route_polyline,
+        route_distance: transport.route_distance,
+        route_travel_time: transport.route_travel_time,
+        route_toll_costs: transport.route_toll_costs,
+        route_full_data: transport.route_full_data,
+        route_calculated_at: transport.route_calculated_at
       };
+
+      // If route_id exists but route_polyline is null, fetch route details from PTV
+      if (transport.route_id && !transport.route_polyline) {
+        try {
+          console.log('🗺️ Fetching route details for route_id:', transport.route_id);
+          const routeResponse = await fetch(`${BASE_URL}routes/${transport.route_id}/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (routeResponse.ok) {
+            const routeData = await routeResponse.json();
+            console.log('✅ Route data fetched successfully');
+
+            // Add route data to transformed transport
+            transformedTransport.route_polyline = routeData.polyline;
+            transformedTransport.route_distance = routeData.distance;
+            transformedTransport.route_travel_time = routeData.travelTime;
+
+            // Extract toll costs if available
+            if (routeData.toll?.costs?.prices && routeData.toll.costs.prices.length > 0) {
+              transformedTransport.route_toll_costs = routeData.toll.costs.prices[0].price;
+            }
+
+            transformedTransport.route_full_data = routeData;
+          } else {
+            console.warn('⚠️ Failed to fetch route details:', routeResponse.status);
+          }
+        } catch (error) {
+          console.error('❌ Error fetching route details:', error);
+          // Continue without route data - it's not critical
+        }
+      }
 
       setData(transformedTransport);
     } catch (err) {

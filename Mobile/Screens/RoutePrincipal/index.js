@@ -38,15 +38,54 @@ const RoutePrincipalScreen = ({ navigation }) => {
   }, [transportData]);
 
   const processTransportRoute = async () => {
+    // Check for new route_polyline field first (from PTV API)
+    if (transportData?.route_polyline) {
+      setProcessingRoute(true);
+      setError(null);
+
+      try {
+        // Request location permission for reverse geocoding
+        let { status } = await Location.requestForegroundPermissionsAsync();
+
+        if (status !== 'granted') {
+          setError('Pentru a afișa numele locațiilor, aplicația are nevoie de acces la localizare.');
+          // Still process route without geocoding
+          const basicRoute = await RouteService.processRouteData({
+            polyline: transportData.route_polyline,
+            distance: transportData.route_distance,
+            travelTime: transportData.route_travel_time
+          });
+          setRouteData(basicRoute);
+          setProcessingRoute(false);
+          return;
+        }
+
+        // Process route with full geocoding from polyline
+        const processedRoute = await RouteService.processRouteData({
+          polyline: transportData.route_polyline,
+          distance: transportData.route_distance,
+          travelTime: transportData.route_travel_time
+        });
+        setRouteData(processedRoute);
+      } catch (error) {
+        console.error('Error processing route from polyline:', error);
+        setError('Eroare la procesarea rutei. Vă rugăm să încercați din nou.');
+      } finally {
+        setProcessingRoute(false);
+      }
+      return;
+    }
+
+    // Fallback to legacy route field
     if (!transportData?.route) return;
-    
+
     setProcessingRoute(true);
     setError(null);
-    
+
     try {
       // Request location permission for reverse geocoding
       let { status } = await Location.requestForegroundPermissionsAsync();
-      
+
       if (status !== 'granted') {
         setError('Pentru a afișa numele locațiilor, aplicația are nevoie de acces la localizare.');
         // Still process route without geocoding
@@ -55,7 +94,7 @@ const RoutePrincipalScreen = ({ navigation }) => {
         setProcessingRoute(false);
         return;
       }
-      
+
       // Process route with full geocoding
       const processedRoute = await RouteService.processRouteData(transportData.route);
       setRouteData(processedRoute);
@@ -68,11 +107,22 @@ const RoutePrincipalScreen = ({ navigation }) => {
   };
 
   const handleOpenFullRoute = () => {
+    // Use new polyline-based navigation if available
+    if (transportData?.route_polyline) {
+      MapService.showPolylineMapOptions(transportData.route_polyline, {
+        route_distance: transportData.route_distance,
+        route_travel_time: transportData.route_travel_time,
+        route_toll_costs: transportData.route_toll_costs
+      });
+      return;
+    }
+
+    // Fallback to waypoints-based navigation
     if (!routeData?.locations) {
       Alert.alert('Eroare', 'Nu sunt disponibile date despre rută.');
       return;
     }
-    
+
     MapService.showMapOptions(routeData.locations);
   };
 
@@ -211,7 +261,7 @@ const RoutePrincipalScreen = ({ navigation }) => {
   }
   
   // Handle no route data
-  if (!transportData?.route) {
+  if (!transportData?.route_polyline && !transportData?.route) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -219,11 +269,11 @@ const RoutePrincipalScreen = ({ navigation }) => {
           onBack={() => navigation.goBack()}
           showBack={true}
         />
-        
+
         <View style={styles.emptyContainer}>
           <Ionicons name="map-outline" size={60} color="#5A5BDE" />
           <Text style={styles.emptyTitle}>Rută indisponibilă</Text>
-          <Text style={styles.emptyText}>Nu sunt disponibile informații despre rută pentru acest transport</Text>
+          <Text style={styles.emptyText}>Nu sunt disponibile informații despre rută pentru acest transport. Dispecerul trebuie să calculeze ruta mai întâi.</Text>
         </View>
       </SafeAreaView>
     );

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation, useGetTransportByIdQuery, useGetDriverQueueQuery } from '../../services/transportService';
 import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation, useGetCMRStatusQuery } from '../../services/CMRService';
+import { MapService } from '../../services/mapService';
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
 
@@ -36,6 +37,16 @@ const TransportMainPage = ({ navigation }) => {
 
   // SMART: Get active transport ID with intelligent fallback logic
   const getActiveTransportId = () => {
+    // If queue loading or has error, skip queue checks and use profile
+    if (queueLoading || queueError) {
+      if (profileData?.active_transport) {
+        console.log('📋 Queue unavailable, using profile active transport:', profileData.active_transport);
+        return profileData.active_transport;
+      }
+      console.log('⚠️ Queue unavailable and no profile active transport');
+      return null;
+    }
+
     // Priority 1: Queue system current transport
     if (queueData?.current_transport_id) {
       console.log('🎯 Using queue current transport:', queueData.current_transport_id);
@@ -331,8 +342,31 @@ const TransportMainPage = ({ navigation }) => {
     setShowUitModal(false);
   };
 
-  // Handle error state
-  if (profileError || queueError) {
+  // Handle opening route navigation
+  const handleOpenRouteNavigation = () => {
+    if (!activeTransportId) {
+      Alert.alert('Eroare', 'Nu există un transport activ.');
+      return;
+    }
+
+    if (!transportData?.route_polyline) {
+      Alert.alert(
+        'Rută indisponibilă',
+        'Nu există o rută calculată pentru acest transport. Dispecerul trebuie să calculeze ruta mai întâi.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    MapService.showPolylineMapOptions(transportData.route_polyline, {
+      route_distance: transportData.route_distance,
+      route_travel_time: transportData.route_travel_time,
+      route_toll_costs: transportData.route_toll_costs
+    });
+  };
+
+  // Handle error state - only show error if profile fails (queue is optional)
+  if (profileError) {
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -346,9 +380,7 @@ const TransportMainPage = ({ navigation }) => {
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
           <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
           <Text style={styles.emptyText}>
-            {profileError ? 'Nu s-au putut încărca datele profilului' :
-             queueError ? 'Nu s-au putut încărca datele cozii de transporturi' :
-             'Nu s-au putut încărca datele transportului'}
+            Nu s-au putut încărca datele profilului. Verifică conexiunea și încearcă din nou.
           </Text>
           <TouchableOpacity
             style={styles.backToHomeButton}
@@ -472,6 +504,22 @@ const TransportMainPage = ({ navigation }) => {
               Vizualizează ruta de transport și punctele de oprire
             </Text>
           </TouchableOpacity>
+
+          {/* Navigate Route Button - only show if route polyline exists */}
+          {transportData?.route_polyline && (
+            <TouchableOpacity
+              style={[styles.selectionButton, { marginBottom: 20, backgroundColor: '#10B981' }]}
+              onPress={handleOpenRouteNavigation}
+            >
+              <View style={[styles.iconCircle, { backgroundColor: '#059669' }]}>
+                <Ionicons name="navigate" size={32} color="#FFFFFF" />
+              </View>
+              <Text style={styles.selectionButtonText}>Navighează Ruta</Text>
+              <Text style={styles.selectionDescription}>
+                Deschide ruta în Google Maps sau Waze pentru navigație
+              </Text>
+            </TouchableOpacity>
+          )}
           
           {/* CMR Digital Button */}
           <TouchableOpacity
