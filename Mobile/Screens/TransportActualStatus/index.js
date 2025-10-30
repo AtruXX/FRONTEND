@@ -26,7 +26,6 @@ import {
 } from '../../services/statusService';
 import { styles } from './styles';
 import PageHeader from "../../components/General/Header";
-
 // Memoized components for better performance
 const ProgressBar = React.memo(({ currentPage, totalPages, percentage }) => (
   <View style={styles.progressContainer}>
@@ -43,7 +42,6 @@ const ProgressBar = React.memo(({ currentPage, totalPages, percentage }) => (
     </Text>
   </View>
 ));
-
 const OptionModal = React.memo(({ 
   visible, 
   options, 
@@ -58,9 +56,7 @@ const OptionModal = React.memo(({
       <Text style={styles.optionText}>{item}</Text>
     </TouchableOpacity>
   ), [onSelect]);
-
   const keyExtractor = useCallback((item) => item, []);
-
   return (
     <Modal
       visible={visible}
@@ -76,7 +72,6 @@ const OptionModal = React.memo(({
               <Ionicons name="close" size={24} color="#373A56" />
             </TouchableOpacity>
           </View>
-          
           <FlatList
             data={options}
             keyExtractor={keyExtractor}
@@ -89,7 +84,6 @@ const OptionModal = React.memo(({
     </Modal>
   );
 });
-
 const SelectInput = React.memo(({ 
   value, 
   placeholder, 
@@ -105,7 +99,6 @@ const SelectInput = React.memo(({
     <Ionicons name="chevron-down" size={20} color="#A0A4C1" />
   </TouchableOpacity>
 ));
-
 const CameraButton = React.memo(({ 
   capturedPhotos, 
   onPress 
@@ -131,7 +124,6 @@ const CameraButton = React.memo(({
     )}
   </TouchableOpacity>
 ));
-
 const FormInput = React.memo(({ 
   field, 
   value, 
@@ -166,7 +158,6 @@ const FormInput = React.memo(({
     );
   }
 });
-
 const ButtonContainer = React.memo(({ 
   onPrevious, 
   onSubmitNow, 
@@ -184,7 +175,6 @@ const ButtonContainer = React.memo(({
       <Ionicons name="arrow-back" size={20} color="white" />
       <Text style={styles.buttonText}>Înapoi</Text>
     </TouchableOpacity>
-    
     <TouchableOpacity 
       style={[styles.button, styles.submitNowButton]} 
       onPress={onSubmitNow}
@@ -199,7 +189,6 @@ const ButtonContainer = React.memo(({
         {isUpdating || isUploading ? 'Se salvează...' : 'Trimite acum'}
       </Text>
     </TouchableOpacity>
-    
     <TouchableOpacity 
       style={[
         styles.button, 
@@ -220,14 +209,12 @@ const ButtonContainer = React.memo(({
     </TouchableOpacity>
   </View>
 ));
-
 const TransportStatusPage = React.memo(({ navigation }) => {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [modalOptions, setModalOptions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [capturedPhotos, setCapturedPhotos] = useState([]);
-
   // Get user profile to get active transport ID
   const {
     data: profileData,
@@ -235,7 +222,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     error: profileError,
     refetch: refetchProfile
   } = useGetUserProfileQuery();
-
   // Also get queue data for new transport system
   const {
     data: queueData,
@@ -243,40 +229,29 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     error: queueError,
     refetch: refetchQueue
   } = useGetDriverQueueQuery();
-
   // Smart transport ID detection with fallback
   const getActiveTransportId = () => {
     // Priority 1: Queue system current transport
     if (queueData?.current_transport_id) {
-      console.log('🎯 Using queue current transport:', queueData.current_transport_id);
       return queueData.current_transport_id;
     }
-
     // Priority 2: Profile active transport (legacy system)
     if (profileData?.active_transport) {
-      console.log('📋 Using profile active transport:', profileData.active_transport);
       return profileData.active_transport;
     }
-
     // Priority 3: Check queue for startable transports
     if (queueData?.queue && queueData.queue.length > 0) {
       const startableTransport = queueData.queue.find(t => t.can_start || t.is_current);
       if (startableTransport) {
-        console.log('🚀 Using startable transport from queue:', startableTransport.transport_id);
         return startableTransport.transport_id;
       }
       // Fallback to first transport in queue
       const firstTransport = queueData.queue[0];
-      console.log('⚠️ Using first transport from queue as fallback:', firstTransport.transport_id);
       return firstTransport.transport_id;
     }
-
-    console.log('❌ No active transport found');
     return null;
   };
-
   const activeTransportId = getActiveTransportId();
-
   // Get current transport status - skip if still loading profile/queue or no transport ID
   const {
     data: transportStatus,
@@ -286,7 +261,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
   } = useGetActiveTransportStatusQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading
   });
-
   // Get existing goods photos - skip if still loading profile/queue or no transport ID
   const {
     data: goodsPhotos,
@@ -295,11 +269,9 @@ const TransportStatusPage = React.memo(({ navigation }) => {
   } = useGetGoodsPhotosQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading
   });
-
   // Mutations
   const [updateTransportStatus, { isLoading: isUpdating }] = useUpdateTransportStatusMutation();
   const [uploadGoodsPhotos, { isLoading: isUploading }] = useUploadGoodsPhotosMutation();
-
   // Status form data
   const [statusFormData, setStatusFormData] = useState({
     is_finished: false,
@@ -313,7 +285,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     status_transport: "",
     delay_estimation: null
   });
-
   // Memoized status fields definition
   const statusFields = useMemo(() => [
     { 
@@ -395,7 +366,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       conditionalDisplay: true
     }
   ], []);
-
   // Update form data when API data is loaded
   useEffect(() => {
     if (transportStatus) {
@@ -413,35 +383,28 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       });
     }
   }, [transportStatus]);
-
   // Memoized current fields calculation
   const currentFields = useMemo(() => {
     const allFields = statusFields.slice(currentIndex, currentIndex + 4);
     return allFields.filter(field => {
       if (!field.conditionalDisplay) return true;
-      
       const controllingField = statusFields.find(f => f.linkedField === field.key);
       if (!controllingField) return false;
-      
       return controllingField.linkedFieldVisible(statusFormData[controllingField.key]);
     }).slice(0, 2);
   }, [statusFields, currentIndex, statusFormData]);
-
   // Memoized calculations
   const pageCalculations = useMemo(() => {
     // Count total visible fields
     let visibleFieldCount = 0;
     let visibleFieldsBeforeCurrent = 0;
-
     for (let i = 0; i < statusFields.length; i++) {
       const field = statusFields[i];
       let isVisible = true;
-
       if (field.conditionalDisplay) {
         const controllingField = statusFields.find(f => f.linkedField === field.key);
         isVisible = controllingField && controllingField.linkedFieldVisible(statusFormData[controllingField.key]);
       }
-
       if (isVisible) {
         visibleFieldCount++;
         // Count visible fields before the current index
@@ -450,15 +413,12 @@ const TransportStatusPage = React.memo(({ navigation }) => {
         }
       }
     }
-
     const totalPages = Math.ceil(visibleFieldCount / 2);
     // Calculate current page based on visible fields shown so far (including current page)
     const currentPage = Math.floor(visibleFieldsBeforeCurrent / 2) + 1;
     const percentage = totalPages > 0 ? (currentPage / totalPages) * 100 : 0;
-
     return { totalPages, currentPage, percentage };
   }, [statusFields, statusFormData, currentIndex]);
-
   // Memoized handlers
   const setFormData = useCallback((key, value) => {
     setStatusFormData(prev => ({
@@ -466,7 +426,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       [key]: value
     }));
   }, []);
-
   const handleOptionSelect = useCallback((option) => {
     if (activeField) {
       setFormData(activeField, option);
@@ -474,21 +433,17 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       setActiveField(null);
     }
   }, [activeField, setFormData]);
-
   const handleCameraCapture = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
     if (status !== 'granted') {
       Alert.alert('Permisiune necesară', 'Avem nevoie de permisiunea de a accesa camera.');
       return;
     }
-    
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.7,
     });
-    
     if (!result.canceled) {
       const newPhoto = {
         uri: result.assets[0].uri,
@@ -498,7 +453,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       setCapturedPhotos(prev => [...prev, newPhoto]);
     }
   }, []);
-
   const handleFieldTouch = useCallback((field) => {
     if (field.type === 'options') {
       setActiveField(field.key);
@@ -508,22 +462,18 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       handleCameraCapture();
     }
   }, [handleCameraCapture]);
-
   const areCurrentFieldsValid = useCallback(() => {
     return currentFields.every(field => {
       if (field.type === 'camera') return true;
       return statusFormData[field.key] !== undefined && statusFormData[field.key] !== "";
     });
   }, [currentFields, statusFormData]);
-
   const handleNext = useCallback(() => {
     if (!areCurrentFieldsValid()) {
       Alert.alert('Câmpuri obligatorii', 'Vă rugăm să completați toate câmpurile pentru a continua.');
       return;
     }
-
     let newIndex = currentIndex + 2;
-    
     while (newIndex < statusFields.length) {
       const field = statusFields[newIndex];
       if (field.conditionalDisplay) {
@@ -535,14 +485,12 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       }
       break;
     }
-    
     if (newIndex < statusFields.length) {
       setCurrentIndex(newIndex);
     } else {
       handleSubmit();
     }
   }, [areCurrentFieldsValid, currentIndex, statusFields, statusFormData]);
-
   const handlePrevious = useCallback(() => {
     if (currentIndex >= 2) {
       setCurrentIndex(currentIndex - 2);
@@ -550,7 +498,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       navigation.goBack();
     }
   }, [currentIndex, navigation]);
-
   const handleSubmit = useCallback(async () => {
     try {
       if (capturedPhotos.length > 0) {
@@ -559,23 +506,19 @@ const TransportStatusPage = React.memo(({ navigation }) => {
           photos: capturedPhotos 
         }).unwrap();
       }
-
       await updateTransportStatus({ 
         statusData: statusFormData, 
         activeTransportId: activeTransportId 
       }).unwrap();
-
       Alert.alert(
         'Status Actualizat',
         'Statusul transportului a fost actualizat cu succes!',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error) {
-      console.error('Submit error:', error);
       Alert.alert('Eroare', 'Nu s-a putut actualiza statusul transportului.');
     }
   }, [capturedPhotos, statusFormData, activeTransportId, uploadGoodsPhotos, updateTransportStatus, navigation]);
-
   const handleSubmitNow = useCallback(async () => {
     Alert.alert(
       'Trimiteți formularul?',
@@ -586,7 +529,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       ]
     );
   }, [handleSubmit]);
-
   const handleRetry = useCallback(async () => {
     try {
       await Promise.all([
@@ -596,14 +538,11 @@ const TransportStatusPage = React.memo(({ navigation }) => {
         refetchPhotos()
       ]);
     } catch (error) {
-      console.error('Error during retry:', error);
     }
   }, [refetchProfile, refetchQueue, refetchStatus, refetchPhotos]);
-
   const isLastStep = useMemo(() => {
     return currentIndex + 2 >= statusFields.length;
   }, [currentIndex, statusFields.length]);
-
   // Handle errors - only show error if PROFILE fails (queue is optional)
   if (profileError) {
     return (
@@ -629,7 +568,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // Handle no active transport - only show if not still loading
   if (!activeTransportId && !profileLoading && !queueLoading) {
     return (
@@ -655,7 +593,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // Handle transport status errors
   if (statusError && !statusLoading) {
     return (
@@ -681,7 +618,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView 
@@ -695,13 +631,11 @@ const TransportStatusPage = React.memo(({ navigation }) => {
           showRetry={true}
           showBack={true}
         />
-
         <ProgressBar 
           currentPage={pageCalculations.currentPage}
           totalPages={pageCalculations.totalPages}
           percentage={pageCalculations.percentage}
         />
-
         <ScrollView 
           style={styles.formContainer} 
           showsVerticalScrollIndicator={false}
@@ -719,7 +653,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
             </View>
           ))}
         </ScrollView>
-
         <ButtonContainer
           onPrevious={handlePrevious}
           onSubmitNow={handleSubmitNow}
@@ -730,7 +663,6 @@ const TransportStatusPage = React.memo(({ navigation }) => {
           isLastStep={isLastStep}
         />
       </KeyboardAvoidingView>
-
       <OptionModal
         visible={showOptionsModal}
         options={modalOptions}
@@ -740,7 +672,5 @@ const TransportStatusPage = React.memo(({ navigation }) => {
     </SafeAreaView>
   );
 });
-
 TransportStatusPage.displayName = 'TransportStatusPage';
-
 export default TransportStatusPage;

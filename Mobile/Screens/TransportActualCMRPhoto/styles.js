@@ -1,5 +1,4 @@
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
-
 const COLORS = {
   background: '#f5f5f5',
   card: '#ffffff',
@@ -12,7 +11,6 @@ const COLORS = {
     light: '#6B7280',
   },
 };
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -25,7 +23,6 @@ export const styles = StyleSheet.create({
   keyboardAvoidingView: {
     flex: 1,
   },
- 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -406,7 +403,6 @@ export const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '500',
   },
-  
   // PhotoCMRForm styles
   photoFormContainer: {
     flex: 1,
@@ -624,7 +620,6 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-
   // Existing photos section
   existingPhotosSection: {
     backgroundColor: COLORS.card,
@@ -640,7 +635,6 @@ export const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#10B981',
   },
-
   photoTitleOverlay: {
     position: 'absolute',
     bottom: 0,
@@ -651,14 +645,12 @@ export const styles = StyleSheet.create({
     borderBottomLeftRadius: 12,
     borderBottomRightRadius: 12,
   },
-
   photoTitleText: {
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
   },
-
   // Full screen modal styles
   fullScreenModalOverlay: {
     flex: 1,
@@ -666,7 +658,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   closeFullScreenButton: {
     position: 'absolute',
     top: 50,
@@ -674,7 +665,6 @@ export const styles = StyleSheet.create({
     zIndex: 10,
     padding: 8,
   },
-
   fullScreenImageContainer: {
     flex: 1,
     width: '100%',
@@ -683,12 +673,10 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 100,
   },
-
   fullScreenImage: {
     width: '100%',
     height: '80%',
   },
-
   fullScreenPhotoInfo: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
@@ -697,7 +685,6 @@ export const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-
   fullScreenPhotoTitle: {
     color: '#FFFFFF',
     fontSize: 18,
@@ -705,7 +692,6 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-
   fullScreenPhotoDate: {
     color: '#D1D5DB',
     fontSize: 14,

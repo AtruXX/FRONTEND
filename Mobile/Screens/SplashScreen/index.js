@@ -3,7 +3,6 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../../utils/BASE_URL.js';
-
 const COLORS = {
   background: "#F4F5FB", // Light lavender background
   card: "#FFFFFF", // White
@@ -19,15 +18,12 @@ const COLORS = {
   warning: "#FFBD59", // Amber
   danger: "#FF7285", // Soft red
 };
-
 const SplashScreen = ({ navigation }) => {
   const opacity = useSharedValue(1);
   const [isChecking, setIsChecking] = useState(true);
-
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
   }));
-
   // Function to check if token is valid
   const validateToken = async (token) => {
     try {
@@ -38,7 +34,6 @@ const SplashScreen = ({ navigation }) => {
           'Content-Type': 'application/json',
         },
       });
-
       if (response.ok) {
         return true;
       } else {
@@ -48,18 +43,14 @@ const SplashScreen = ({ navigation }) => {
       return false;
     }
   };
-
   // Function to check authentication and navigate accordingly
   const checkAuthAndNavigate = async () => {
     try {
       const token = await AsyncStorage.getItem('authToken');
       const driverId = await AsyncStorage.getItem('driverId');
-      
-
       if (token && driverId) {
         // Token exists, validate it
         const isValid = await validateToken(token);
-        
         if (isValid) {
           // Token is valid, go to main app
           navigation.replace('Main');
@@ -76,10 +67,8 @@ const SplashScreen = ({ navigation }) => {
           ]);
         }
       }
-      
       // No token or invalid token, go to login
       navigation.replace('Login');
-      
     } catch (error) {
       // In case of error, go to login
       navigation.replace('Login');
@@ -87,7 +76,6 @@ const SplashScreen = ({ navigation }) => {
       setIsChecking(false);
     }
   };
-
   useEffect(() => {
     const timer = setTimeout(() => {
       opacity.value = withTiming(0, { duration: 500 }, (finished) => {
@@ -96,10 +84,8 @@ const SplashScreen = ({ navigation }) => {
         }
       });
     }, 1000); // Reduced from 2500ms to 1000ms for faster startup
-
     return () => clearTimeout(timer);
   }, [navigation, opacity]);
-
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <Image
@@ -110,7 +96,6 @@ const SplashScreen = ({ navigation }) => {
     </Animated.View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -146,5 +131,4 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
 });
-
 export default SplashScreen;

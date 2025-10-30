@@ -10,9 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import COLORS from '../../utils/COLORS';
-
 const { width } = Dimensions.get('window');
-
 const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDate }) => {
   const currentYear = new Date().getFullYear();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
@@ -20,14 +18,11 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
   const [selectedDay, setSelectedDay] = useState(selectedDate ? new Date(selectedDate) : null);
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showYearDropdown, setShowYearDropdown] = useState(false);
-
   const months = [
     'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
     'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
   ];
-
   const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-
   // Generate year options starting from current year
   const generateYears = () => {
     const years = [];
@@ -36,7 +31,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
     }
     return years;
   };
-
   useEffect(() => {
     if (selectedDate) {
       const date = new Date(selectedDate);
@@ -45,40 +39,30 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
       setSelectedYear(date.getFullYear());
     }
   }, [selectedDate]);
-
   const getDaysInMonth = (month, year) => {
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startDate = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Monday = 0
-
     const days = [];
-
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < startDate; i++) {
       days.push(null);
     }
-
     // Add days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(day);
     }
-
     return days;
   };
-
   const handleDayPress = (day) => {
     if (!day) return;
-
     const newDate = new Date(selectedYear, selectedMonth, day);
-    
     // Check if date is within allowed range
     if (minDate && newDate < new Date(minDate)) return;
     if (maxDate && newDate > new Date(maxDate)) return;
-
     setSelectedDay(newDate);
   };
-
   const handleConfirm = () => {
     if (selectedDay) {
       // Format date as YYYY-MM-DD
@@ -86,12 +70,10 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
       const month = String(selectedDay.getMonth() + 1).padStart(2, '0');
       const day = String(selectedDay.getDate()).padStart(2, '0');
       const formattedDate = `${year}-${month}-${day}`;
-      
       onDateSelect(formattedDate);
     }
     onClose();
   };
-
   const isDateDisabled = (day) => {
     if (!day) return true;
     const date = new Date(selectedYear, selectedMonth, day);
@@ -99,28 +81,23 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
     if (maxDate && date > new Date(maxDate)) return true;
     return false;
   };
-
   const isToday = (day) => {
     if (!day) return false;
     const today = new Date();
     const date = new Date(selectedYear, selectedMonth, day);
     return date.toDateString() === today.toDateString();
   };
-
   const isSelected = (day) => {
     if (!day || !selectedDay) return false;
     const date = new Date(selectedYear, selectedMonth, day);
     return date.toDateString() === selectedDay.toDateString();
   };
-
   const renderCalendarGrid = () => {
     const days = getDaysInMonth(selectedMonth, selectedYear);
     const weeks = [];
-    
     for (let i = 0; i < days.length; i += 7) {
       weeks.push(days.slice(i, i + 7));
     }
-
     return weeks.map((week, weekIndex) => (
       <View key={weekIndex} style={styles.weekRow}>
         {week.map((day, dayIndex) => (
@@ -151,7 +128,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
       </View>
     ));
   };
-
   return (
     <Modal
       visible={visible}
@@ -181,7 +157,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
                   color={COLORS.primary} 
                 />
               </TouchableOpacity>
-
               <TouchableOpacity 
                 style={styles.selector}
                 onPress={() => {
@@ -201,7 +176,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
               </TouchableOpacity>
             </View>
           </View>
-
           {/* Month Dropdown */}
           {showMonthDropdown && (
             <View style={styles.dropdown}>
@@ -230,7 +204,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
               </ScrollView>
             </View>
           )}
-
           {/* Year Dropdown */}
           {showYearDropdown && (
             <View style={styles.dropdown}>
@@ -259,7 +232,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
               </ScrollView>
             </View>
           )}
-
           {/* Week days header */}
           <View style={styles.weekDaysContainer}>
             {weekDays.map((day, index) => (
@@ -268,12 +240,10 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
               </View>
             ))}
           </View>
-
           {/* Calendar grid */}
           <View style={styles.calendarGrid}>
             {renderCalendarGrid()}
           </View>
-
           {/* Footer buttons */}
           <View style={styles.calendarFooter}>
             <TouchableOpacity
@@ -283,7 +253,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
             >
               <Text style={styles.cancelButtonText}>Anulează</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               style={[styles.footerButton, styles.confirmButton]}
               onPress={handleConfirm}
@@ -297,7 +266,6 @@ const Calendar = ({ visible, onClose, selectedDate, onDateSelect, minDate, maxDa
     </Modal>
   );
 };
-
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
@@ -505,5 +473,4 @@ const styles = StyleSheet.create({
     color: COLORS.card,
   },
 });
-
 export default Calendar;

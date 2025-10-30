@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useNotifications } from '../../Screens/NotificationsContext';
-
 const NotificationBadge = ({
   size = 'medium',
   showZero = false,
@@ -10,11 +9,9 @@ const NotificationBadge = ({
   backgroundColor = '#FF6B6B'
 }) => {
   const { unreadCount } = useNotifications();
-
   if (!showZero && unreadCount === 0) {
     return null;
   }
-
   const getSize = () => {
     switch (size) {
       case 'small':
@@ -25,7 +22,6 @@ const NotificationBadge = ({
         return { width: 20, height: 20, borderRadius: 10 };
     }
   };
-
   const getTextSize = () => {
     switch (size) {
       case 'small':
@@ -36,9 +32,7 @@ const NotificationBadge = ({
         return 12;
     }
   };
-
   const displayCount = unreadCount > 99 ? '99+' : unreadCount.toString();
-
   return (
     <View
       style={[
@@ -61,7 +55,6 @@ const NotificationBadge = ({
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   badge: {
     justifyContent: 'center',
@@ -74,5 +67,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
 export default NotificationBadge;

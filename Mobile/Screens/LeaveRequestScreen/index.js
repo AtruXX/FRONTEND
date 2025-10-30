@@ -19,7 +19,6 @@ import {
   useUpdateLeaveRequestMutation
 } from '../../services/leaveService';
 import PageHeader from "../../components/General/Header";
-
 // Date Range Selector Component
 const DateRangeSelector = React.memo(({
   startDate,
@@ -29,7 +28,6 @@ const DateRangeSelector = React.memo(({
 }) => {
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
-
   const formatDisplayDate = (dateString) => {
     if (!dateString) return 'Selectează data';
     return new Date(dateString).toLocaleDateString('ro-RO', {
@@ -39,7 +37,6 @@ const DateRangeSelector = React.memo(({
       day: 'numeric'
     });
   };
-
   const calculateDays = () => {
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
@@ -48,7 +45,6 @@ const DateRangeSelector = React.memo(({
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     return diffDays;
   };
-
   const handleStartDateSelect = (date) => {
     onStartDateSelect(date);
     setShowStartCalendar(false);
@@ -57,29 +53,24 @@ const DateRangeSelector = React.memo(({
       onEndDateSelect('');
     }
   };
-
   const handleEndDateSelect = (date) => {
     onEndDateSelect(date);
     setShowEndCalendar(false);
   };
-
   // Get minimum date for end date selector (start date + 1 day or today)
   const getMinEndDate = () => {
     if (!startDate) return new Date().toISOString().split('T')[0];
     return startDate;
   };
-
   return (
     <View style={styles.dateRangeContainer}>
       <Text style={styles.sectionTitle}>Perioada concediului</Text>
-
       {/* Instructions */}
       <View style={styles.instructionsContainer}>
         <Text style={styles.instructionsText}>
           Selectează datele de început și de sfârșit pentru concediul tău
         </Text>
       </View>
-
       {/* Date Selectors */}
       <View style={styles.dateSelectorsContainer}>
         {/* Start Date Selector */}
@@ -98,7 +89,6 @@ const DateRangeSelector = React.memo(({
             <Ionicons name="chevron-down" size={16} color={startDate ? "#6366F1" : "#9CA3AF"} />
           </TouchableOpacity>
         </View>
-
         {/* End Date Selector */}
         <View style={styles.dateSelectorItem}>
           <Text style={styles.dateLabel}>Data încheierii *</Text>
@@ -121,7 +111,6 @@ const DateRangeSelector = React.memo(({
           </TouchableOpacity>
         </View>
       </View>
-
       {/* Days Counter */}
       {startDate && endDate && (
         <View style={styles.daysCounter}>
@@ -139,7 +128,6 @@ const DateRangeSelector = React.memo(({
           )}
         </View>
       )}
-
       {/* Start Date Calendar Modal */}
       <Calendar
         visible={showStartCalendar}
@@ -148,7 +136,6 @@ const DateRangeSelector = React.memo(({
         onDateSelect={handleStartDateSelect}
         minDate={new Date().toISOString().split('T')[0]}
       />
-
       {/* End Date Calendar Modal */}
       <Calendar
         visible={showEndCalendar}
@@ -160,7 +147,6 @@ const DateRangeSelector = React.memo(({
     </View>
   );
 });
-
 // Leave Request Form Component
 const LeaveRequestForm = React.memo(({
   reason,
@@ -173,7 +159,6 @@ const LeaveRequestForm = React.memo(({
   isEditing = false
 }) => {
   const isFormValid = startDate && endDate && reason.trim().length > 0;
-
   return (
     <View style={styles.formContainer}>
       <View style={styles.reasonContainer}>
@@ -198,7 +183,6 @@ const LeaveRequestForm = React.memo(({
           {reason.length}/500 caractere
         </Text>
       </View>
-
       <View style={styles.formActions}>
         <TouchableOpacity
           style={styles.cancelButton}
@@ -207,7 +191,6 @@ const LeaveRequestForm = React.memo(({
         >
           <Text style={styles.cancelButtonText}>Anulează</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={[
             styles.submitButton,
@@ -231,51 +214,40 @@ const LeaveRequestForm = React.memo(({
     </View>
   );
 });
-
 // Main Leave Request Screen
 const LeaveRequestScreen = React.memo(({ navigation, route }) => {
   const editingRequest = route.params?.request; // For editing existing request
   const isEditing = !!editingRequest;
-
   // Form state
   const [startDate, setStartDate] = useState(editingRequest?.start_date || '');
   const [endDate, setEndDate] = useState(editingRequest?.end_date || '');
   const [reason, setReason] = useState(editingRequest?.reason || '');
-
   // Service hooks
   const [createLeaveRequest, { isLoading: isCreating }] = useCreateLeaveRequestMutation();
   const [updateLeaveRequest, { isLoading: isUpdating }] = useUpdateLeaveRequestMutation();
-
   const isSubmitting = isCreating || isUpdating;
-
   const handleStartDateSelect = useCallback((date) => {
     setStartDate(date);
   }, []);
-
   const handleEndDateSelect = useCallback((date) => {
     setEndDate(date);
   }, []);
-
   const handleSubmit = useCallback(async () => {
     if (!startDate || !endDate || !reason.trim()) {
       Alert.alert('Eroare', 'Te rugăm să completezi toate câmpurile obligatorii.');
       return;
     }
-
     try {
       const requestData = {
         dataStart: startDate,
         dataFinal: endDate,
         reason: reason.trim()
       };
-
       if (isEditing) {
         await updateLeaveRequest({
           id: editingRequest.id,
           ...requestData
         }).unwrap();
-
-
         Alert.alert(
           'Succes!',
           'Cererea de concediu a fost actualizată cu succes.',
@@ -286,8 +258,6 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
         );
       } else {
         await createLeaveRequest(requestData).unwrap();
-
-
         Alert.alert(
           'Succes!',
           'Cererea de concediu a fost trimisă cu succes. Vei fi notificat când cererea va fi aprobată sau respinsă.',
@@ -298,10 +268,7 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
         );
       }
     } catch (error) {
-      console.error('Error submitting leave request:', error);
-
       let errorMessage = 'Nu s-a putut trimite cererea. Încearcă din nou.';
-
       if (error.message?.includes('overlap')) {
         errorMessage = 'Perioada selectată se suprapune cu o cerere existentă.';
       } else if (error.message?.includes('past')) {
@@ -309,11 +276,9 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
       } else if (error.message?.includes('30 days')) {
         errorMessage = 'Perioada de concediu nu poate depăși 30 de zile.';
       }
-
       Alert.alert('Eroare', errorMessage);
     }
   }, [startDate, endDate, reason, isEditing, editingRequest, createLeaveRequest, updateLeaveRequest, navigation]);
-
   const handleCancel = useCallback(() => {
     if (startDate || endDate || reason) {
       Alert.alert(
@@ -332,7 +297,6 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
       navigation.goBack();
     }
   }, [startDate, endDate, reason, navigation]);
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <PageHeader
@@ -340,7 +304,6 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
         onBack={handleCancel}
         showBack={true}
       />
-
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -358,7 +321,6 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
             onStartDateSelect={handleStartDateSelect}
             onEndDateSelect={handleEndDateSelect}
           />
-
           {/* Form */}
           <LeaveRequestForm
             reason={reason}
@@ -375,7 +337,5 @@ const LeaveRequestScreen = React.memo(({ navigation, route }) => {
     </SafeAreaView>
   );
 });
-
 LeaveRequestScreen.displayName = 'LeaveRequestScreen';
-
 export default LeaveRequestScreen;

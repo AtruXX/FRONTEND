@@ -1,6 +1,5 @@
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
 import COLORS from "../../utils/COLORS.js";
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,

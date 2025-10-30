@@ -7,12 +7,10 @@ import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMut
 import { MapService } from '../../services/mapService';
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
-
 const TransportMainPage = ({ navigation }) => {
   // UIT edit modal state
   const [showUitModal, setShowUitModal] = useState(false);
   const [uitInput, setUitInput] = useState('');
-  
   // ALWAYS call hooks at the top level - never conditionally
   // Get user profile to access active transport data
   const {
@@ -21,7 +19,6 @@ const TransportMainPage = ({ navigation }) => {
     error: profileError,
     refetch: refetchProfile
   } = useGetUserProfileQuery();
-
   // Queue system hook to get current transport
   const {
     data: queueData,
@@ -29,77 +26,50 @@ const TransportMainPage = ({ navigation }) => {
     error: queueError,
     refetch: refetchQueue
   } = useGetDriverQueueQuery();
-
   // Mutations - always call these hooks
   const [finalizeTransport, { isLoading: isFinalizing }] = useFinalizeTransportMutation();
   const [downloadCMR, { isLoading: isDownloading }] = useDownloadCMRDocumentMutation();
   const [updateCMRData, { isLoading: isUpdatingCMR }] = useUpdateCMRDataMutation();
-
   // SMART: Get active transport ID with intelligent fallback logic
   const getActiveTransportId = () => {
     // If queue loading or has error, skip queue checks and use profile
     if (queueLoading || queueError) {
       if (profileData?.active_transport) {
-        console.log('📋 Queue unavailable, using profile active transport:', profileData.active_transport);
         return profileData.active_transport;
       }
-      console.log('⚠️ Queue unavailable and no profile active transport');
       return null;
     }
-
     // Priority 1: Queue system current transport
     if (queueData?.current_transport_id) {
-      console.log('🎯 Using queue current transport:', queueData.current_transport_id);
       return queueData.current_transport_id;
     }
-
     // Priority 2: Profile active transport (legacy system)
     if (profileData?.active_transport) {
-      console.log('📋 Using profile active transport:', profileData.active_transport);
       return profileData.active_transport;
     }
-
     // Priority 3: Check if queue has properly ordered transports and use first one
     if (queueData?.queue && queueData.queue.length > 0) {
       // Find transport with position 1 or lowest position
       const sortedQueue = [...queueData.queue].sort((a, b) => a.queue_position - b.queue_position);
       const firstTransport = sortedQueue[0];
-
       // If positions are properly set (>= 1) and can start, use it
       if (firstTransport.queue_position >= 1 && firstTransport.can_start) {
-        console.log('🔄 Using first startable transport from queue:', firstTransport.transport_id);
         return firstTransport.transport_id;
       }
-
       // ENHANCED FALLBACK: If queue positions are malformed (0, 0, 0) but we have transports,
       // try to find a transport that's actually startable or in progress
       const startableTransport = sortedQueue.find(t => t.can_start || t.is_current);
       if (startableTransport) {
-        console.log('🚀 Using startable transport from queue:', startableTransport.transport_id);
         return startableTransport.transport_id;
       }
-
       // Last resort: use first transport but log warning
       if (sortedQueue.length > 0) {
-        console.log('⚠️ Queue positions malformed, using first transport as last resort:', firstTransport.transport_id);
         return firstTransport.transport_id;
       }
     }
-
-    console.log('❌ No active transport found');
     return null;
   };
-
   const activeTransportId = getActiveTransportId();
-
-  console.log('🔧 TransportActualMain Debug:');
-  console.log('  - Queue current_transport_id:', queueData?.current_transport_id);
-  console.log('  - Profile active_transport:', profileData?.active_transport);
-  console.log('  - Queue data:', queueData?.queue?.map(t => `ID:${t.transport_id} Pos:${t.queue_position} CanStart:${t.can_start}`));
-  console.log('  - Final activeTransportId:', activeTransportId);
-  console.log('  - Profile loading:', profileLoading);
-  console.log('  - Queue loading:', queueLoading);
-  
 
   // Fetch full transport details - skip if no transportId OR profile/queue is still loading
   const {
@@ -110,7 +80,6 @@ const TransportMainPage = ({ navigation }) => {
   } = useGetTransportByIdQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
-
   // Fetch CMR data to get UIT code
   const {
     data: cmrData,
@@ -120,7 +89,6 @@ const TransportMainPage = ({ navigation }) => {
   } = useGetCMRDataQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
-
   // Fetch CMR status to check for photos and digital CMR
   const {
     data: cmrStatus,
@@ -130,13 +98,11 @@ const TransportMainPage = ({ navigation }) => {
   } = useGetCMRStatusQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
-
   const handleDownloadCMR = async () => {
     if (!activeTransportId) {
       Alert.alert('Eroare', 'Nu există un transport activ pentru descărcare.');
       return;
     }
-
     // Check if digital CMR exists before attempting download
     if (!cmrStatus?.has_digital_cmr && !cmrStatus?.has_physical_cmr) {
       Alert.alert(
@@ -148,32 +114,25 @@ const TransportMainPage = ({ navigation }) => {
       );
       return;
     }
-
     try {
       await downloadCMR(activeTransportId).unwrap();
       // PDF opens automatically, no need for success alert
     } catch (error) {
-      console.error('Download CMR Error:', error);
-
       // Show user-friendly error message
       let errorMessage = 'Nu s-a putut deschide documentul CMR.';
-
       if (error?.message?.includes('Nu există niciun document')) {
         errorMessage = 'Dispecerul nu a generat încă documentul CMR PDF. Vă rugăm să așteptați sau să contactați dispecerul.';
       } else if (error?.message?.includes('Network') || error?.message?.includes('network')) {
         errorMessage = 'Verificați conexiunea la internet și încercați din nou.';
       }
-
       Alert.alert('Eroare', errorMessage);
     }
   };
-
   const handleFinalizeTransport = async () => {
     if (!activeTransportId) {
       Alert.alert('Eroare', 'Nu există un transport activ pentru finalizare.');
       return;
     }
-
     Alert.alert(
       'Finalizare Transport',
       'Sunteți sigur că doriți să finalizați transportul? Această acțiune nu poate fi anulată.',
@@ -207,32 +166,26 @@ const TransportMainPage = ({ navigation }) => {
       ]
     );
   };
-
   const navigateTo = (screenName) => {
     navigation.navigate(screenName);
   };
-
   // Get UIT code from CMR data or show appropriate message
   const getUitCode = () => {
     // If CMR data is loading, show loading message
     if (cmrLoading) {
       return 'Se încarcă...';
     }
-
     // If CMR data failed to load or doesn't exist, show message
     if (cmrError || !cmrData) {
       return 'Nu există CMR';
     }
-
     // If UIT field exists and has value, show it
     if (cmrData.UIT && cmrData.UIT.trim() !== '') {
       return cmrData.UIT;
     }
-
     // If UIT field is empty, show message
     return 'UIT nu este completat';
   };
-
   const handleRetry = useCallback(async () => {
     await refetchProfile();
     await refetchQueue();
@@ -246,14 +199,12 @@ const TransportMainPage = ({ navigation }) => {
       await refetchCMRStatus();
     }
   }, [refetchProfile, refetchQueue, refetchTransport, refetchCMR, refetchCMRStatus]);
-
   // Handle viewing CMR photos
   const handleViewCMRPhotos = () => {
     if (!activeTransportId) {
       Alert.alert('Eroare', 'Nu există un transport activ.');
       return;
     }
-
     if (!cmrStatus?.has_physical_cmr) {
       Alert.alert(
         'Fără fotografii CMR',
@@ -268,11 +219,9 @@ const TransportMainPage = ({ navigation }) => {
       );
       return;
     }
-
     // Navigate to photo viewing screen
     navigation.navigate('PhotoCMRForm');
   };
-
   // Handle UIT edit button press
   const handleEditUIT = () => {
     // Pre-fill input with current UIT if it exists
@@ -280,14 +229,12 @@ const TransportMainPage = ({ navigation }) => {
     setUitInput(currentUIT);
     setShowUitModal(true);
   };
-
   // Handle UIT save
   const handleSaveUIT = async () => {
     if (!activeTransportId) {
       Alert.alert('Eroare', 'Nu există un transport activ.');
       return;
     }
-
     // Check if CMR exists first
     if (!cmrData) {
       Alert.alert(
@@ -306,7 +253,6 @@ const TransportMainPage = ({ navigation }) => {
       );
       return;
     }
-
     try {
       // Try updating with minimal payload - just the UIT field
       await updateCMRData({
@@ -315,40 +261,32 @@ const TransportMainPage = ({ navigation }) => {
           UIT: uitInput.trim()
         }
       }).unwrap();
-
       // Refresh CMR data to show updated UIT
       await refetchCMR();
-
       setShowUitModal(false);
       Alert.alert('Succes', 'Codul UIT a fost actualizat cu succes.');
     } catch (error) {
-      console.error('UIT Update Error:', error);
-      console.error('CMR Update payload:', {
         activeTransportId,
         cmrData: {
           UIT: uitInput.trim()
         }
       });
-
       // Show specific error message if available
       const errorMessage = error?.message || error?.data?.detail || 'Nu s-a putut actualiza codul UIT. Încercați din nou.';
       Alert.alert('Eroare UIT Update', errorMessage);
     }
   };
-
   // Handle modal cancel
   const handleCancelUIT = () => {
     setUitInput('');
     setShowUitModal(false);
   };
-
   // Handle opening route navigation
   const handleOpenRouteNavigation = () => {
     if (!activeTransportId) {
       Alert.alert('Eroare', 'Nu există un transport activ.');
       return;
     }
-
     if (!transportData?.route_polyline) {
       Alert.alert(
         'Rută indisponibilă',
@@ -357,14 +295,12 @@ const TransportMainPage = ({ navigation }) => {
       );
       return;
     }
-
     MapService.showPolylineMapOptions(transportData.route_polyline, {
       route_distance: transportData.route_distance,
       route_travel_time: transportData.route_travel_time,
       route_toll_costs: transportData.route_toll_costs
     });
   };
-
   // Handle error state - only show error if profile fails (queue is optional)
   if (profileError) {
     return (
@@ -392,18 +328,15 @@ const TransportMainPage = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // Handle no active transport with intelligent messaging
   if (!activeTransportId) {
     // Determine the reason and provide helpful message
     let emptyTitle = "Niciun transport activ";
     let emptyText = "Nu aveți un transport activ asignat în acest moment";
     let showQueueButton = false;
-
     if (queueData && queueData.queue_count > 0) {
       const allPositionsZero = queueData.queue.every(t => t.queue_position === 0);
       const noCanStart = queueData.queue.every(t => !t.can_start);
-
       if (allPositionsZero && noCanStart) {
         emptyTitle = "Transporturi în coadă neordonate";
         emptyText = `Aveți ${queueData.queue_count} transporturi în coadă, dar acestea nu sunt încă ordonate de dispecer. Contactați dispecerul pentru a organiza coada.`;
@@ -414,7 +347,6 @@ const TransportMainPage = ({ navigation }) => {
         showQueueButton = true;
       }
     }
-
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -424,12 +356,10 @@ const TransportMainPage = ({ navigation }) => {
           showRetry={true}
           showBack={true}
         />
-
         <View style={styles.emptyContainer}>
           <Ionicons name="car-outline" size={60} color="#5A5BDE" />
           <Text style={styles.emptyTitle}>{emptyTitle}</Text>
           <Text style={styles.emptyText}>{emptyText}</Text>
-
           {/* Queue Button */}
           {showQueueButton && (
             <TouchableOpacity
@@ -439,7 +369,6 @@ const TransportMainPage = ({ navigation }) => {
               <Text style={[styles.backToHomeText, { color: 'white' }]}>Vezi Coada de Transporturi</Text>
             </TouchableOpacity>
           )}
-
           <TouchableOpacity
             style={styles.backToHomeButton}
             onPress={() => navigation.navigate('Home')}
@@ -450,7 +379,6 @@ const TransportMainPage = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // Main render - only reached if we have an active transport
   return (
     <SafeAreaView style={styles.container}>
@@ -461,7 +389,6 @@ const TransportMainPage = ({ navigation }) => {
         showRetry={true}
         showBack={true}
       />
-      
       <ScrollView 
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
@@ -487,10 +414,8 @@ const TransportMainPage = ({ navigation }) => {
             </TouchableOpacity>
           )}
         </View>
-        
         <View style={styles.selectionContainer}>
           <Text style={styles.selectionTitle}>Alegeți tipul de formular:</Text>
-          
           {/* Vezi Ruta Button */}
           <TouchableOpacity
             style={[styles.selectionButton, { marginBottom: 20 }]}
@@ -504,7 +429,6 @@ const TransportMainPage = ({ navigation }) => {
               Vizualizează ruta de transport și punctele de oprire
             </Text>
           </TouchableOpacity>
-
           {/* Navigate Route Button - only show if route polyline exists */}
           {transportData?.route_polyline && (
             <TouchableOpacity
@@ -520,7 +444,6 @@ const TransportMainPage = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           )}
-          
           {/* CMR Digital Button */}
           <TouchableOpacity
             style={[styles.selectionButton, { marginBottom: 20 }]}
@@ -534,7 +457,6 @@ const TransportMainPage = ({ navigation }) => {
               Scrisoare de transport internațional de mărfuri (Expeditor, Destinatar, etc.)
             </Text>
           </TouchableOpacity>
-          
           {/* Transport Status Button */}
           <TouchableOpacity
             style={[styles.selectionButton, { marginBottom: 20 }]}
@@ -548,7 +470,6 @@ const TransportMainPage = ({ navigation }) => {
               Informații despre starea camionului, mărfii și a transportului
             </Text>
           </TouchableOpacity>
-
           {/* Photo CMR Button */}
           <TouchableOpacity
             style={[styles.selectionButton, { marginBottom: 20 }]}
@@ -562,7 +483,6 @@ const TransportMainPage = ({ navigation }) => {
               Încarcă o fotografie cu CMR-ul în format fizic
             </Text>
           </TouchableOpacity>
-
           {/* View CMR Photos Button - only show if photos exist */}
           {cmrStatus?.has_physical_cmr && (
             <TouchableOpacity
@@ -578,7 +498,6 @@ const TransportMainPage = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           )}
-
           {/* Download CMR Button */}
           <TouchableOpacity 
             style={styles.downloadButton} 
@@ -594,7 +513,6 @@ const TransportMainPage = ({ navigation }) => {
               {isDownloading ? 'Se descarcă...' : 'Descarcă acum CMR-ul'}
             </Text>
           </TouchableOpacity>
-
           {/* Finalize Transport Button */}
           <TouchableOpacity 
             style={styles.finalizeButton} 
@@ -612,7 +530,6 @@ const TransportMainPage = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-
       {/* UIT Edit Modal */}
       <Modal
         visible={showUitModal}
@@ -628,7 +545,6 @@ const TransportMainPage = ({ navigation }) => {
                 <Ionicons name="close" size={24} color="#373A56" />
               </TouchableOpacity>
             </View>
-
             <View style={styles.modalBody}>
               <Text style={styles.inputLabel}>Codul UIT:</Text>
               <TextInput
@@ -641,7 +557,6 @@ const TransportMainPage = ({ navigation }) => {
                 autoCorrect={false}
               />
             </View>
-
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -649,7 +564,6 @@ const TransportMainPage = ({ navigation }) => {
               >
                 <Text style={styles.cancelButtonText}>Anulează</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={[styles.saveButton, isUpdatingCMR && styles.saveButtonDisabled]}
                 onPress={handleSaveUIT}
@@ -671,5 +585,4 @@ const TransportMainPage = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 export default TransportMainPage;

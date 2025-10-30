@@ -1,6 +1,5 @@
 import { StyleSheet } from 'react-native';
 import COLORS from '../../utils/COLORS.js';
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -13,7 +12,6 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 16,
   },
-  
   // Empty state styles
   emptyContainer: {
     flex: 1,
@@ -37,7 +35,6 @@ export const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 32,
   },
-  
   // Error banner styles
   errorBanner: {
     flexDirection: 'row',
@@ -56,7 +53,6 @@ export const styles = StyleSheet.create({
     marginLeft: 12,
     fontWeight: '500',
   },
-  
   // Route info styles
   routeInfoContainer: {
     backgroundColor: '#ffffff',
@@ -93,7 +89,6 @@ export const styles = StyleSheet.create({
     color: COLORS.dark || '#333333',
     textAlign: 'center',
   },
-  
   // Locations container styles
   locationsContainer: {
     backgroundColor: '#ffffff',
@@ -140,7 +135,6 @@ export const styles = StyleSheet.create({
   locationsList: {
     paddingBottom: 8,
   },
-  
   // Location card styles
   locationCard: {
     backgroundColor: '#ffffff',
@@ -207,7 +201,6 @@ export const styles = StyleSheet.create({
     color: COLORS.light || '#999999',
     fontFamily: 'monospace',
   },
-  
   // Loading styles
   loadingContainer: {
     alignItems: 'center',
@@ -219,7 +212,6 @@ export const styles = StyleSheet.create({
     color: COLORS.medium || '#666666',
     fontWeight: '500',
   },
-  
   // Legacy styles for compatibility
   header: {
     flexDirection: 'row',
@@ -339,7 +331,6 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 2,
   },
-  
   // Fallback styles for Expo Go
   fallbackContainer: {
     backgroundColor: '#f0f8ff',

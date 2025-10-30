@@ -21,8 +21,6 @@ import { styles } from './styles'; // Import your styles from the styles.js file
 import { BASE_URL } from "../../utils/BASE_URL";
 import PageHeader from "../../components/General/Header";
 const Modify_Page = ({ navigation, route }) => {
-    console.log("Route params:", route.params);
-  
     // Safely handle potentially undefined route.params
     const transportData = route.params?.transport || {};
     const [showStatusCouplingDropdown, setShowStatusCouplingDropdown] = useState(false);
@@ -44,15 +42,11 @@ const statusIncarcareOptions = [
 const statusTransportOptions = [
     { label: "Intarziat", value: "intarziat" },
     { label: "Punctual", value: "punctual" },
-   
   ];
     // Debug what we received
-    console.log("Transport data received:", transportData);
-    
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [authToken, setAuthToken] = useState(null);
-    
     // Form state with safe defaults
     const [formData, setFormData] = useState({
       transport_id: transportData.id || '',
@@ -69,7 +63,6 @@ const statusTransportOptions = [
       status_transport: transportData.status_transport || 'ok',
       dispatcher: transportData.dispatcher || ''
     });
-
   useEffect(() => {
     const loadAuthToken = async () => {
       try {
@@ -81,27 +74,22 @@ const statusTransportOptions = [
           navigation.navigate('Login');
         }
       } catch (error) {
-        console.error("Error loading auth token:", error);
         Alert.alert('Eroare', 'Nu s-a putut încărca token-ul de autentificare.');
       }
     };
-    
     loadAuthToken();
   }, []);
-
   const handleInputChange = (field, value) => {
     setFormData({
       ...formData,
       [field]: value
     });
   };
-
   const handleSubmit = async () => {
     if (!authToken) {
       Alert.alert('Eroare', 'Token-ul de autentificare lipsește.');
       return;
     }
-
     setSubmitting(true);
     try {
       const response = await fetch(
@@ -115,8 +103,6 @@ const statusTransportOptions = [
           body: JSON.stringify(formData)
         }
       );
-        console.log('Response status:', response.status);
-        console.log('DATA TRIMISA:', formData);
       if (response.ok) {
         Alert.alert(
           'Succes',
@@ -125,11 +111,9 @@ const statusTransportOptions = [
         );
       } else {
         const errorData = await response.json();
-        console.error('Server error:', errorData);
         Alert.alert('Eroare', 'Nu s-a putut actualiza transportul. Verificați datele introduse.');
       }
     } catch (error) {
-      console.error('Error updating transport:', error);
       Alert.alert('Eroare', 'Verificați conexiunea la internet.');
     } finally {
       setSubmitting(false);
@@ -138,7 +122,6 @@ const statusTransportOptions = [
 const handleRetry = useCallback(async () => {
   // Add any specific retry logic for transport modification
   // For example, refetch transport data if available
-  console.log('Retrying transport modification page...');
 }, []);
   return (
     <SafeAreaView style={styles.container}>
@@ -149,7 +132,6 @@ const handleRetry = useCallback(async () => {
         showRetry={true}
         showBack={true}
       />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -157,7 +139,6 @@ const handleRetry = useCallback(async () => {
         <ScrollView contentContainerStyle={styles.formContainer}>
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Informații Camion</Text>
-            
             <View style={styles.formGroup}>
               <Text style={styles.label}>Combinație camion</Text>
               <TextInput
@@ -167,7 +148,6 @@ const handleRetry = useCallback(async () => {
                 placeholder="Introduceți combinația camionului"
               />
             </View>
-            
             <View style={styles.formGroup}>
   <Text style={styles.label}>Status Camion</Text>
   <TouchableOpacity 
@@ -179,7 +159,6 @@ const handleRetry = useCallback(async () => {
     </Text>
     <Ionicons name="chevron-down" size={20} color="#666" />
   </TouchableOpacity>
-  
   <Modal
     visible={showStatusCamionDropdown}
     transparent={true}
@@ -211,7 +190,6 @@ const handleRetry = useCallback(async () => {
     </TouchableOpacity>
   </Modal>
 </View>
-            
             <View style={styles.formGroup}>
               <Text style={styles.label}>Detalii status camion</Text>
               <TextInput
@@ -224,7 +202,6 @@ const handleRetry = useCallback(async () => {
               />
             </View>
           </View>
-          
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Informații Marfă</Text>
             </View>
@@ -239,7 +216,6 @@ const handleRetry = useCallback(async () => {
     </Text>
     <Ionicons name="chevron-down" size={20} color="#666" />
   </TouchableOpacity>
-  
   <Modal
     visible={showStatusMarfaDropdown}
     transparent={true}
@@ -271,8 +247,6 @@ const handleRetry = useCallback(async () => {
     </TouchableOpacity>
   </Modal>
 </View>
-
-            
             <View style={styles.formGroup}>
   <Text style={styles.label}>Status Incarcare</Text>
   <TouchableOpacity 
@@ -284,7 +258,6 @@ const handleRetry = useCallback(async () => {
     </Text>
     <Ionicons name="chevron-down" size={20} color="#666" />
   </TouchableOpacity>
-  
   <Modal
     visible={showStatusIncarcareDropdown}
     transparent={true}
@@ -316,7 +289,6 @@ const handleRetry = useCallback(async () => {
     </TouchableOpacity>
   </Modal>
 </View>
-          
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Informații Remorcă</Text>
             </View>
@@ -331,7 +303,6 @@ const handleRetry = useCallback(async () => {
     </Text>
     <Ionicons name="chevron-down" size={20} color="#666" />
   </TouchableOpacity>
-  
   <Modal
     visible={showStatusCouplingDropdown}
     transparent={true}
@@ -363,7 +334,6 @@ const handleRetry = useCallback(async () => {
     </TouchableOpacity>
   </Modal>
 </View>
-            
             <View style={styles.formGroup}>
               <Text style={styles.label}>Tip remorcă</Text>
               <TextInput
@@ -373,7 +343,6 @@ const handleRetry = useCallback(async () => {
                 placeholder="Introduceți tipul remorcii"
               />
             </View>
-            
             <View style={styles.formGroup}>
               <Text style={styles.label}>Număr remorcă</Text>
               <TextInput
@@ -383,7 +352,6 @@ const handleRetry = useCallback(async () => {
                 placeholder="Introduceți numărul remorcii"
               />
             </View>
-            
             <View style={styles.formGroup}>
   <Text style={styles.label}>Status Remorca</Text>
   <TouchableOpacity 
@@ -395,7 +363,6 @@ const handleRetry = useCallback(async () => {
     </Text>
     <Ionicons name="chevron-down" size={20} color="#666" />
   </TouchableOpacity>
-  
   <Modal
     visible={showStatusRemorcaDropdown}
     transparent={true}
@@ -429,7 +396,6 @@ const handleRetry = useCallback(async () => {
 </View>
           <View style={styles.formSection}>
             <Text style={styles.sectionTitle}>Alte Informații</Text>
-            
             <View style={styles.formGroup}>
               <Text style={styles.label}>Detracție</Text>
               <TextInput
@@ -451,7 +417,6 @@ const handleRetry = useCallback(async () => {
     </Text>
     <Ionicons name="chevron-down" size={20} color="#666" />
   </TouchableOpacity>
-  
   <Modal
     visible={showStatusTransportDropdown}
     transparent={true}
@@ -483,7 +448,6 @@ const handleRetry = useCallback(async () => {
     </TouchableOpacity>
   </Modal>
 </View>
-          
           <TouchableOpacity
             style={styles.submitButton}
             onPress={handleSubmit}
@@ -500,7 +464,4 @@ const handleRetry = useCallback(async () => {
     </SafeAreaView>
   );
 };
-
-
-
 export default Modify_Page;

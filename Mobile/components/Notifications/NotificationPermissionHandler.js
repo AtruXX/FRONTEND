@@ -6,32 +6,26 @@ import * as Device from 'expo-device';
 import { Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import backgroundNotificationService from '../../services/backgroundNotificationService';
-
 const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied }) => {
   const [permissionStatus, setPermissionStatus] = useState('unknown');
   const [isLoading, setIsLoading] = useState(false);
   const [batteryOptimizationStatus, setBatteryOptimizationStatus] = useState('unknown');
   const [isAndroidDevice, setIsAndroidDevice] = useState(false);
-
   useEffect(() => {
     initializePermissionHandler();
   }, []);
-
   const initializePermissionHandler = async () => {
     // Check if Android device
     const isAndroid = Platform.OS === 'android' && Device.isDevice;
     setIsAndroidDevice(isAndroid);
-
     // Initial permission check
     await checkPermissionStatus();
-
     // For Android, also check battery optimization
     if (isAndroid) {
       await checkBatteryOptimizationStatus();
       setupAppStateListener();
     }
   };
-
   const setupAppStateListener = () => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
@@ -39,43 +33,35 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
         checkPermissionStatus();
       }
     });
-
     return () => subscription?.remove();
   };
-
   const checkPermissionStatus = async () => {
     try {
       const { status } = await Notifications.getPermissionsAsync();
       setPermissionStatus(status);
-
       if (status === 'granted' && onPermissionGranted) {
         onPermissionGranted();
       } else if (status === 'denied' && onPermissionDenied) {
         onPermissionDenied();
       }
     } catch (error) {
-      console.error('Error checking notification permissions:', error);
     }
   };
-
   const checkBatteryOptimizationStatus = async () => {
     try {
       // Check if we've asked about battery optimization recently
       const lastAsked = await AsyncStorage.getItem('batteryOptimizationAsked');
       const now = Date.now();
       const oneWeek = 7 * 24 * 60 * 60 * 1000;
-
       if (!lastAsked || (now - parseInt(lastAsked)) > oneWeek) {
         setBatteryOptimizationStatus('not_asked');
       } else {
         setBatteryOptimizationStatus('asked');
       }
     } catch (error) {
-      console.error('Error checking battery optimization status:', error);
       setBatteryOptimizationStatus('unknown');
     }
   };
-
   const requestPermissions = async () => {
     setIsLoading(true);
     try {
@@ -92,21 +78,17 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
           allowSound: true,
         },
       });
-
       setPermissionStatus(status);
-
       if (status === 'granted') {
         // For Android, also check battery optimization after granting permissions
         if (isAndroidDevice) {
           await handleAndroidOptimizations();
         }
-
         Alert.alert(
           'Notifications Enabled',
           'You will now receive important notifications about your transports and documents.',
           [{ text: 'OK' }]
         );
-
         if (onPermissionGranted) {
           onPermissionGranted();
         }
@@ -117,13 +99,11 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
         }
       }
     } catch (error) {
-      console.error('Error requesting notification permissions:', error);
       Alert.alert('Error', 'Failed to request notification permissions');
     } finally {
       setIsLoading(false);
     }
   };
-
   const handleAndroidOptimizations = async () => {
     // Ask about battery optimization after notification permissions are granted
     if (batteryOptimizationStatus === 'not_asked') {
@@ -132,7 +112,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
       }, 1000); // Delay to not overwhelm user
     }
   };
-
   const showPermissionDeniedAlert = () => {
     Alert.alert(
       'Notifications Disabled',
@@ -143,7 +122,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
       ]
     );
   };
-
   const showBatteryOptimizationAlert = async () => {
     Alert.alert(
       'Android Battery Optimization',
@@ -167,7 +145,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
       ]
     );
   };
-
   const showAndroidSetupGuide = () => {
     Alert.alert(
       'Android Setup Guide',
@@ -183,7 +160,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
       ]
     );
   };
-
   const openSettings = () => {
     if (Platform.OS === 'ios') {
       Linking.openURL('app-settings:');
@@ -191,7 +167,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
       Linking.openSettings();
     }
   };
-
   const testNotification = async () => {
     try {
       await backgroundNotificationService.scheduleLocalNotification(
@@ -201,14 +176,11 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
       );
       Alert.alert('Test Sent', 'A test notification has been sent!');
     } catch (error) {
-      console.error('Error sending test notification:', error);
       Alert.alert('Error', 'Failed to send test notification');
     }
   };
-
   const renderAndroidOptimizationStatus = () => {
     if (!isAndroidDevice) return null;
-
     return (
       <View style={styles.androidContainer}>
         <Text style={styles.androidTitle}>Android Optimization</Text>
@@ -232,7 +204,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
       </View>
     );
   };
-
   const renderPermissionStatus = () => {
     switch (permissionStatus) {
       case 'granted':
@@ -248,7 +219,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
             {renderAndroidOptimizationStatus()}
           </View>
         );
-
       case 'denied':
         return (
           <View>
@@ -266,7 +236,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
             )}
           </View>
         );
-
       case 'undetermined':
         return (
           <View>
@@ -290,7 +259,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
             )}
           </View>
         );
-
       default:
         return (
           <View style={styles.permissionContainer}>
@@ -300,7 +268,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
         );
     }
   };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Background Notifications</Text>
@@ -313,7 +280,6 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     padding: 16,
@@ -412,5 +378,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
 export default NotificationPermissionHandler;

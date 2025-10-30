@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NotificationUtils } from '../../services/notificationService';
-
 const NotificationItem = ({
   notification,
   onPress,
@@ -13,15 +12,12 @@ const NotificationItem = ({
   const getNotificationIcon = () => {
     return NotificationUtils.getNotificationIcon(notification.notification_type);
   };
-
   const getNotificationColor = () => {
     return NotificationUtils.getNotificationColor(notification.notification_type);
   };
-
   const formatTimestamp = () => {
     return NotificationUtils.formatTimestamp(notification.created_at);
   };
-
   const handlePress = () => {
     if (!notification.is_read && onMarkAsRead) {
       onMarkAsRead(notification.id);
@@ -30,7 +26,6 @@ const NotificationItem = ({
       onPress(notification);
     }
   };
-
   return (
     <TouchableOpacity
       style={[
@@ -49,7 +44,6 @@ const NotificationItem = ({
           />
         </View>
       </View>
-
       <View style={styles.middleContent}>
         <View style={styles.header}>
           <Text style={styles.title} numberOfLines={1}>
@@ -59,11 +53,9 @@ const NotificationItem = ({
             {formatTimestamp()}
           </Text>
         </View>
-
         <Text style={styles.message} numberOfLines={2}>
           {notification.message}
         </Text>
-
         {notification.data && Object.keys(notification.data).length > 0 && (
           <View style={styles.metaInfo}>
             {notification.user_id && (
@@ -78,7 +70,6 @@ const NotificationItem = ({
           </View>
         )}
       </View>
-
       {showActions && (
         <View style={styles.rightContent}>
           {!notification.is_read && (
@@ -92,7 +83,6 @@ const NotificationItem = ({
               <Ionicons name="checkmark-circle-outline" size={20} color="#4ECDC4" />
             </TouchableOpacity>
           )}
-
           <TouchableOpacity
             style={styles.actionButton}
             onPress={(e) => {
@@ -104,14 +94,12 @@ const NotificationItem = ({
           </TouchableOpacity>
         </View>
       )}
-
       {!notification.is_read && (
         <View style={styles.unreadIndicator} />
       )}
     </TouchableOpacity>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -190,5 +178,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#6366F1',
   },
 });
-
 export default NotificationItem;

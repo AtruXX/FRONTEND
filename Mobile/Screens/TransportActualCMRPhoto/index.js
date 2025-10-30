@@ -8,11 +8,9 @@ import { useGetDriverQueueQuery } from '../../services/transportService';
 import { useUploadCMRFizicMutation, useGetCMRStatusQuery, useGetCMRCompleteQuery } from '../../services/CMRService';
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
-
 const PhotoCMRForm = ({ navigation }) => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
-
   // Get user profile to access active transport data
   const {
     data: profileData,
@@ -20,7 +18,6 @@ const PhotoCMRForm = ({ navigation }) => {
     error: profileError,
     refetch: refetchProfile
   } = useGetUserProfileQuery();
-
   // Also get queue data for new transport system
   const {
     data: queueData,
@@ -28,10 +25,8 @@ const PhotoCMRForm = ({ navigation }) => {
     error: queueError,
     refetch: refetchQueue
   } = useGetDriverQueueQuery();
-
   // Upload mutation - using new dedicated endpoint
   const [uploadCMRFizic, { isLoading: isUploading }] = useUploadCMRFizicMutation();
-
   // Get CMR status to show current state
   const {
     data: cmrStatus,
@@ -39,7 +34,6 @@ const PhotoCMRForm = ({ navigation }) => {
   } = useGetCMRStatusQuery(activeTransportId, {
     skip: !activeTransportId
   });
-
   // Get complete CMR data including physical photos
   const {
     data: cmrCompleteData,
@@ -48,19 +42,16 @@ const PhotoCMRForm = ({ navigation }) => {
   } = useGetCMRCompleteQuery(activeTransportId, {
     skip: !activeTransportId
   });
-
   // Smart transport ID detection with fallback
   const getActiveTransportId = () => {
     // Priority 1: Queue system current transport
     if (queueData?.current_transport_id) {
       return queueData.current_transport_id;
     }
-
     // Priority 2: Profile active transport (legacy system)
     if (profileData?.active_transport) {
       return profileData.active_transport;
     }
-
     // Priority 3: Check queue for startable transports
     if (queueData?.queue && queueData.queue.length > 0) {
       const startableTransport = queueData.queue.find(t => t.can_start || t.is_current);
@@ -70,31 +61,24 @@ const PhotoCMRForm = ({ navigation }) => {
       // Fallback to first transport in queue
       return queueData.queue[0]?.transport_id;
     }
-
     return null;
   };
-
   const activeTransportId = getActiveTransportId();
-
   const screenWidth = Dimensions.get('window').width;
   const imageSize = (screenWidth - 60) / 2; // 2 images per row with margins
-
   // Handle camera capture
   const handleCameraCapture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    
     if (status !== 'granted') {
       Alert.alert('Permisiune necesară', 'Avem nevoie de permisiunea de a accesa camera pentru a fotografia CMR-ul.');
       return;
     }
-    
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.8,
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
     });
-    
     if (!result.canceled) {
       const newImage = {
         id: Date.now().toString(),
@@ -107,16 +91,13 @@ const PhotoCMRForm = ({ navigation }) => {
       setSelectedImages([...selectedImages, newImage]);
     }
   };
-
   // Handle gallery selection
   const handleGallerySelect = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
     if (status !== 'granted') {
       Alert.alert('Permisiune necesară', 'Avem nevoie de permisiunea de a accesa galeria pentru a selecta imagini CMR.');
       return;
     }
-    
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       aspect: [4, 3],
@@ -124,7 +105,6 @@ const PhotoCMRForm = ({ navigation }) => {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
     });
-    
     if (!result.canceled) {
       const newImages = result.assets.map((asset, index) => ({
         id: (Date.now() + index).toString(),
@@ -137,7 +117,6 @@ const PhotoCMRForm = ({ navigation }) => {
       setSelectedImages([...selectedImages, ...newImages]);
     }
   };
-
   // Handle document picker (for PDF files)
   const handleDocumentPicker = async () => {
     try {
@@ -146,7 +125,6 @@ const PhotoCMRForm = ({ navigation }) => {
         copyToCacheDirectory: true,
         multiple: true,
       });
-      
       if (!result.canceled) {
         const newDocuments = result.assets.map((asset, index) => ({
           id: (Date.now() + index).toString(),
@@ -163,7 +141,6 @@ const PhotoCMRForm = ({ navigation }) => {
       Alert.alert('Eroare', 'Nu s-a putut selecta documentul.');
     }
   };
-
   // Remove image
   const removeImage = (imageId) => {
     Alert.alert(
@@ -184,23 +161,19 @@ const PhotoCMRForm = ({ navigation }) => {
       ]
     );
   };
-
   // Handle upload using new dedicated endpoint
   const handleUpload = async () => {
     if (selectedImages.length === 0) {
       Alert.alert('Nicio imagine selectată', 'Vă rugăm să adăugați cel puțin o imagine sau document CMR.');
       return;
     }
-
     if (!activeTransportId) {
       Alert.alert('Eroare', 'Nu există un transport activ pentru încărcarea documentelor CMR.');
       return;
     }
-
     try {
       let uploadedCount = 0;
       const errors = [];
-
       // Upload each document individually using the new endpoint
       for (let i = 0; i < selectedImages.length; i++) {
         const doc = selectedImages[i];
@@ -215,11 +188,9 @@ const PhotoCMRForm = ({ navigation }) => {
           errors.push(`${doc.title || doc.name}: ${error.message}`);
         }
       }
-
       // Refresh CMR status and complete data after upload
       await refetchCMRStatus();
       await refetchCMRComplete();
-
       if (uploadedCount === selectedImages.length) {
         Alert.alert(
           'Upload reușit',
@@ -253,7 +224,6 @@ const PhotoCMRForm = ({ navigation }) => {
       );
     }
   };
-
   const handleRetry = useCallback(async () => {
     try {
       await Promise.all([
@@ -265,15 +235,12 @@ const PhotoCMRForm = ({ navigation }) => {
       // Retry failed, but we don't need to log it
     }
   }, [refetchProfile, refetchQueue, refetchCMRComplete]);
-
   // Handle viewing a photo in full screen
   const handleViewPhoto = (photo) => {
     setSelectedPhotoForView(photo);
   };
-
   // Get existing CMR photos from complete data
   const existingPhotos = cmrCompleteData?.physical_cmrs || [];
-
   // Render image preview
   const renderImagePreview = (image) => {
     return (
@@ -292,14 +259,12 @@ const PhotoCMRForm = ({ navigation }) => {
             resizeMode="cover"
           />
         )}
-        
         <TouchableOpacity 
           style={styles.removeImageButton}
           onPress={() => removeImage(image.id)}
         >
           <Ionicons name="close-circle" size={24} color="#EF4444" />
         </TouchableOpacity>
-        
         <View style={styles.imageTypeIndicator}>
           <Ionicons
             name={image.mimeType?.includes('pdf') ? 'document' : 'image'}
@@ -310,7 +275,6 @@ const PhotoCMRForm = ({ navigation }) => {
       </View>
     );
   };
-
   // Error handling - only show error if PROFILE fails (queue is optional)
   if (profileError) {
     return (
@@ -333,7 +297,6 @@ const PhotoCMRForm = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // No active transport
   if (!activeTransportId && !profileLoading && !queueLoading) {
     return (
@@ -354,7 +317,6 @@ const PhotoCMRForm = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   return (
     <SafeAreaView style={styles.container}>
       <PageHeader
@@ -364,7 +326,6 @@ const PhotoCMRForm = ({ navigation }) => {
         showRetry={true}
         showBack={true}
       />
-
       <ScrollView style={styles.photoFormContainer} contentContainerStyle={styles.photoFormContent}>
         {/* CMR Status Badge */}
         {cmrStatus && (
@@ -406,7 +367,6 @@ const PhotoCMRForm = ({ navigation }) => {
             </Text>
           </View>
         )}
-
         {/* Existing CMR Photos Section */}
         {existingPhotos.length > 0 && (
           <View style={styles.existingPhotosSection}>
@@ -443,7 +403,6 @@ const PhotoCMRForm = ({ navigation }) => {
             </View>
           </View>
         )}
-
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
           <Ionicons name="information-circle" size={24} color="#3B82F6" />
@@ -456,7 +415,6 @@ const PhotoCMRForm = ({ navigation }) => {
             • Acceptăm imagini (JPEG, PNG, GIF, WebP) și fișiere PDF
           </Text>
         </View>
-
         {/* Action buttons */}
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity 
@@ -467,7 +425,6 @@ const PhotoCMRForm = ({ navigation }) => {
             <Text style={styles.actionButtonText}>Fotografiază</Text>
             <Text style={styles.actionButtonSubtext}>Fă o poză nouă</Text>
           </TouchableOpacity>
-
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={handleGallerySelect}
@@ -476,7 +433,6 @@ const PhotoCMRForm = ({ navigation }) => {
             <Text style={styles.actionButtonText}>Galerie</Text>
             <Text style={styles.actionButtonSubtext}>Selectează din galerie</Text>
           </TouchableOpacity>
-
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={handleDocumentPicker}
@@ -486,7 +442,6 @@ const PhotoCMRForm = ({ navigation }) => {
             <Text style={styles.actionButtonSubtext}>Selectează PDF</Text>
           </TouchableOpacity>
         </View>
-
         {/* Selected images preview */}
         {selectedImages.length > 0 && (
           <View style={styles.previewSection}>
@@ -498,7 +453,6 @@ const PhotoCMRForm = ({ navigation }) => {
             </View>
           </View>
         )}
-
         {/* Upload button */}
         {selectedImages.length > 0 && (
           <TouchableOpacity 
@@ -524,7 +478,6 @@ const PhotoCMRForm = ({ navigation }) => {
             )}
           </TouchableOpacity>
         )}
-
         {/* Empty state */}
         {selectedImages.length === 0 && (
           <View style={styles.emptyState}>
@@ -536,7 +489,6 @@ const PhotoCMRForm = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
-
       {/* Full Screen Photo Viewer Modal */}
       <Modal
         visible={selectedPhotoForView !== null}
@@ -551,7 +503,6 @@ const PhotoCMRForm = ({ navigation }) => {
           >
             <Ionicons name="close-circle" size={40} color="#FFFFFF" />
           </TouchableOpacity>
-
           {selectedPhotoForView && (
             <View style={styles.fullScreenImageContainer}>
               <Image
@@ -578,5 +529,4 @@ const PhotoCMRForm = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 export default PhotoCMRForm;

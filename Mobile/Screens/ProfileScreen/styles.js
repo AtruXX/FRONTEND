@@ -1,6 +1,5 @@
 import { StyleSheet } from "react-native";
 import COLORS from "../../utils/COLORS.js";
-
 // Enhanced color palette for production consistency
 const ENHANCED_COLORS = {
   ...COLORS,
@@ -18,7 +17,6 @@ const ENHANCED_COLORS = {
   warning: "#FFBD59",
   danger: "#FF7285",
 };
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -44,7 +42,6 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  
   // Profile Section - More prominent and friendly
   profileInfoContainer: {
     flexDirection: 'row',
@@ -100,7 +97,6 @@ export const styles = StyleSheet.create({
     color: ENHANCED_COLORS.medium,
     fontWeight: '400',
   },
-
   // Data Container - Cleaner layout
   dataContainer: {
     backgroundColor: ENHANCED_COLORS.card,
@@ -144,7 +140,6 @@ export const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
-
   // Alert Container for expiring documents
   alertContainer: {
     backgroundColor: ENHANCED_COLORS.card,
@@ -189,7 +184,6 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-
   // Settings Section - More organized
   settingsTitle: {
     fontSize: 24,
@@ -199,7 +193,6 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
     paddingHorizontal: 20,
   },
-  
   settingOuterContainer: {
     marginVertical: 6,
     marginHorizontal: 16,
@@ -253,7 +246,6 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: ENHANCED_COLORS.card,
   },
-
   // Dropdown containers
   dropdownContainer: {
     padding: 20,
@@ -273,7 +265,6 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  
   // Document items
   documentItem: {
     flexDirection: 'row',
@@ -299,7 +290,6 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: ENHANCED_COLORS.medium,
   },
-
   // Call button
   callButton: {
     flexDirection: 'row',
@@ -321,7 +311,6 @@ export const styles = StyleSheet.create({
     color: ENHANCED_COLORS.card,
     marginLeft: 10,
   },
-
   // Sign Out Button - More prominent but safe styling
   signOutButton: {
     marginTop: 32,
@@ -343,7 +332,6 @@ export const styles = StyleSheet.create({
     color: COLORS.danger,
     fontWeight: '600',
   },
-
   // Legacy styles that might be needed elsewhere
   profileImage: {
     width: 70,

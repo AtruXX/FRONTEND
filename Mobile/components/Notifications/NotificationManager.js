@@ -2,46 +2,36 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import NotificationToast from './NotificationToast';
 import { useNotifications } from '../../Screens/NotificationsContext';
-
 const NotificationManager = ({ navigation }) => {
   const { notifications } = useNotifications();
   const [toasts, setToasts] = useState([]);
-
   useEffect(() => {
     // Show toast for new notifications
     if (notifications.length > 0) {
       const latestNotification = notifications[0];
-
       // Check if this is a new notification (not already shown as toast)
       const isNewNotification = !toasts.find(toast => toast.id === latestNotification.id);
-
       if (isNewNotification && !latestNotification.is_read) {
         showToast(latestNotification);
       }
     }
   }, [notifications]);
-
   const showToast = (notification) => {
     const toastId = `toast_${notification.id}_${Date.now()}`;
-
     const newToast = {
       id: toastId,
       notification,
       timestamp: Date.now(),
     };
-
     setToasts(prev => [...prev, newToast]);
-
     // Auto-remove toast after delay
     setTimeout(() => {
       removeToast(toastId);
     }, 5000);
   };
-
   const removeToast = (toastId) => {
     setToasts(prev => prev.filter(toast => toast.id !== toastId));
   };
-
   const handleToastPress = (notification) => {
     // Handle navigation based on notification type
     switch (notification.notification_type) {
@@ -66,11 +56,9 @@ const NotificationManager = ({ navigation }) => {
         break;
     }
   };
-
   if (toasts.length === 0) {
     return null;
   }
-
   return (
     <View style={styles.container} pointerEvents="box-none">
       {toasts.map((toast, index) => (
@@ -89,7 +77,6 @@ const NotificationManager = ({ navigation }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
@@ -101,5 +88,4 @@ const styles = StyleSheet.create({
     pointerEvents: 'box-none',
   },
 });
-
 export default NotificationManager;

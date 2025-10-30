@@ -1,13 +1,10 @@
 import { StyleSheet, Dimensions } from 'react-native';
-
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
 export const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
-
   // Header Styles
   modalHeader: {
     backgroundColor: 'white',
@@ -51,14 +48,12 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   // Content Styles
   modalContent: {
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
   },
-
   // Section Styles
   section: {
     backgroundColor: 'white',
@@ -82,7 +77,6 @@ export const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 8,
   },
-
   // Info Grid
   infoGrid: {
     gap: 12,
@@ -108,7 +102,6 @@ export const styles = StyleSheet.create({
     flex: 2,
     textAlign: 'right',
   },
-
   // Status Grid
   statusGrid: {
     gap: 8,
@@ -139,7 +132,6 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
-
   // Notes Section
   notesContainer: {
     backgroundColor: '#f8f9fa',
@@ -152,7 +144,6 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 8,
   },
-
   // Bottom padding
   bottomPadding: {
     height: 32,

@@ -1,5 +1,4 @@
 import { StyleSheet, Dimensions } from 'react-native';
-
 // Color palette
 const COLORS = {
   background: "#F4F5FB",
@@ -17,9 +16,7 @@ const COLORS = {
   danger: "#FF7285",
   selected: "#E8F5E8",
 };
-
 const { width: screenWidth } = Dimensions.get('window');
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,

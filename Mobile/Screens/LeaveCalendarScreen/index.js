@@ -16,7 +16,6 @@ import {
   useGetLeaveRequestsQuery
 } from '../../services/leaveService';
 import PageHeader from "../../components/General/Header";
-
 // Calendar Legend Component
 const CalendarLegend = React.memo(() => (
   <View style={styles.legendContainer}>
@@ -37,14 +36,12 @@ const CalendarLegend = React.memo(() => (
     </View>
   </View>
 ));
-
 // Calendar Stats Component
 const CalendarStats = React.memo(({ stats, selectedMonth, onRefresh }) => {
   const monthName = new Date(selectedMonth + '-01').toLocaleDateString('ro-RO', {
     month: 'long',
     year: 'numeric'
   });
-
   return (
     <View style={styles.statsContainer}>
       <View style={styles.statsHeader}>
@@ -53,7 +50,6 @@ const CalendarStats = React.memo(({ stats, selectedMonth, onRefresh }) => {
           <Ionicons name="refresh" size={16} color="#6366F1" />
         </TouchableOpacity>
       </View>
-
       <View style={styles.statsGrid}>
         <View style={styles.statItem}>
           <Text style={[styles.statNumber, { color: '#10B981' }]}>
@@ -61,14 +57,12 @@ const CalendarStats = React.memo(({ stats, selectedMonth, onRefresh }) => {
           </Text>
           <Text style={styles.statLabel}>Zile aprobate</Text>
         </View>
-
         <View style={styles.statItem}>
           <Text style={[styles.statNumber, { color: '#F59E0B' }]}>
             {stats.pendingDays || 0}
           </Text>
           <Text style={styles.statLabel}>În așteptare</Text>
         </View>
-
         <View style={styles.statItem}>
           <Text style={[styles.statNumber, { color: '#6366F1' }]}>
             {stats.totalRequests || 0}
@@ -79,7 +73,6 @@ const CalendarStats = React.memo(({ stats, selectedMonth, onRefresh }) => {
     </View>
   );
 });
-
 // Upcoming Leave Component
 const UpcomingLeave = React.memo(({ upcomingLeave, navigation }) => {
   if (!upcomingLeave || upcomingLeave.length === 0) {
@@ -99,14 +92,12 @@ const UpcomingLeave = React.memo(({ upcomingLeave, navigation }) => {
       </View>
     );
   }
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('ro-RO', {
       day: '2-digit',
       month: 'short'
     });
   };
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved': return '#10B981';
@@ -115,7 +106,6 @@ const UpcomingLeave = React.memo(({ upcomingLeave, navigation }) => {
       default: return '#6B7280';
     }
   };
-
   return (
     <View style={styles.upcomingContainer}>
       <View style={styles.upcomingHeader}>
@@ -124,7 +114,6 @@ const UpcomingLeave = React.memo(({ upcomingLeave, navigation }) => {
           <Text style={styles.viewAllText}>Vezi toate</Text>
         </TouchableOpacity>
       </View>
-
       {upcomingLeave.slice(0, 3).map((leave) => (
         <View key={leave.id} style={styles.upcomingItem}>
           <View style={styles.upcomingDateContainer}>
@@ -152,13 +141,11 @@ const UpcomingLeave = React.memo(({ upcomingLeave, navigation }) => {
     </View>
   );
 });
-
 // Main Leave Calendar Screen
 const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7) // YYYY-MM format
   );
-
   // Calculate month boundaries for API calls
   const monthBoundaries = useMemo(() => {
     const year = parseInt(selectedMonth.split('-')[0]);
@@ -167,7 +154,6 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
     return { startDate, endDate };
   }, [selectedMonth]);
-
   // Fetch user's own requests for calendar display and upcoming leave
   const {
     data: requestsData,
@@ -176,27 +162,21 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
     error: requestsError,
     refetch: refetchRequests
   } = useGetLeaveRequestsQuery();
-
   // Process driver's own leave requests to create marked dates
   const markedDates = useMemo(() => {
     if (!requestsData?.results) return {};
-
     const marked = {};
-
     requestsData.results.forEach((leave) => {
       const start = new Date(leave.start_date);
       const end = new Date(leave.end_date);
       const current = new Date(start);
-
       // Color based on status - green for approved leave as requested
       let color = '#6B7280'; // default
       if (leave.status === 'approved') color = '#10B981'; // Green for approved
       else if (leave.status === 'pending') color = '#F59E0B'; // Yellow for pending
       else if (leave.status === 'rejected') color = '#EF4444'; // Red for rejected
-
       while (current <= end) {
         const dateString = current.toISOString().split('T')[0];
-
         // Only mark dates in the selected month
         if (dateString.startsWith(selectedMonth)) {
           marked[dateString] = {
@@ -206,78 +186,62 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
             endingDay: current.getTime() === end.getTime(),
           };
         }
-
         current.setDate(current.getDate() + 1);
       }
     });
-
     return marked;
   }, [requestsData, selectedMonth]);
-
   // Calculate stats for selected month
   const monthStats = useMemo(() => {
     if (!requestsData?.results) return {};
-
     const monthRequests = requestsData.results.filter(request => {
       const startDate = request.start_date.slice(0, 7);
       const endDate = request.end_date.slice(0, 7);
       return startDate === selectedMonth || endDate === selectedMonth;
     });
-
     let approvedDays = 0;
     let pendingDays = 0;
-
     monthRequests.forEach(request => {
       const start = new Date(request.start_date);
       const end = new Date(request.end_date);
       const diffTime = Math.abs(end - start);
       const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
       if (request.status === 'approved') {
         approvedDays += days;
       } else if (request.status === 'pending') {
         pendingDays += days;
       }
     });
-
     return {
       approvedDays,
       pendingDays,
       totalRequests: monthRequests.length
     };
   }, [requestsData, selectedMonth]);
-
   // Get upcoming leave requests
   const upcomingLeave = useMemo(() => {
     if (!requestsData?.results) return [];
-
     const today = new Date().toISOString().split('T')[0];
     return requestsData.results
       .filter(request => request.start_date >= today)
       .sort((a, b) => new Date(a.start_date) - new Date(b.start_date))
       .slice(0, 5);
   }, [requestsData]);
-
   const onRefresh = useCallback(async () => {
     try {
       await refetchRequests();
     } catch (error) {
-      console.error('Error refreshing calendar data:', error);
     }
   }, [refetchRequests]);
-
   const handleMonthChange = useCallback((month) => {
     setSelectedMonth(month.dateString.slice(0, 7));
   }, []);
-
   const handleDayPress = useCallback((day) => {
     const selectedDate = day.dateString;
-
     // Find leave for this date from driver's own requests
     const leaveForDate = requestsData?.results?.find(leave =>
       selectedDate >= leave.start_date && selectedDate <= leave.end_date
     );
-
     if (leaveForDate) {
       Alert.alert(
         'Detalii concediu',
@@ -286,7 +250,6 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
       );
     }
   }, [requestsData]);
-
   // Handle error state
   if (requestsError) {
     return (
@@ -298,7 +261,6 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
           showRetry={true}
           showBack={true}
         />
-
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#EF4444" />
           <Text style={styles.errorTitle}>Eroare la încărcare</Text>
@@ -312,7 +274,6 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
       </SafeAreaView>
     );
   }
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <PageHeader
@@ -322,7 +283,6 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
         showRetry={true}
         showBack={true}
       />
-
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
@@ -341,7 +301,6 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
           selectedMonth={selectedMonth}
           onRefresh={onRefresh}
         />
-
         {/* Calendar */}
         <View style={styles.calendarContainer}>
           <Calendar
@@ -372,10 +331,8 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
             }}
           />
         </View>
-
         {/* Calendar Legend */}
         <CalendarLegend />
-
         {/* Upcoming Leave */}
         <UpcomingLeave
           upcomingLeave={upcomingLeave}
@@ -385,7 +342,5 @@ const LeaveCalendarScreen = React.memo(({ navigation, route }) => {
     </SafeAreaView>
   );
 });
-
 LeaveCalendarScreen.displayName = 'LeaveCalendarScreen';
-
 export default LeaveCalendarScreen;

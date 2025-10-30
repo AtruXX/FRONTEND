@@ -1,19 +1,14 @@
 // Test utility for background notifications
 import backgroundNotificationService from '../services/backgroundNotificationService';
-
 export const testBackgroundNotifications = async () => {
   const tests = [];
-
   try {
-    console.log('🧪 Starting background notification tests...');
-
     // Test 1: Check if service is initialized
     tests.push({
       name: 'Service Initialization',
       status: backgroundNotificationService ? 'PASS' : 'FAIL',
       result: backgroundNotificationService ? 'Service instance exists' : 'Service not initialized'
     });
-
     // Test 2: Check notification permissions
     const hasPermissions = await backgroundNotificationService.areNotificationsEnabled();
     tests.push({
@@ -21,7 +16,6 @@ export const testBackgroundNotifications = async () => {
       status: hasPermissions ? 'PASS' : 'WARN',
       result: hasPermissions ? 'Permissions granted' : 'Permissions not granted - user needs to enable'
     });
-
     // Test 3: Send test notification
     try {
       const notificationId = await backgroundNotificationService.scheduleLocalNotification(
@@ -41,7 +35,6 @@ export const testBackgroundNotifications = async () => {
         result: `Error: ${error.message}`
       });
     }
-
     // Test 4: Test badge functionality
     try {
       await backgroundNotificationService.setBadgeCount(5);
@@ -60,7 +53,6 @@ export const testBackgroundNotifications = async () => {
         result: `Error: ${error.message}`
       });
     }
-
     // Test 5: Test WebSocket notification handling
     try {
       const mockWebSocketData = {
@@ -70,7 +62,6 @@ export const testBackgroundNotifications = async () => {
         user_id: 'test_user',
         data: { transport_id: 123 }
       };
-
       await backgroundNotificationService.handleWebSocketNotification(mockWebSocketData);
       tests.push({
         name: 'WebSocket Notification Handling',
@@ -84,40 +75,23 @@ export const testBackgroundNotifications = async () => {
         result: `Error: ${error.message}`
       });
     }
-
     // Generate test report
-    console.log('\n📊 Background Notification Test Results:');
-    console.log('=' * 50);
-
     tests.forEach((test, index) => {
       const emoji = test.status === 'PASS' ? '✅' : test.status === 'WARN' ? '⚠️' : '❌';
-      console.log(`${emoji} Test ${index + 1}: ${test.name}`);
-      console.log(`   Status: ${test.status}`);
-      console.log(`   Result: ${test.result}\n`);
     });
-
     const passCount = tests.filter(t => t.status === 'PASS').length;
     const warnCount = tests.filter(t => t.status === 'WARN').length;
     const failCount = tests.filter(t => t.status === 'FAIL').length;
-
-    console.log(`📈 Summary: ${passCount} passed, ${warnCount} warnings, ${failCount} failed`);
-
     const allPassed = failCount === 0;
-
     if (allPassed) {
-      console.log('🎉 All critical tests passed! Background notifications are working correctly.');
     } else {
-      console.log('⚠️ Some tests failed. Please check the implementation and permissions.');
     }
-
     return {
       success: allPassed,
       tests,
       summary: { passed: passCount, warnings: warnCount, failed: failCount }
     };
-
   } catch (error) {
-    console.error('❌ Test suite failed:', error);
     return {
       success: false,
       error: error.message,
@@ -125,7 +99,6 @@ export const testBackgroundNotifications = async () => {
     };
   }
 };
-
 // Test specific notification types
 export const testNotificationTypes = async () => {
   const notificationTypes = [
@@ -150,9 +123,6 @@ export const testNotificationTypes = async () => {
       message: 'System maintenance scheduled for tonight'
     }
   ];
-
-  console.log('🔔 Testing different notification types...');
-
   for (const [index, notification] of notificationTypes.entries()) {
     try {
       await backgroundNotificationService.scheduleLocalNotification(
@@ -161,17 +131,12 @@ export const testNotificationTypes = async () => {
         { type: notification.type },
         { seconds: index * 2 } // Stagger notifications by 2 seconds
       );
-      console.log(`✅ ${notification.type} notification scheduled`);
     } catch (error) {
-      console.error(`❌ Failed to schedule ${notification.type}:`, error);
     }
   }
 };
-
 // Test background vs foreground behavior
 export const testBackgroundBehavior = async () => {
-  console.log('📱 Testing background vs foreground notification behavior...');
-
   // This would typically be called when app goes to background
   const testBackgroundNotification = async () => {
     await backgroundNotificationService.scheduleLocalNotification(
@@ -180,7 +145,6 @@ export const testBackgroundBehavior = async () => {
       { type: 'background_test' }
     );
   };
-
   // This would typically be called when app comes to foreground
   const testForegroundNotification = async () => {
     await backgroundNotificationService.scheduleLocalNotification(
@@ -189,7 +153,6 @@ export const testBackgroundBehavior = async () => {
       { type: 'foreground_test' }
     );
   };
-
   return {
     testBackgroundNotification,
     testForegroundNotification

@@ -1,6 +1,5 @@
 import { StyleSheet } from "react-native";
 import COLORS from '../../utils/COLORS.js'; // Import your COLORS
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -162,7 +161,6 @@ export const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: '500',
   },
-
   // File Preview Section
   filePreviewSection: {
     marginBottom: 24,
@@ -202,7 +200,6 @@ export const styles = StyleSheet.create({
   removeFileButton: {
     padding: 4,
   },
-
   // Upload Methods
   uploadMethodsContainer: {
     marginBottom: 24,
@@ -254,7 +251,6 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.medium,
   },
-
   // Upload Button
   uploadButton: {
     backgroundColor: COLORS.primary,
@@ -284,7 +280,6 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.card,
   },
-
   // Help Container
   helpContainer: {
     flexDirection: 'row',

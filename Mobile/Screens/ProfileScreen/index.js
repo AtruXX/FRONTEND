@@ -20,20 +20,17 @@ import { useGetPersonalDocumentsQuery } from '../../services/documentsService';
 import { styles } from "./styles";
 import { BASE_URL } from "../../utils/BASE_URL";
 import PageHeader from "../../components/General/Header";
-
 // Memoized components for better performance
 const ProfileInfo = React.memo(({ profileData }) => {
   const initials = useMemo(() => 
     profileData?.initials || 'N/A'
   , [profileData?.initials]);
-
   const role = useMemo(() => {
     if (profileData?.is_admin) return 'Administrator';
     if (profileData?.is_driver) return 'Șofer';
     if (profileData?.is_dispatcher) return 'Dispecer';
     return 'Utilizator';
   }, [profileData?.is_admin, profileData?.is_driver, profileData?.is_dispatcher]);
-
   return (
     <View style={styles.profileInfoContainer}>
       <View style={styles.profileContainer}>
@@ -47,7 +44,6 @@ const ProfileInfo = React.memo(({ profileData }) => {
     </View>
   );
 });
-
 const DataRow = React.memo(({ label, value, valueStyle }) => (
   <View style={styles.dataRow}>
     <Text style={styles.dataLabel}>{label || ''}</Text>
@@ -55,14 +51,12 @@ const DataRow = React.memo(({ label, value, valueStyle }) => (
     <Text style={[styles.dataValue, valueStyle]}>{value || 'N/A'}</Text>
   </View>
 ));
-
 const DataSection = React.memo(({ title, children }) => (
   <View style={styles.dataContainer}>
     <Text style={styles.dataTitle}>{title}</Text>
     {children}
   </View>
 ));
-
 const SettingItem = React.memo(({ 
   iconName, 
   title, 
@@ -99,7 +93,6 @@ const SettingItem = React.memo(({
     )}
   </TouchableOpacity>
 ));
-
 const DocumentItem = React.memo(({ doc, onPress }) => (
   <TouchableOpacity
     style={styles.documentItem}
@@ -117,20 +110,17 @@ const DocumentItem = React.memo(({ doc, onPress }) => (
     <Ionicons name="download-outline" size={20} color="#5A5BDE" />
   </TouchableOpacity>
 ));
-
 const AlertItem = React.memo(({ doc }) => {
   const getExpirationColor = useCallback((daysLeft) => {
     if (daysLeft <= 7) return '#FF7285';
     if (daysLeft <= 30) return '#FFBD59';
     return '#63C6AE';
   }, []);
-
   const getExpirationText = useCallback((daysLeft) => {
     if (daysLeft <= 0) return 'EXPIRAT';
     if (daysLeft === 1) return '1 zi';
     return `${daysLeft} zile`;
   }, []);
-
   return (
     <View style={styles.alertItem}>
       <Text style={styles.alertDocTitle}>{doc.name || doc.title}</Text>
@@ -143,10 +133,8 @@ const AlertItem = React.memo(({ doc }) => {
     </View>
   );
 });
-
 const ProfileScreen = React.memo(() => {
   const navigation = useNavigation();
-
   // Get user profile using the service
   const {
     data: profileData,
@@ -154,7 +142,6 @@ const ProfileScreen = React.memo(() => {
     error: profileError,
     refetch: refetchProfile
   } = useGetUserProfileQuery();
-
   // Get total transports count
   const {
     data: transportsData,
@@ -162,7 +149,6 @@ const ProfileScreen = React.memo(() => {
     error: transportsError,
     refetch: refetchTransports
   } = useGetTotalTransportsQuery();
-
   // Get personal documents
   const {
     data: documentsData,
@@ -170,62 +156,48 @@ const ProfileScreen = React.memo(() => {
     error: documentsError,
     refetch: refetchDocuments
   } = useGetPersonalDocumentsQuery();
-
   const [expiringDocuments, setExpiringDocuments] = useState([]);
   const [contactExpanded, setContactExpanded] = useState(false);
   const [documentsExpanded, setDocumentsExpanded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
   const dispatcherNumber = '0745346397';
-
   // Process documents to identify expiring ones
   useEffect(() => {
     if (documentsData && Array.isArray(documentsData)) {
       const today = new Date();
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
-
       const expiring = documentsData.filter(doc => {
         if (!doc.expiration_date) return false;
-        
         const expirationDate = new Date(doc.expiration_date);
         const timeDifference = expirationDate.getTime() - today.getTime();
         const daysLeft = Math.ceil(timeDifference / (1000 * 3600 * 24));
-        
         return daysLeft <= 30 && daysLeft >= 0;
       }).map(doc => {
         const expirationDate = new Date(doc.expiration_date);
         const timeDifference = expirationDate.getTime() - today.getTime();
         const daysLeft = Math.ceil(timeDifference / (1000 * 3600 * 24));
-        
         return {
           ...doc,
           days_left: daysLeft
         };
       });
-
       setExpiringDocuments(expiring);
     }
   }, [documentsData]);
-
   // Memoized calculations
   const profileCalculations = useMemo(() => {
     if (!profileData) return {};
-
     const calculateTimeInCompany = (hireDate) => {
       if (!hireDate) return 'N/A';
-      
       const hired = new Date(hireDate);
       const now = new Date();
-      
       let years = now.getFullYear() - hired.getFullYear();
       let months = now.getMonth() - hired.getMonth();
-      
       if (months < 0) {
         years--;
         months += 12;
       }
-      
       if (years === 0) {
         return months === 1 ? '1 lună' : `${months} luni`;
       } else if (months === 0) {
@@ -234,25 +206,19 @@ const ProfileScreen = React.memo(() => {
         return `${years} ${years === 1 ? 'an' : 'ani'} și ${months} ${months === 1 ? 'lună' : 'luni'}`;
       }
     };
-
     const calculateAge = (dateOfBirth) => {
       if (!dateOfBirth) return 'N/A';
-      
       const birth = new Date(dateOfBirth);
       const now = new Date();
-      
       let years = now.getFullYear() - birth.getFullYear();
       let months = now.getMonth() - birth.getMonth();
-      
       if (months < 0 || (months === 0 && now.getDate() < birth.getDate())) {
         years--;
         months += 12;
       }
-      
       if (now.getDate() < birth.getDate()) {
         months--;
       }
-      
       if (years === 0) {
         return months === 1 ? '1 lună' : `${months} luni`;
       } else if (months === 0) {
@@ -261,7 +227,6 @@ const ProfileScreen = React.memo(() => {
         return `${years} ${years === 1 ? 'an' : 'ani'} și ${months} ${months === 1 ? 'lună' : 'luni'}`;
       }
     };
-
     const formatDate = (dateString) => {
       if (!dateString) return 'N/A';
       return new Date(dateString).toLocaleDateString('ro-RO', {
@@ -270,19 +235,16 @@ const ProfileScreen = React.memo(() => {
         day: 'numeric'
       });
     };
-
     const getDriverStatus = () => {
       if (!profileData?.driver) return 'Inactiv';
       if (!profileData.is_active) return 'Cont dezactivat';
       return profileData.driver.on_road ? 'Pe drum' : 'În depou';
     };
-
     const getDriverRating = () => {
       if (!profileData?.driver) return 'N/A';
       const rating = profileData.driver.average_rating;
       return rating > 0 ? `${rating.toFixed(1)}/5.0` : 'Fără evaluare';
     };
-
     return {
       timeInCompany: calculateTimeInCompany(profileData.hire_date),
       age: calculateAge(profileData.dob),
@@ -295,16 +257,13 @@ const ProfileScreen = React.memo(() => {
                 profileData?.is_dispatcher ? 'Dispecer' : 'Utilizator Standard'
     };
   }, [profileData]);
-
   // Memoized handlers
   const toggleContact = useCallback(() => {
     setContactExpanded(!contactExpanded);
   }, [contactExpanded]);
-
   const toggleDocuments = useCallback(() => {
     setDocumentsExpanded(!documentsExpanded);
   }, [documentsExpanded]);
-
   const callDispatcher = useCallback(() => {
     const phoneUrl = Platform.OS === 'android'
       ? `tel:${dispatcherNumber}`
@@ -315,9 +274,8 @@ const ProfileScreen = React.memo(() => {
           return Linking.openURL(phoneUrl);
         }
       })
-      .catch(error => console.log('Error with phone call:', error));
+      .catch(error => {});
   }, [dispatcherNumber]);
-
   const callManager = useCallback(() => {
     const managerPhone = '+40755123456';
     Alert.alert(
@@ -343,7 +301,6 @@ const ProfileScreen = React.memo(() => {
                 }
               })
               .catch(error => {
-                console.log('Error with phone call:', error);
                 Alert.alert('Eroare', 'A apărut o eroare la inițializarea apelului');
               });
           },
@@ -351,7 +308,6 @@ const ProfileScreen = React.memo(() => {
       ]
     );
   }, []);
-
   const openDocument = useCallback((documentUrl) => {
     Linking.canOpenURL(documentUrl)
       .then(supported => {
@@ -361,9 +317,8 @@ const ProfileScreen = React.memo(() => {
           Alert.alert('Eroare', 'Nu se poate deschide documentul');
         }
       })
-      .catch(error => console.log('Error opening document:', error));
+      .catch(error => {});
   }, []);
-
   const handleSignOut = useCallback(async () => {
     Alert.alert(
       'Delogare',
@@ -379,7 +334,6 @@ const ProfileScreen = React.memo(() => {
           onPress: async () => {
             try {
               const token = await AsyncStorage.getItem('authToken');
-
               // Clear local storage first
               await AsyncStorage.multiRemove([
                 'authToken',
@@ -389,7 +343,6 @@ const ProfileScreen = React.memo(() => {
                 'isDriver',
                 'isDispatcher'
               ]);
-
               // Then try to logout from server
               if (token) {
                 try {
@@ -400,22 +353,17 @@ const ProfileScreen = React.memo(() => {
                       'Content-Type': 'application/json',
                     },
                   });
-
                   if (!response.ok) {
-                    console.warn('Server logout failed, but local cleanup successful');
                   }
                 } catch (networkError) {
-                  console.warn('Network error during logout, but local cleanup successful:', networkError);
                 }
               }
-
               // Always navigate to login screen regardless of server response
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],
               });
             } catch (error) {
-              console.error('Logout error:', error);
               Alert.alert('Eroare', 'A apărut o eroare în timpul delogării. Încearcă din nou.');
             }
           },
@@ -423,26 +371,21 @@ const ProfileScreen = React.memo(() => {
       ]
     );
   }, [navigation]);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([refetchProfile(), refetchTransports(), refetchDocuments()]);
     setRefreshing(false);
   }, [refetchProfile, refetchTransports, refetchDocuments]);
-
   const handleRetry = useCallback(async () => {
     await onRefresh();
   }, [onRefresh]);
-
   // Memoized render functions
   const renderDocumentItem = useCallback((doc) => (
     <DocumentItem key={doc.id} doc={doc} onPress={openDocument} />
   ), [openDocument]);
-
   const renderAlertItem = useCallback((doc) => (
     <AlertItem key={doc.id} doc={doc} />
   ), []);
-
   // Error state
   if (profileError || transportsError || documentsError) {
     return (
@@ -465,7 +408,6 @@ const ProfileScreen = React.memo(() => {
       </SafeAreaView>
     );
   }
-
   return (
     <SafeAreaView style={styles.container}>
       <PageHeader
@@ -475,7 +417,6 @@ const ProfileScreen = React.memo(() => {
         showRetry={true}
         showBack={true}
       />
-      
       <ScrollView
         contentContainerStyle={styles.scrollViewContent}
         showsVerticalScrollIndicator={false}
@@ -486,7 +427,6 @@ const ProfileScreen = React.memo(() => {
       >
         {/* Profile Info */}
         <ProfileInfo profileData={profileData} />
-
         {/* Essential Information Section */}
         <DataSection title="Informații Personale">
           <DataRow label="Email" value={profileData?.email || 'N/A'} />
@@ -499,7 +439,6 @@ const ProfileScreen = React.memo(() => {
             valueStyle={{ color: profileData?.is_active ? '#63C6AE' : '#FF7285' }}
           />
         </DataSection>
-
         {/* Driver Specific Information */}
         {profileData?.is_driver && (
           <DataSection title="Informații Șofer">
@@ -522,7 +461,6 @@ const ProfileScreen = React.memo(() => {
             <DataRow label="Expirare permis" value={profileCalculations.formattedLicenseExpiration} />
           </DataSection>
         )}
-
         {/* Dispatcher Specific Information */}
         {profileData?.is_dispatcher && (
           <DataSection title="Informații Dispecer">
@@ -536,7 +474,6 @@ const ProfileScreen = React.memo(() => {
             />
           </DataSection>
         )}
-
         {/* Admin Specific Information */}
         {profileData?.is_admin && (
           <DataSection title="Informații Administrator">
@@ -551,7 +488,6 @@ const ProfileScreen = React.memo(() => {
             />
           </DataSection>
         )}
-
         {/* Account Information */}
         <DataSection title="Informații Cont">
           <DataRow label="Ultima autentificare" value={profileCalculations.formattedLastLogin} />
@@ -573,7 +509,6 @@ const ProfileScreen = React.memo(() => {
             }) : 'N/A'}
           />
         </DataSection>
-
         {/* Expiring Documents Alert */}
         {expiringDocuments.length > 0 && (
           <View style={styles.alertContainer}>
@@ -584,10 +519,8 @@ const ProfileScreen = React.memo(() => {
             {expiringDocuments.map(renderAlertItem)}
           </View>
         )}
-
         {/* Settings Section */}
         <Text style={styles.settingsTitle}>Opțiuni</Text>
-
         {/* Documents Section */}
         <View style={styles.settingOuterContainer}>
           <SettingItem
@@ -609,7 +542,6 @@ const ProfileScreen = React.memo(() => {
             </View>
           )}
         </View>
-
         {/* Emergency Contact Section */}
         <View style={styles.settingOuterContainer}>
           <SettingItem
@@ -620,7 +552,6 @@ const ProfileScreen = React.memo(() => {
             showChevron={false}
           />
         </View>
-
         {/* My Transports Section */}
         {profileData?.is_driver && (
           <View style={styles.settingOuterContainer}>
@@ -634,7 +565,6 @@ const ProfileScreen = React.memo(() => {
             />
           </View>
         )}
-
         {/* Notifications Settings */}
         <View style={styles.settingOuterContainer}>
           <SettingItem
@@ -645,7 +575,6 @@ const ProfileScreen = React.memo(() => {
             showChevron={true}
           />
         </View>
-
         {/* Dispatcher Contact Section */}
         <View style={styles.settingOuterContainer}>
           <SettingItem
@@ -671,7 +600,6 @@ const ProfileScreen = React.memo(() => {
             </View>
           )}
         </View>
-
         {/* Sign Out Button */}
         <TouchableOpacity
           style={styles.signOutButton}
@@ -683,7 +611,5 @@ const ProfileScreen = React.memo(() => {
     </SafeAreaView>
   );
 });
-
 ProfileScreen.displayName = 'ProfileScreen';
-
 export default ProfileScreen;

@@ -1,6 +1,5 @@
 import { StyleSheet } from 'react-native';
 import COLORS from '../../utils/COLORS';
-
 // Enhanced color palette for better visual hierarchy
 const ENHANCED_COLORS = {
   ...COLORS,
@@ -18,7 +17,6 @@ const ENHANCED_COLORS = {
   warning: "#FFBD59",
   danger: "#FF7285",
 };
-
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -235,7 +233,6 @@ export const styles = StyleSheet.create({
     lineHeight: 24,
   },
 });
-
 // Additional styles for enhanced functionality
 export const documentTypeColors = {
   license: ENHANCED_COLORS.primary,

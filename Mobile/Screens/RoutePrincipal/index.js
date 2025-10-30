@@ -8,22 +8,18 @@ import { RouteService } from '../../services/routeService';
 import { MapService } from '../../services/mapService';
 import PageHeader from '../../components/General/Header';
 import { styles } from './styles';
-
 const RoutePrincipalScreen = ({ navigation }) => {
   const [routeData, setRouteData] = useState(null);
   const [processingRoute, setProcessingRoute] = useState(false);
   const [error, setError] = useState(null);
-  
   // Get user profile to access active transport data
   const {
     data: profileData,
     isLoading: profileLoading,
     error: profileError
   } = useGetUserProfileQuery();
-  
   // Get active transport ID
   const activeTransportId = profileData?.active_transport;
-  
   // Fetch transport details with route data
   const {
     data: transportData,
@@ -32,21 +28,17 @@ const RoutePrincipalScreen = ({ navigation }) => {
   } = useGetTransportByIdQuery(activeTransportId, { 
     skip: !activeTransportId || profileLoading || profileError
   });
-
   useEffect(() => {
     processTransportRoute();
   }, [transportData]);
-
   const processTransportRoute = async () => {
     // Check for new route_polyline field first (from PTV API)
     if (transportData?.route_polyline) {
       setProcessingRoute(true);
       setError(null);
-
       try {
         // Request location permission for reverse geocoding
         let { status } = await Location.requestForegroundPermissionsAsync();
-
         if (status !== 'granted') {
           setError('Pentru a afișa numele locațiilor, aplicația are nevoie de acces la localizare.');
           // Still process route without geocoding
@@ -59,7 +51,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
           setProcessingRoute(false);
           return;
         }
-
         // Process route with full geocoding from polyline
         const processedRoute = await RouteService.processRouteData({
           polyline: transportData.route_polyline,
@@ -68,24 +59,19 @@ const RoutePrincipalScreen = ({ navigation }) => {
         });
         setRouteData(processedRoute);
       } catch (error) {
-        console.error('Error processing route from polyline:', error);
         setError('Eroare la procesarea rutei. Vă rugăm să încercați din nou.');
       } finally {
         setProcessingRoute(false);
       }
       return;
     }
-
     // Fallback to legacy route field
     if (!transportData?.route) return;
-
     setProcessingRoute(true);
     setError(null);
-
     try {
       // Request location permission for reverse geocoding
       let { status } = await Location.requestForegroundPermissionsAsync();
-
       if (status !== 'granted') {
         setError('Pentru a afișa numele locațiilor, aplicația are nevoie de acces la localizare.');
         // Still process route without geocoding
@@ -94,18 +80,15 @@ const RoutePrincipalScreen = ({ navigation }) => {
         setProcessingRoute(false);
         return;
       }
-
       // Process route with full geocoding
       const processedRoute = await RouteService.processRouteData(transportData.route);
       setRouteData(processedRoute);
     } catch (error) {
-      console.error('Error processing route:', error);
       setError('Eroare la procesarea rutei. Vă rugăm să încercați din nou.');
     } finally {
       setProcessingRoute(false);
     }
   };
-
   const handleOpenFullRoute = () => {
     // Use new polyline-based navigation if available
     if (transportData?.route_polyline) {
@@ -116,38 +99,30 @@ const RoutePrincipalScreen = ({ navigation }) => {
       });
       return;
     }
-
     // Fallback to waypoints-based navigation
     if (!routeData?.locations) {
       Alert.alert('Eroare', 'Nu sunt disponibile date despre rută.');
       return;
     }
-
     MapService.showMapOptions(routeData.locations);
   };
-
   const handleOpenLocation = (location) => {
     MapService.openLocationInMaps(location, location.city);
   };
-
-
   const handleRefresh = () => {
     processTransportRoute();
   };
-
   const renderLocationCard = (location, index, total) => {
     const getLocationIcon = () => {
       if (location.isStart) return 'play-circle';
       if (location.isEnd) return 'checkmark-circle';
       return 'location';
     };
-    
     const getLocationColor = () => {
       if (location.isStart) return '#4CAF50';
       if (location.isEnd) return '#FF5722';
       return '#5A5BDE';
     };
-    
     return (
       <TouchableOpacity
         key={location.id}
@@ -164,7 +139,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
             />
             {index < total - 1 && <View style={styles.routeLine} />}
           </View>
-          
           <View style={styles.locationInfo}>
             <View style={styles.locationHeader}>
               <Text style={styles.locationNumber}>
@@ -177,17 +151,14 @@ const RoutePrincipalScreen = ({ navigation }) => {
                 <Ionicons name="map" size={16} color="#5A5BDE" />
               </TouchableOpacity>
             </View>
-            
             <Text style={styles.locationCity}>
               {location.city || 'Locație necunoscută'}
             </Text>
-            
             {location.formattedAddress && location.formattedAddress !== 'Adresă necunoscută' && (
               <Text style={styles.locationAddress}>
                 {location.formattedAddress}
               </Text>
             )}
-            
             <Text style={styles.locationCoordinates}>
               {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
             </Text>
@@ -196,10 +167,8 @@ const RoutePrincipalScreen = ({ navigation }) => {
       </TouchableOpacity>
     );
   };
-  
   const renderRouteInfo = () => {
     if (!routeData) return null;
-    
     return (
       <View style={styles.routeInfoContainer}>
         <View style={styles.routeInfoRow}>
@@ -208,7 +177,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
             <Text style={styles.routeInfoLabel}>Distanță</Text>
             <Text style={styles.routeInfoValue}>{routeData.totalDistance} km</Text>
           </View>
-          
           <View style={styles.routeInfoItem}>
             <Ionicons name="time" size={20} color="#5A5BDE" />
             <Text style={styles.routeInfoLabel}>Timp estimat</Text>
@@ -218,8 +186,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
       </View>
     );
   };
-
-
   // Handle no active transport
   if (!activeTransportId) {
     return (
@@ -229,7 +195,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
           onBack={() => navigation.goBack()}
           showBack={true}
         />
-        
         <View style={styles.emptyContainer}>
           <Ionicons name="car-outline" size={60} color="#5A5BDE" />
           <Text style={styles.emptyTitle}>Niciun transport activ</Text>
@@ -238,7 +203,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-  
   // Handle errors
   if (profileError || transportError) {
     return (
@@ -250,7 +214,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
           showRetry={true}
           showBack={true}
         />
-        
         <View style={styles.emptyContainer}>
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
           <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
@@ -259,7 +222,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-  
   // Handle no route data
   if (!transportData?.route_polyline && !transportData?.route) {
     return (
@@ -269,7 +231,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
           onBack={() => navigation.goBack()}
           showBack={true}
         />
-
         <View style={styles.emptyContainer}>
           <Ionicons name="map-outline" size={60} color="#5A5BDE" />
           <Text style={styles.emptyTitle}>Rută indisponibilă</Text>
@@ -278,7 +239,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   return (
     <SafeAreaView style={styles.container}>
       <PageHeader
@@ -288,7 +248,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
         showRetry={true}
         showBack={true}
       />
-      
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
@@ -300,9 +259,7 @@ const RoutePrincipalScreen = ({ navigation }) => {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
-        
         {renderRouteInfo()}
-        
         {routeData?.locations && (
           <View style={styles.locationsContainer}>
             <View style={styles.locationsHeader}>
@@ -315,7 +272,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
                 <Text style={styles.openFullRouteText}>Navigează</Text>
               </TouchableOpacity>
             </View>
-            
             <View style={styles.locationsList}>
               {routeData.locations.map((location, index) =>
                 renderLocationCard(location, index, routeData.locations.length)
@@ -323,7 +279,6 @@ const RoutePrincipalScreen = ({ navigation }) => {
             </View>
           </View>
         )}
-        
         {processingRoute && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#5A5BDE" />
@@ -334,5 +289,4 @@ const RoutePrincipalScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 export default RoutePrincipalScreen;

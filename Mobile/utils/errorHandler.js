@@ -1,5 +1,4 @@
 // utils/errorHandler.js - Centralized error handling utility
-
 /**
  * Converts technical errors into user-friendly Romanian messages
  * @param {Error|string|number} error - The error object, message, or status code
@@ -10,7 +9,6 @@ export const getUserFriendlyErrorMessage = (error, defaultMessage = 'A apărut o
   // Handle different error formats
   let statusCode = null;
   let errorMessage = '';
-
   if (typeof error === 'number') {
     statusCode = error;
   } else if (error?.status) {
@@ -26,7 +24,6 @@ export const getUserFriendlyErrorMessage = (error, defaultMessage = 'A apărut o
   } else if (typeof error === 'string') {
     errorMessage = error;
   }
-
   // Check for network/connection issues
   if (errorMessage.toLowerCase().includes('network') ||
       errorMessage.toLowerCase().includes('connection') ||
@@ -34,7 +31,6 @@ export const getUserFriendlyErrorMessage = (error, defaultMessage = 'A apărut o
       statusCode === 0) {
     return 'Problemă de conexiune. Verificați internetul și încercați din nou.';
   }
-
   // Handle specific HTTP status codes
   switch (statusCode) {
     case 400:
@@ -67,37 +63,29 @@ export const getUserFriendlyErrorMessage = (error, defaultMessage = 'A apărut o
       }
       break;
   }
-
   // Handle specific error keywords in message
   if (errorMessage.toLowerCase().includes('timeout')) {
     return 'Cererea a expirat. Verificați conexiunea și încercați din nou.';
   }
-
   if (errorMessage.toLowerCase().includes('unauthorized')) {
     return 'Sesiunea a expirat. Vă rugăm să vă autentificați din nou.';
   }
-
   if (errorMessage.toLowerCase().includes('forbidden')) {
     return 'Nu aveți permisiunea să efectuați această acțiune.';
   }
-
   if (errorMessage.toLowerCase().includes('not found')) {
     return 'Resursa solicitată nu a fost găsită.';
   }
-
   if (errorMessage.toLowerCase().includes('too large') ||
       errorMessage.toLowerCase().includes('file size')) {
     return 'Fișierul este prea mare. Selectați un fișier mai mic.';
   }
-
   if (errorMessage.toLowerCase().includes('invalid format') ||
       errorMessage.toLowerCase().includes('unsupported')) {
     return 'Formatul fișierului nu este acceptat.';
   }
-
   return defaultMessage;
 };
-
 /**
  * Logs error details for debugging while showing user-friendly message
  * @param {Error} error - The original error object
@@ -106,17 +94,14 @@ export const getUserFriendlyErrorMessage = (error, defaultMessage = 'A apărut o
  */
 export const logAndShowError = (error, context, userMessage) => {
   // Log detailed error for developers
-  console.error(`[${context}] Error:`, {
     message: error?.message,
     status: error?.status,
     stack: error?.stack,
     originalMessage: error?.originalMessage,
     timestamp: new Date().toISOString()
   });
-
   return userMessage;
 };
-
 /**
  * Common error messages in Romanian for consistent UI
  */
@@ -134,7 +119,6 @@ export const ERROR_MESSAGES = {
   RATE_LIMIT: 'Prea multe cereri. Așteptați câteva minute și încercați din nou.',
   GENERIC: 'A apărut o eroare neașteptată. Încercați din nou.'
 };
-
 /**
  * Document upload specific error handler based on AtruX backend documentation
  * @param {Error|Response} error - The error object or response
@@ -144,64 +128,51 @@ export const ERROR_MESSAGES = {
 export const getDocumentUploadErrorMessage = (error, context = 'document_upload') => {
   let statusCode = null;
   let errorMessage = '';
-
   if (typeof error === 'object' && error.status) {
     statusCode = error.status;
     errorMessage = error.message || '';
   } else if (error?.message) {
     errorMessage = error.message;
   }
-
   // Check specific backend error messages
   if (errorMessage.includes('You already have a document of this type')) {
     return 'Aveți deja un document de acest tip încărcat. Ștergeți documentul existent înainte de a încărca unul nou.';
   }
-
   if (errorMessage.includes('Invalid category') || errorMessage.includes('category')) {
     return 'Categoria documentului nu este validă. Selectați o categorie din lista disponibilă.';
   }
-
   if (errorMessage.includes('document is required') || errorMessage.includes('title is required')) {
     return 'Toate câmpurile obligatorii trebuie completate: document, titlu și categorie.';
   }
-
   // File size validation (backend has 20MB limit)
   if (statusCode === 413 || errorMessage.includes('too large') || errorMessage.includes('size')) {
     return 'Fișierul este prea mare. Dimensiunea maximă acceptată este 20MB.';
   }
-
   // Format validation - backend accepts PDF, JPG, PNG, DOCX
   if (errorMessage.includes('format') || errorMessage.includes('type') || errorMessage.includes('unsupported')) {
     return 'Formatul fișierului nu este acceptat. Folosiți doar PDF, JPG, PNG sau DOCX.';
   }
-
   // Authentication and permissions
   if (statusCode === 401 || errorMessage.includes('unauthorized') || errorMessage.includes('token')) {
     return 'Sesiunea a expirat. Vă rugăm să vă autentificați din nou.';
   }
-
   if (statusCode === 403 || errorMessage.includes('forbidden') || errorMessage.includes('permission')) {
     return 'Nu aveți permisiunea să încărcați documente sau să efectuați această acțiune.';
   }
-
   // Server validation errors (400)
   if (statusCode === 400) {
     return 'Datele documentului nu sunt valide. Verificați toate câmpurile și încercați din nou.';
   }
-
   // Network and server errors
   if (statusCode >= 500) {
     return 'Problemă pe serverul AtruX. Încercați din nou în câteva minute.';
   }
-
   if (statusCode === 0 || errorMessage.includes('network') || errorMessage.includes('connection')) {
     return 'Problemă de conexiune. Verificați internetul și încercați din nou.';
   }
-
   // Default document upload error
   return 'Nu s-a putut încărca documentul. Verificați fișierul și încercați din nou.';
 };
-
 /**
  * Document deletion specific error handler
  * @param {Error|Response} error - The error object or response
@@ -211,33 +182,26 @@ export const getDocumentUploadErrorMessage = (error, context = 'document_upload'
 export const getDocumentDeleteErrorMessage = (error, context = 'document_delete') => {
   let statusCode = null;
   let errorMessage = '';
-
   if (typeof error === 'object' && error.status) {
     statusCode = error.status;
     errorMessage = error.message || '';
   } else if (error?.message) {
     errorMessage = error.message;
   }
-
   if (statusCode === 404 || errorMessage.includes('not found')) {
     return 'Documentul nu a fost găsit. Probabil a fost deja șters.';
   }
-
   if (statusCode === 403 || errorMessage.includes('forbidden') || errorMessage.includes('permission')) {
     return 'Nu aveți permisiunea să ștergeți acest document.';
   }
-
   if (statusCode === 401 || errorMessage.includes('unauthorized')) {
     return 'Sesiunea a expirat. Vă rugăm să vă autentificați din nou.';
   }
-
   if (statusCode >= 500) {
     return 'Problemă pe serverul AtruX. Încercați din nou în câteva minute.';
   }
-
   return 'Nu s-a putut șterge documentul. Încercați din nou.';
 };
-
 /**
  * Enhanced error handler for API responses
  * @param {Response} response - Fetch response object
@@ -251,9 +215,7 @@ export const handleApiError = async (response, context) => {
   } catch (parseError) {
     errorData = 'Could not parse error response';
   }
-
   let userFriendlyMessage;
-
   // Use context-specific error handlers
   if (context === 'document_upload') {
     userFriendlyMessage = getDocumentUploadErrorMessage({ status: response.status, message: errorData }, context);
@@ -262,14 +224,11 @@ export const handleApiError = async (response, context) => {
   } else {
     userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
   }
-
   const error = new Error(userFriendlyMessage);
   error.status = response.status;
   error.originalMessage = `HTTP ${response.status}: ${errorData}`;
   error.context = context;
-
   // Log for debugging
   logAndShowError(error, context, userFriendlyMessage);
-
   return error;
 };

@@ -18,7 +18,6 @@ import {
   useGetNextTransportQuery
 } from '../../services/transportService';
 import PageHeader from "../../components/General/Header";
-
 // Transport Status Indicator Component
 const TransportStatusIndicator = React.memo(({ status }) => {
   const getStatusInfo = (status) => {
@@ -28,9 +27,7 @@ const TransportStatusIndicator = React.memo(({ status }) => {
     if (status === 'in_progress') return { icon: 'time', color: '#F59E0B', bg: '#FEF3C7', text: 'În curs' };
     return { icon: 'help-circle', color: '#9CA3AF', bg: '#F3F4F6', text: status };
   };
-
   const info = getStatusInfo(status);
-
   return (
     <View style={[styles.statusContainer, { backgroundColor: info.bg }]}>
       <Ionicons name={info.icon} size={16} color={info.color} style={styles.statusIcon} />
@@ -38,7 +35,6 @@ const TransportStatusIndicator = React.memo(({ status }) => {
     </View>
   );
 });
-
 // Queue Item Component
 const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport, isStarting }) => {
   const getStatusColor = useCallback((position) => {
@@ -46,16 +42,13 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
     if (position === 2) return '#F59E0B'; // Amber for second
     return '#6B7280'; // Gray for others
   }, []);
-
   const getStatusIcon = useCallback((position) => {
     if (position === 1) return 'play-forward-circle';
     if (position === 2) return 'time';
     return 'list';
   }, []);
-
   const statusColor = getStatusColor(item.queue_position);
   const statusIcon = getStatusIcon(item.queue_position);
-
   const statusFields = useMemo(() => [
     { key: 'status_truck', label: 'Status camion' },
     { key: 'status_goods', label: 'Status marfă' },
@@ -64,7 +57,6 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
     { key: 'status_loaded_truck', label: 'Status încărcare' },
     { key: 'status_transport', label: 'Status transport' },
   ], []);
-
   return (
     <View style={[styles.queueItem, isNext && styles.nextQueueItem]}>
       <View style={styles.queueItemHeader}>
@@ -79,12 +71,10 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
             </Text>
           </View>
         </View>
-
         <View style={[styles.statusIndicator, { backgroundColor: `${statusColor}15` }]}>
           <Ionicons name={statusIcon} size={20} color={statusColor} />
         </View>
       </View>
-
       {/* Transport Details Section */}
       <View style={styles.queueItemContent}>
         {item.truck_combination && (
@@ -105,7 +95,6 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
             <Text style={styles.detailText}>{item.company}</Text>
           </View>
         )}
-
         {/* Status Grid */}
         <View style={styles.statusGrid}>
           {statusFields.map((field) => (
@@ -116,7 +105,6 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
           ))}
         </View>
       </View>
-
       {isNext && item.can_start && (
         <View style={styles.queueItemActions}>
           <TouchableOpacity
@@ -135,7 +123,6 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
           </TouchableOpacity>
         </View>
       )}
-
       {!isNext && (
         <View style={styles.queueItemFooter}>
           <Text style={styles.waitingText}>
@@ -146,7 +133,6 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
     </View>
   );
 });
-
 // Empty Queue State
 const EmptyQueueState = React.memo(({ onRefresh, refreshing }) => (
   <View style={styles.emptyContainer}>
@@ -168,7 +154,6 @@ const EmptyQueueState = React.memo(({ onRefresh, refreshing }) => (
     </TouchableOpacity>
   </View>
 ));
-
 // Error State
 const ErrorState = React.memo(({ error, onRefresh }) => (
   <View style={styles.errorContainer}>
@@ -192,11 +177,9 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
     </TouchableOpacity>
   </View>
 ));
-
 // Main Queue Screen Component
 const QueueScreen = React.memo(({ navigation, route }) => {
   const [startingTransport, setStartingTransport] = useState(null);
-
   // Queue system hooks
   const {
     data: queueData,
@@ -205,9 +188,7 @@ const QueueScreen = React.memo(({ navigation, route }) => {
     error: queueError,
     refetch: refetchQueue
   } = useGetDriverQueueQuery();
-
   const [startNextTransportMutation, { isLoading: isStartingNext }] = useStartNextTransportMutation();
-
   // Memoized data extraction
   const { queue, nextTransportId, currentTransportId, queueCount, hasTransportable } = useMemo(() => {
     return {
@@ -218,16 +199,13 @@ const QueueScreen = React.memo(({ navigation, route }) => {
       hasTransportable: queueData?.has_transportable || false,
     };
   }, [queueData]);
-
   // Handlers
   const onRefresh = useCallback(async () => {
     try {
       await refetchQueue();
     } catch (error) {
-      console.error('Error refreshing queue:', error);
     }
   }, [refetchQueue]);
-
   const handleStartTransport = useCallback(async (transport) => {
     if (!transport.can_start) {
       Alert.alert(
@@ -237,12 +215,9 @@ const QueueScreen = React.memo(({ navigation, route }) => {
       );
       return;
     }
-
     setStartingTransport(transport.id);
-
     try {
       const result = await startNextTransportMutation().unwrap();
-
       Alert.alert(
         'Succes!',
         'TRANSPORT ÎNCEPUT CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
@@ -256,13 +231,9 @@ const QueueScreen = React.memo(({ navigation, route }) => {
           }
         ]
       );
-
       await onRefresh();
     } catch (error) {
-      console.error('Error starting transport:', error);
-
       let errorMessage = 'Nu s-a putut începe transportul. Încearcă din nou.';
-
       if (error.message?.includes('No transport available')) {
         errorMessage = 'Nu există transporturi disponibile în listă.';
       } else if (error.message?.includes('queue')) {
@@ -270,7 +241,6 @@ const QueueScreen = React.memo(({ navigation, route }) => {
       } else if (error.message?.includes('401')) {
         errorMessage = 'Sesiunea a expirat. Te rugăm să te autentifici din nou.';
       }
-
       Alert.alert(
         'Eroare',
         errorMessage,
@@ -280,12 +250,10 @@ const QueueScreen = React.memo(({ navigation, route }) => {
       setStartingTransport(null);
     }
   }, [startNextTransportMutation, onRefresh, navigation]);
-
   const renderQueueItem = useCallback(({ item, index }) => {
     const isNext = item.queue_position === 1;
     const isActive = currentTransportId === item.id;
     const isStarting = startingTransport === item.id;
-
     return (
       <QueueItem
         item={item}
@@ -297,9 +265,7 @@ const QueueScreen = React.memo(({ navigation, route }) => {
       />
     );
   }, [currentTransportId, startingTransport, handleStartTransport]);
-
   const keyExtractor = useCallback((item) => item.id.toString(), []);
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -310,27 +276,23 @@ const QueueScreen = React.memo(({ navigation, route }) => {
           showRetry={true}
           showBack={true}
         />
-
         {/* Queue Status Header */}
         <View style={styles.queueStatusContainer}>
           <View style={styles.queueStatusHeader}>
             <Ionicons name="list" size={24} color="#6366F1" />
             <Text style={styles.queueStatusTitle}>Status Listă</Text>
           </View>
-
           <View style={styles.queueStats}>
             <View style={styles.queueStat}>
               <Text style={styles.queueStatNumber}>{queueCount}</Text>
               <Text style={styles.queueStatLabel}>Transporturi în listă</Text>
             </View>
-
             {currentTransportId && (
               <View style={styles.queueStat}>
                 <Text style={styles.queueStatNumber}>#{currentTransportId}</Text>
                 <Text style={styles.queueStatLabel}>Transport activ</Text>
               </View>
             )}
-
             {nextTransportId && (
               <View style={styles.queueStat}>
                 <Text style={styles.queueStatNumber}>#{nextTransportId}</Text>
@@ -338,13 +300,11 @@ const QueueScreen = React.memo(({ navigation, route }) => {
               </View>
             )}
           </View>
-
           {/* Queue Status Messages */}
           {queueCount > 0 && (
             (() => {
               const allPositionsZero = queue.every(t => t.queue_position === 0);
               const noCanStart = queue.every(t => !t.can_start);
-
               if (allPositionsZero && noCanStart) {
                 return (
                   <View style={styles.warningIndicator}>
@@ -373,7 +333,6 @@ const QueueScreen = React.memo(({ navigation, route }) => {
             })()
           )}
         </View>
-
         {/* Queue Content */}
         {queueError ? (
           <ErrorState error={queueError} onRefresh={onRefresh} />
@@ -399,7 +358,5 @@ const QueueScreen = React.memo(({ navigation, route }) => {
     </SafeAreaView>
   );
 });
-
 QueueScreen.displayName = 'QueueScreen';
-
 export default QueueScreen;

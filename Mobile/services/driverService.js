@@ -1,5 +1,4 @@
 import { api } from './api';
-
 export const driverApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getDrivers: builder.query({
@@ -11,7 +10,6 @@ export const driverApi = api.injectEndpoints({
       // Mobile-optimized settings
       keepUnusedDataFor: 300, // 5 minutes
     }),
-    
     addDriver: builder.mutation({
       query: (driverData) => ({
         url: 'drivers',
@@ -20,7 +18,6 @@ export const driverApi = api.injectEndpoints({
       }),
       invalidatesTags: ['Driver'],
     }),
-    
     deleteDriver: builder.mutation({
       query: (driverId) => ({
         url: `drivers/${driverId}`,
@@ -31,19 +28,16 @@ export const driverApi = api.injectEndpoints({
         'Driver'
       ],
     }),
-    
     getTotalDrivers: builder.query({
       query: () => 'drivers/total',
       providesTags: ['Driver'],
     }),
-    
     getDriversOnRoad: builder.query({
       query: () => 'drivers/on-road',
       providesTags: ['Driver'],
       // Refetch every 30 seconds for real-time data
       pollingInterval: 30000,
     }),
-    
     giveRating: builder.mutation({
       query: ({ driverId, rating }) => ({
         url: `drivers/${driverId}/rating`,
@@ -54,7 +48,6 @@ export const driverApi = api.injectEndpoints({
         { type: 'Driver', id: driverId }
       ],
     }),
-    
     changeDriverStatus: builder.mutation({
       query: ({ driverId, status }) => ({
         url: `drivers/${driverId}/status`,
@@ -84,7 +77,6 @@ export const driverApi = api.injectEndpoints({
     }),
   }),
 });
-
 export const {
   useGetDriversQuery,
   useAddDriverMutation,

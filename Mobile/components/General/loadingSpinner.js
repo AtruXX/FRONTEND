@@ -1,9 +1,7 @@
 // Create a new file: LoadingContext.js
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
-
 const LoadingContext = createContext();
-
 export const useLoading = () => {
   const context = useContext(LoadingContext);
   if (!context) {
@@ -11,20 +9,15 @@ export const useLoading = () => {
   }
   return context;
 };
-
 export const LoadingProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const fadeValue = useRef(new Animated.Value(0)).current;
-  
   // Create animated value for circular rotation
   const spinValue = useRef(new Animated.Value(0)).current;
-
   const showLoading = useCallback(() => setIsLoading(true), []);
   const hideLoading = useCallback(() => setIsLoading(false), []);
-
   useEffect(() => {
     let spinAnimation;
-    
     if (isLoading) {
       // Fade in the overlay
       Animated.timing(fadeValue, {
@@ -32,7 +25,6 @@ export const LoadingProvider = ({ children }) => {
         duration: 300,
         useNativeDriver: true,
       }).start();
-
       // Continuous circular rotation
       spinAnimation = Animated.loop(
         Animated.timing(spinValue, {
@@ -50,20 +42,17 @@ export const LoadingProvider = ({ children }) => {
         useNativeDriver: true,
       }).start();
     }
-
     return () => {
       if (spinAnimation) {
         spinAnimation.stop();
       }
     };
   }, [isLoading, fadeValue, spinValue]);
-
   // Convert the animated value to a rotation
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
-
   return (
     <LoadingContext.Provider value={{ isLoading, showLoading, hideLoading }}>
       {children}
@@ -94,7 +83,6 @@ export const LoadingProvider = ({ children }) => {
     </LoadingContext.Provider>
   );
 };
-
 const styles = StyleSheet.create({
   overlay: {
     position: 'absolute',

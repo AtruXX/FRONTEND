@@ -10,15 +10,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import NotificationsList from '../../components/Notifications/NotificationsList';
 import { useNotifications } from '../NotificationsContext';
-
 const NotificationsScreen = ({ navigation }) => {
   const { isConnected } = useNotifications();
   const [filterType, setFilterType] = useState('all');
-
   const handleGoBack = () => {
     navigation.goBack();
   };
-
   const renderHeader = () => (
     <View style={styles.header}>
       <TouchableOpacity
@@ -27,9 +24,7 @@ const NotificationsScreen = ({ navigation }) => {
       >
         <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
       </TouchableOpacity>
-
       <Text style={styles.headerTitle}>Notificări</Text>
-
       <View style={styles.connectionStatus}>
         <View
           style={[
@@ -43,7 +38,6 @@ const NotificationsScreen = ({ navigation }) => {
       </View>
     </View>
   );
-
   const renderFilterTabs = () => (
     <View style={styles.filterContainer}>
       <TouchableOpacity
@@ -62,7 +56,6 @@ const NotificationsScreen = ({ navigation }) => {
           Toate
         </Text>
       </TouchableOpacity>
-
       <TouchableOpacity
         style={[
           styles.filterTab,
@@ -79,7 +72,6 @@ const NotificationsScreen = ({ navigation }) => {
           Necitite
         </Text>
       </TouchableOpacity>
-
       <TouchableOpacity
         style={[
           styles.filterTab,
@@ -96,7 +88,6 @@ const NotificationsScreen = ({ navigation }) => {
           Documente
         </Text>
       </TouchableOpacity>
-
       <TouchableOpacity
         style={[
           styles.filterTab,
@@ -115,14 +106,11 @@ const NotificationsScreen = ({ navigation }) => {
       </TouchableOpacity>
     </View>
   );
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
-
       {renderHeader()}
       {renderFilterTabs()}
-
       <View style={styles.content}>
         <NotificationsList
           navigation={navigation}
@@ -133,7 +121,6 @@ const NotificationsScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -205,5 +192,4 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-
 export default NotificationsScreen;

@@ -9,18 +9,14 @@ import {
   Platform,
 } from 'react-native';
 import COLORS from '../../utils/COLORS.js'; // Adjust import path as needed
-
 // Simple arrow and refresh icons using Unicode characters
 const BackIcon = ({ color = COLORS.medium, size = 20 }) => (
   <Text style={[{ fontSize: size, color, fontWeight: 'bold' }]}>←</Text>
 );
-
 const RetryIcon = ({ color = COLORS.primary, size = 18 }) => (
   <Text style={[{ fontSize: size, color, fontWeight: 'bold' }]}>↻</Text>
 );
-
 const { width } = Dimensions.get('window');
-
 const PageHeader = ({
   onBack,
   onRetry,
@@ -50,11 +46,9 @@ const PageHeader = ({
       </View>
     </TouchableOpacity>
   );
-
   return (
     <View style={[styles.headerContainer, containerStyle]}>
       <StatusBar backgroundColor={COLORS.background} barStyle="dark-content" />
-      
       <View style={styles.headerContent}>
         <View style={styles.leftSection}>
           {showBack && (
@@ -66,13 +60,11 @@ const PageHeader = ({
             </NeumorphicButton>
           )}
         </View>
-
         <View style={styles.centerSection}>
           {title ? (
             <Text style={[styles.titleText, titleStyle]}>{title}</Text>
           ) : null}
         </View>
-
         <View style={styles.rightSection}>
           {showRetry && (
             <NeumorphicButton
@@ -87,7 +79,6 @@ const PageHeader = ({
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   headerContainer: {
     backgroundColor: COLORS.background,
@@ -181,5 +172,4 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
 });
-
 export default PageHeader;

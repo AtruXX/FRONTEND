@@ -1,5 +1,4 @@
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
-
 export const styles = StyleSheet.create({
     safeArea: {
       flex: 1,

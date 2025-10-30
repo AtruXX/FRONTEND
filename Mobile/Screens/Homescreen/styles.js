@@ -1,6 +1,5 @@
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
 import COLORS from "../../utils/COLORS.js";
-
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -229,7 +228,6 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  
   statusDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -239,36 +237,29 @@ export const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
   },
-  
   driving: {
     backgroundColor: COLORS.selected,
   },
-  
   parked: {
     backgroundColor: COLORS.background,
   },
-  
   statusDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
     marginRight: 10,
   },
-  
   drivingDot: {
     backgroundColor: COLORS.success,
   },
-  
   parkedDot: {
     backgroundColor: COLORS.secondary,
   },
-  
   statusText: {
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.dark,
   },
-  
   toggleButton: {
     paddingVertical: 16,
     paddingHorizontal: 32,
@@ -276,19 +267,15 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
   driveButton: {
     backgroundColor: COLORS.success,
   },
-  
   parkButton: {
     backgroundColor: COLORS.secondary,
   },
-  
   disabled: {
     opacity: 0.6,
   },
-  
   buttonText: {
     color: COLORS.card,
     fontSize: 16,
@@ -375,32 +362,26 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  
   drivingText: {
     color: COLORS.success,
   },
-  
   parkedText: {
     color: COLORS.secondary,
   },
-  
   changeInstructions: {
     alignItems: 'center',
   },
-  
   instructionText: {
     fontSize: 14,
     color: COLORS.medium,
     textAlign: 'center',
     marginBottom: 4,
   },
-  
   nextStatusText: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.light,
   },
-
   deliveryCard: {
     backgroundColor: COLORS.card,
     borderRadius: 12,
@@ -502,7 +483,6 @@ export const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-  
   // Badge status styles for different transport statuses
   badgeNotStarted: {
     backgroundColor: COLORS.light,
@@ -516,7 +496,6 @@ export const styles = StyleSheet.create({
   badgeCompleted: {
     backgroundColor: COLORS.success,
   },
-  
   // Error container styles
   errorContainer: {
     flex: 1,

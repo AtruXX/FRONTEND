@@ -11,7 +11,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import NotificationItem from './NotificationItem';
 import { useNotifications } from '../../Screens/NotificationsContext';
-
 const NotificationsList = ({
   navigation,
   showHeader = true,
@@ -28,9 +27,7 @@ const NotificationsList = ({
     dismissAllNotifications,
     refetchNotifications,
   } = useNotifications();
-
   const [refreshing, setRefreshing] = useState(false);
-
   // Filter notifications based on filterType
   const filteredNotifications = notifications.filter(notification => {
     switch (filterType) {
@@ -45,21 +42,17 @@ const NotificationsList = ({
         return true;
     }
   });
-
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await refetchNotifications();
     } catch (error) {
-      console.error('Error refreshing notifications:', error);
     } finally {
       setRefreshing(false);
     }
   };
-
   const handleMarkAllAsRead = () => {
     if (unreadCount === 0) return;
-
     Alert.alert(
       'Marchează toate ca citite',
       `Dorești să marchezi toate ${unreadCount} notificările ca citite?`,
@@ -75,10 +68,8 @@ const NotificationsList = ({
       ]
     );
   };
-
   const handleDismissAll = () => {
     if (notifications.length === 0) return;
-
     Alert.alert(
       'Șterge toate notificările',
       `Dorești să ștergi toate ${notifications.length} notificările? Această acțiune nu poate fi anulată.`,
@@ -95,7 +86,6 @@ const NotificationsList = ({
       ]
     );
   };
-
   const handleNotificationPress = (notification) => {
     // Handle navigation based on notification type
     switch (notification.notification_type) {
@@ -119,7 +109,6 @@ const NotificationsList = ({
         break;
     }
   };
-
   const renderNotificationItem = ({ item }) => (
     <NotificationItem
       notification={item}
@@ -128,10 +117,8 @@ const NotificationsList = ({
       onDismiss={dismissNotification}
     />
   );
-
   const renderHeader = () => {
     if (!showHeader) return null;
-
     return (
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -142,7 +129,6 @@ const NotificationsList = ({
             </View>
           )}
         </View>
-
         <View style={styles.headerActions}>
           {unreadCount > 0 && (
             <TouchableOpacity
@@ -152,7 +138,6 @@ const NotificationsList = ({
               <Ionicons name="checkmark-done-outline" size={20} color="#4ECDC4" />
             </TouchableOpacity>
           )}
-
           {notifications.length > 0 && (
             <TouchableOpacity
               style={styles.headerButton}
@@ -165,7 +150,6 @@ const NotificationsList = ({
       </View>
     );
   };
-
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="notifications-off-outline" size={64} color="#ccc" />
@@ -176,13 +160,10 @@ const NotificationsList = ({
       </TouchableOpacity>
     </View>
   );
-
   const renderSeparator = () => <View style={styles.separator} />;
-
   return (
     <View style={styles.container}>
       {renderHeader()}
-
       <FlatList
         data={filteredNotifications}
         keyExtractor={(item) => item.id.toString()}
@@ -203,7 +184,6 @@ const NotificationsList = ({
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -288,5 +268,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-
 export default NotificationsList;

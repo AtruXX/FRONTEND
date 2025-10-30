@@ -9,9 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NotificationUtils } from '../../services/notificationService';
-
 const { width: screenWidth } = Dimensions.get('window');
-
 const NotificationToast = ({
   notification,
   onPress,
@@ -22,7 +20,6 @@ const NotificationToast = ({
 }) => {
   const slideAnim = useRef(new Animated.Value(-screenWidth)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     // Show animation
     Animated.parallel([
@@ -37,17 +34,14 @@ const NotificationToast = ({
         useNativeDriver: true,
       }),
     ]).start();
-
     // Auto hide
     if (autoHide) {
       const timer = setTimeout(() => {
         handleDismiss();
       }, autoHideDelay);
-
       return () => clearTimeout(timer);
     }
   }, []);
-
   const handleDismiss = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -64,26 +58,21 @@ const NotificationToast = ({
       onDismiss?.();
     });
   };
-
   const handlePress = () => {
     handleDismiss();
     onPress?.(notification);
   };
-
   const getNotificationIcon = () => {
     return NotificationUtils.getNotificationIcon(notification.notification_type);
   };
-
   const getNotificationColor = () => {
     return NotificationUtils.getNotificationColor(notification.notification_type);
   };
-
   const getPositionStyle = () => {
     return position === 'bottom'
       ? { bottom: 100 }
       : { top: 100 };
   };
-
   return (
     <Animated.View
       style={[
@@ -107,7 +96,6 @@ const NotificationToast = ({
             color="white"
           />
         </View>
-
         <View style={styles.content}>
           <Text style={styles.title} numberOfLines={1}>
             {notification.title}
@@ -116,7 +104,6 @@ const NotificationToast = ({
             {notification.message}
           </Text>
         </View>
-
         <TouchableOpacity
           style={styles.dismissButton}
           onPress={handleDismiss}
@@ -127,7 +114,6 @@ const NotificationToast = ({
     </Animated.View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
@@ -180,5 +166,4 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-
 export default NotificationToast;

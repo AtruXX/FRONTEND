@@ -1,6 +1,5 @@
 // LeaveHistoryScreen/styles.js
 import { StyleSheet } from 'react-native';
-
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -10,7 +9,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
-
   // Filter Container
   filterContainer: {
     backgroundColor: 'white',
@@ -24,20 +22,17 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-
   filterTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 12,
   },
-
   filterOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-
   filterOption: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -46,24 +41,20 @@ export const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     backgroundColor: 'white',
   },
-
   filterOptionActive: {
     borderWidth: 2,
     backgroundColor: '#F8FAFC',
   },
-
   filterOptionText: {
     fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
   },
-
   // Create New Container
   createNewContainer: {
     marginHorizontal: 16,
     marginTop: 16,
   },
-
   createNewButton: {
     backgroundColor: '#6366F1',
     flexDirection: 'row',
@@ -78,19 +69,16 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-
   createNewButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
   },
-
   // List Container
   listContainer: {
     padding: 16,
   },
-
   // Request Item
   requestItem: {
     backgroundColor: 'white',
@@ -103,50 +91,42 @@ export const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-
   requestHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-
   requestDatesContainer: {
     flex: 1,
   },
-
   requestDates: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 4,
   },
-
   requestDays: {
     fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
   },
-
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
     marginLeft: 12,
   },
-
   statusText: {
     fontSize: 12,
     fontWeight: '600',
   },
-
   requestReason: {
     fontSize: 14,
     color: '#4B5563',
     lineHeight: 20,
     marginBottom: 12,
   },
-
   // Approval/Rejection Details
   approvalContainer: {
     flexDirection: 'row',
@@ -157,14 +137,12 @@ export const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 12,
   },
-
   approvalText: {
     fontSize: 13,
     color: '#065F46',
     marginLeft: 6,
     fontWeight: '500',
   },
-
   rejectionContainer: {
     backgroundColor: '#FEF2F2',
     paddingHorizontal: 12,
@@ -172,14 +150,12 @@ export const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 12,
   },
-
   rejectionText: {
     fontSize: 13,
     color: '#DC2626',
     marginLeft: 6,
     lineHeight: 18,
   },
-
   // Request Actions
   requestActions: {
     flexDirection: 'row',
@@ -190,7 +166,6 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
-
   detailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,14 +174,12 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
-
   detailsButtonText: {
     fontSize: 14,
     color: '#6366F1',
     fontWeight: '500',
     marginLeft: 6,
   },
-
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -215,14 +188,12 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
-
   editButtonText: {
     fontSize: 14,
     color: '#F59E0B',
     fontWeight: '500',
     marginLeft: 6,
   },
-
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -231,25 +202,21 @@ export const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
-
   deleteButtonDisabled: {
     opacity: 0.6,
   },
-
   deleteButtonText: {
     fontSize: 14,
     color: '#EF4444',
     fontWeight: '500',
     marginLeft: 6,
   },
-
   createdDate: {
     fontSize: 12,
     color: '#9CA3AF',
     textAlign: 'right',
     fontStyle: 'italic',
   },
-
   // Empty State
   emptyContainer: {
     flex: 1,
@@ -257,7 +224,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-
   emptyIconContainer: {
     width: 80,
     height: 80,
@@ -267,7 +233,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-
   emptyTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -275,7 +240,6 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-
   emptyText: {
     fontSize: 16,
     color: '#6B7280',
@@ -283,7 +247,6 @@ export const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 24,
   },
-
   createButton: {
     backgroundColor: '#6366F1',
     flexDirection: 'row',
@@ -293,14 +256,12 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
   },
-
   createButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
   },
-
   refreshButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,14 +271,12 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#6366F1',
   },
-
   refreshButtonText: {
     color: '#6366F1',
     fontSize: 14,
     fontWeight: '500',
     marginRight: 6,
   },
-
   // Error States
   errorContainer: {
     flex: 1,
@@ -325,7 +284,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -333,7 +291,6 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-
   errorText: {
     fontSize: 16,
     color: '#6B7280',
@@ -341,14 +298,12 @@ export const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 24,
   },
-
   retryButton: {
     backgroundColor: '#EF4444',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-
   retryButtonText: {
     color: 'white',
     fontSize: 16,

@@ -21,10 +21,8 @@ import {
   useGetTrailerQuery
 } from '../../services/vehicleService';
 import PageHeader from "../../components/General/Header";
-
 const TruckPageScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
-
   // Get user profile
   const {
     data: profileData,
@@ -32,7 +30,6 @@ const TruckPageScreen = ({ navigation }) => {
     error: profileError,
     refetch: refetchProfile
   } = useGetUserProfileQuery();
-
   // Get active transport using the transport ID from profile
   const activeTransportId = profileData?.active_transport;
   const {
@@ -41,7 +38,6 @@ const TruckPageScreen = ({ navigation }) => {
     error: transportError,
     refetch: refetchTransport
   } = useGetActiveTransportQuery(activeTransportId);
-
   // Get truck details using truck ID from active transport
   const {
     data: truckData,
@@ -49,7 +45,6 @@ const TruckPageScreen = ({ navigation }) => {
     error: truckError,
     refetch: refetchTruck
   } = useGetTruckQuery(activeTransport?.truck);
-
   // Get truck documents
   const {
     data: truckDocuments,
@@ -57,7 +52,6 @@ const TruckPageScreen = ({ navigation }) => {
     error: documentsError,
     refetch: refetchDocuments
   } = useGetTruckDocumentsQuery(activeTransport?.truck);
-
   // Get trailer details
   const {
     data: trailerData,
@@ -65,7 +59,6 @@ const TruckPageScreen = ({ navigation }) => {
     error: trailerError,
     refetch: refetchTrailer
   } = useGetTrailerQuery(activeTransport?.trailer);
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -77,16 +70,13 @@ const TruckPageScreen = ({ navigation }) => {
         refetchTrailer()
       ]);
     } catch (error) {
-      console.error('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
   }, [refetchProfile, refetchTransport, refetchTruck, refetchDocuments]);
-
   const handleRetry = useCallback(async () => {
     await onRefresh();
   }, [onRefresh]);
-
   const handleBackPress = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -94,13 +84,11 @@ const TruckPageScreen = ({ navigation }) => {
       navigation.navigate('Home');
     }
   };
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString('ro-RO', options);
   };
-
   const getDocumentStatusColor = (status, expirationDate) => {
     if (status === 'expired' || (expirationDate && new Date(expirationDate) < new Date())) {
       return '#EF4444'; // Red
@@ -113,7 +101,6 @@ const TruckPageScreen = ({ navigation }) => {
     }
     return '#10B981'; // Green
   };
-
   const openDocument = async (documentUrl) => {
     try {
       const supported = await Linking.canOpenURL(documentUrl);
@@ -123,11 +110,9 @@ const TruckPageScreen = ({ navigation }) => {
         Alert.alert('Eroare', 'Nu se poate deschide documentul');
       }
     } catch (error) {
-      console.error('Error opening document:', error);
       Alert.alert('Eroare', 'Nu se poate deschide documentul');
     }
   };
-
   if (!activeTransportId || !activeTransport) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -139,7 +124,6 @@ const TruckPageScreen = ({ navigation }) => {
             showRetry={true}
             showBack={true}
           />
-          
           <View style={styles.emptyContainer}>
             <Ionicons name="truck-outline" size={60} color="#6366F1" />
             <Text style={styles.emptyTitle}>Niciun transport activ</Text>
@@ -149,7 +133,6 @@ const TruckPageScreen = ({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -160,7 +143,6 @@ const TruckPageScreen = ({ navigation }) => {
           showRetry={true}
           showBack={true}
         />
-
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           refreshControl={
@@ -193,7 +175,6 @@ const TruckPageScreen = ({ navigation }) => {
               </View>
             </View>
           )}
-
           {/* Transport Info Card */}
           <View style={styles.detailCard}>
             <View style={styles.cardHeader}>
@@ -225,7 +206,6 @@ const TruckPageScreen = ({ navigation }) => {
               </View>
             </View>
           </View>
-
           {/* Technical Specifications */}
           {truckData && (
             <View style={styles.detailCard}>
@@ -263,7 +243,6 @@ const TruckPageScreen = ({ navigation }) => {
               </View>
             </View>
           )}
-
           {/* Legal & Safety Information */}
           {truckData?.legal_condition && (
             <View style={styles.detailCard}>
@@ -299,7 +278,6 @@ const TruckPageScreen = ({ navigation }) => {
               </View>
             </View>
           )}
-
           {/* Documents Card */}
           {truckDocuments && truckDocuments.documents && truckDocuments.documents.length > 0 && (
             <View style={styles.detailCard}>
@@ -349,7 +327,6 @@ const TruckPageScreen = ({ navigation }) => {
               </View>
             </View>
           )}
-
           {/* Maintenance Card */}
           {truckData?.last_service_date && (
             <View style={styles.detailCard}>
@@ -372,7 +349,6 @@ const TruckPageScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -646,5 +622,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-
 export default TruckPageScreen;

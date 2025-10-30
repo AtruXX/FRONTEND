@@ -1,5 +1,4 @@
 import { View, StyleSheet, Alert, Text, TouchableOpacity, Image } from "react-native";
-
 export const styles = StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -230,7 +229,6 @@ export const styles = StyleSheet.create({
       borderTopColor: '#E5E7EB',
       paddingHorizontal: 16,
     },
-  
     // Start transport button
     startButton: {
       backgroundColor: '#6366F1',
@@ -249,7 +247,6 @@ export const styles = StyleSheet.create({
       shadowOpacity: 0.1,
       shadowRadius: 3,
     },
-  
     // Active button state (TRANSPORT ACTIV)
     activeButton: {
       backgroundColor: '#10B981',
@@ -257,13 +254,11 @@ export const styles = StyleSheet.create({
     completedButton: {
       backgroundColor: '#6B7280', // Green color
     },
-  
     // Disabled button state
     disabledButton: {
       backgroundColor: '#9CA3AF', // Gray color
       opacity: 0.6,
     },
-  
     // Button text
     startButtonText: {
       color: 'white',
@@ -271,18 +266,15 @@ export const styles = StyleSheet.create({
       fontWeight: '600',
       textAlign: 'center',
     },
-  
     // Button icon
     buttonIcon: {
       marginRight: 8,
     },
-  
     // Disabled card style
     disabledCard: {
       opacity: 0.7,
       backgroundColor: '#F9FAFB',
     },
-  
     // Destination text
     destinationText: {
       fontSize: 12,
@@ -291,7 +283,6 @@ export const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
     },
-  
     // Transport info section
     transportInfoSection: {
       backgroundColor: '#F8FAFC',
@@ -299,14 +290,12 @@ export const styles = StyleSheet.create({
       borderRadius: 8,
       marginBottom: 12,
     },
-  
     // Info row
     infoRow: {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 6,
     },
-  
     // Info text
     infoText: {
       fontSize: 14,
@@ -314,7 +303,6 @@ export const styles = StyleSheet.create({
       marginLeft: 8,
       fontWeight: '500',
     },
-
     // Error handling styles
     errorContainer: {
       flex: 1,
@@ -323,7 +311,6 @@ export const styles = StyleSheet.create({
       padding: 24,
       backgroundColor: '#f8f9fa',
     },
-
     errorIconContainer: {
       width: 80,
       height: 80,
@@ -333,7 +320,6 @@ export const styles = StyleSheet.create({
       alignItems: 'center',
       marginBottom: 16,
     },
-
     errorTitle: {
       fontSize: 18,
       fontWeight: 'bold',
@@ -341,7 +327,6 @@ export const styles = StyleSheet.create({
       marginBottom: 8,
       textAlign: 'center',
     },
-
     errorText: {
       fontSize: 16,
       color: '#666',
@@ -349,7 +334,6 @@ export const styles = StyleSheet.create({
       textAlign: 'center',
       lineHeight: 22,
     },
-
     retryButton: {
       flexDirection: 'row',
       backgroundColor: '#DC2626',
@@ -358,13 +342,11 @@ export const styles = StyleSheet.create({
       borderRadius: 8,
       alignItems: 'center',
     },
-
     retryButtonText: {
       color: 'white',
       fontWeight: 'bold',
       fontSize: 16,
     },
-
     // Queue system styles
     queueInfoContainer: {
       backgroundColor: 'white',
@@ -381,7 +363,6 @@ export const styles = StyleSheet.create({
       borderWidth: 1,
       borderColor: '#E5E7EB',
     },
-
     queueInfoHeader: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -390,7 +371,6 @@ export const styles = StyleSheet.create({
       borderBottomWidth: 1,
       borderBottomColor: '#F3F4F6',
     },
-
     queueInfoTitle: {
       fontSize: 17,
       fontWeight: '700',
@@ -398,14 +378,12 @@ export const styles = StyleSheet.create({
       marginLeft: 10,
       flex: 1,
     },
-
     queueInfoText: {
       fontSize: 15,
       color: '#1F2937',
       lineHeight: 22,
       fontWeight: '500',
     },
-
     queueEmptyText: {
       fontSize: 14,
       color: '#9CA3AF',
@@ -413,7 +391,6 @@ export const styles = StyleSheet.create({
       marginTop: 8,
       lineHeight: 20,
     },
-
     queuePositionContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -424,19 +401,16 @@ export const styles = StyleSheet.create({
       borderRadius: 6,
       marginBottom: 8,
     },
-
     queuePositionText: {
       fontSize: 14,
       color: '#374151',
       marginLeft: 6,
       fontWeight: '500',
     },
-
     // Queue button styles
     queueButton: {
       backgroundColor: '#F59E0B',
     },
-
     nextInQueueButton: {
       backgroundColor: '#6366F1',
     },

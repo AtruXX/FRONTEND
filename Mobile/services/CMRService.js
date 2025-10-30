@@ -2,7 +2,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
-
 // Enhanced CMR error types for better error handling
 export const CMR_ERROR_TYPES = {
   NOT_FOUND: 'CMR_NOT_FOUND',
@@ -11,7 +10,6 @@ export const CMR_ERROR_TYPES = {
   SERVER_ERROR: 'SERVER_ERROR',
   UNKNOWN_ERROR: 'UNKNOWN_ERROR'
 };
-
 // Helper function to categorize CMR errors
 const categorizeCMRError = (error, response) => {
   if (response?.status === 404) {
@@ -43,7 +41,6 @@ const categorizeCMRError = (error, response) => {
       originalError: error
     };
   }
-
   return {
     type: CMR_ERROR_TYPES.UNKNOWN_ERROR,
     message: 'A apărut o eroare neașteptată',
@@ -51,7 +48,6 @@ const categorizeCMRError = (error, response) => {
     originalError: error
   };
 };
-
 // Helper function to check if CMR exists for a transport
 const checkCMRExists = async (transportId, token) => {
   try {
@@ -62,22 +58,18 @@ const checkCMRExists = async (transportId, token) => {
         'Content-Type': 'application/json',
       },
     });
-
     if (!response.ok) {
       if (response.status === 404) {
         return { exists: false, canCreate: true };
       }
       throw new Error(`HTTP ${response.status}`);
     }
-
     const data = await response.json();
     return { exists: data.exists || false, canCreate: !data.exists };
   } catch (error) {
-    console.warn('CMR existence check failed:', error);
     return { exists: false, canCreate: true };
   }
 };
-
 // Custom hook for getting CMR data with enhanced error handling
 export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
   const [data, setData] = useState(null);
@@ -85,26 +77,21 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
   const [cmrExists, setCmrExists] = useState(null);
-
   const fetchCMRData = useCallback(async () => {
     if (options.skip || !activeTransportId) {
       setIsLoading(false);
       return;
     }
-
     setIsFetching(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       // First, check if CMR exists
       const existsResult = await checkCMRExists(activeTransportId, token);
       setCmrExists(existsResult.exists);
-
       if (!existsResult.exists) {
         // CMR doesn't exist, create a user-friendly error
         const notFoundError = {
@@ -118,7 +105,6 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
         setIsFetching(false);
         return;
       }
-
       // CMR exists, fetch the data
       const response = await fetch(`${BASE_URL}transport-cmr/${activeTransportId}`, {
         method: 'GET',
@@ -127,25 +113,20 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
           'Content-Type': 'application/json',
         },
       });
-
       if (!response.ok) {
         const errorData = await response.text();
-
         // Create categorized error for better handling
         const categorizedError = categorizeCMRError(
           new Error(`HTTP ${response.status}: ${errorData}`),
           response
         );
-
         throw categorizedError;
       }
-
       const cmrData = await response.json();
       setData(cmrData);
       setCmrExists(true);
     } catch (err) {
       setError(err);
-
       // If it's not already a categorized error, categorize it
       if (!err.type) {
         const categorizedError = categorizeCMRError(err);
@@ -156,12 +137,10 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
       setIsFetching(false);
     }
   }, [activeTransportId, options.skip]);
-
   // Initial load
   useEffect(() => {
     fetchCMRData();
   }, [fetchCMRData]);
-
   return {
     data,
     isLoading,
@@ -171,22 +150,18 @@ export const useGetCMRDataQuery = (activeTransportId, options = {}) => {
     refetch: fetchCMRData,
   };
 };
-
 // Custom hook for updating CMR data
 export const useUpdateCMRDataMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const updateCMRData = useCallback(async ({ activeTransportId, cmrData }) => {
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       const response = await fetch(`${BASE_URL}transport-cmr/${activeTransportId}`, {
         method: 'PATCH',
         headers: {
@@ -195,14 +170,11 @@ export const useUpdateCMRDataMutation = () => {
         },
         body: JSON.stringify(cmrData),
       });
-
       if (!response.ok) {
         const errorData = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
-
       const data = await response.json();
-      
       setIsLoading(false);
       return data;
     } catch (err) {
@@ -211,35 +183,26 @@ export const useUpdateCMRDataMutation = () => {
       throw err;
     }
   }, []);
-
   // Return the mutation function with unwrap method
   const updateCMRDataMutation = useCallback((variables) => {
     const promise = updateCMRData(variables);
     promise.unwrap = () => promise;
     return promise;
   }, [updateCMRData]);
-
   return [updateCMRDataMutation, { isLoading, error }];
 };
-
 // Custom hook for creating new CMR data
 export const useCreateCMRDataMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const createCMRData = useCallback(async ({ activeTransportId, cmrData }) => {
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
-      console.log('🚀 Creating CMR for transport:', activeTransportId);
-      console.log('📝 CMR Data:', cmrData);
-
       const response = await fetch(`${BASE_URL}transport-cmr/${activeTransportId}`, {
         method: 'POST',
         headers: {
@@ -248,13 +211,8 @@ export const useCreateCMRDataMutation = () => {
         },
         body: JSON.stringify(cmrData),
       });
-
-      console.log('📡 CMR Creation Response Status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.text();
-        console.error('❌ CMR Creation Failed:', errorData);
-
         // Create user-friendly error message
         let userMessage = 'Nu s-a putut crea CMR-ul.';
         if (response.status === 400) {
@@ -266,13 +224,9 @@ export const useCreateCMRDataMutation = () => {
         } else if (response.status >= 500) {
           userMessage = 'Eroare de server. Încercați din nou peste câteva momente.';
         }
-
         throw new Error(userMessage);
       }
-
       const data = await response.json();
-      console.log('✅ CMR Created Successfully:', data);
-
       setIsLoading(false);
       return data;
     } catch (err) {
@@ -281,38 +235,31 @@ export const useCreateCMRDataMutation = () => {
       throw err;
     }
   }, []);
-
   // Return the mutation function with unwrap method
   const createCMRDataMutation = useCallback((variables) => {
     const promise = createCMRData(variables);
     promise.unwrap = () => promise;
     return promise;
   }, [createCMRData]);
-
   return [createCMRDataMutation, { isLoading, error }];
 };
-
 // Custom hook for checking CMR status (digital/physical/both/none)
 export const useGetCMRStatusQuery = (transportId, options = {}) => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const fetchCMRStatus = useCallback(async () => {
     if (options.skip || !transportId) {
       setIsLoading(false);
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       const response = await fetch(`${BASE_URL}cmr-status/${transportId}`, {
         method: 'GET',
         headers: {
@@ -320,36 +267,28 @@ export const useGetCMRStatusQuery = (transportId, options = {}) => {
           'Content-Type': 'application/json',
         },
       });
-
       if (!response.ok) {
         const errorData = await response.text();
-
         // 404 is not an error - it just means CMR doesn't exist yet
         if (response.status === 404) {
-          console.log('CMR status not found (404) - CMR does not exist yet');
           setData({ has_digital_cmr: false, has_physical_cmr: false });
           setError(null); // Don't set error for 404
           setIsLoading(false);
           return;
         }
-
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
-
       const statusData = await response.json();
       setData(statusData);
     } catch (err) {
-      console.error('CMR status fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
     }
   }, [transportId, options.skip]);
-
   useEffect(() => {
     fetchCMRStatus();
   }, [fetchCMRStatus]);
-
   return {
     data,
     isLoading,
@@ -357,36 +296,29 @@ export const useGetCMRStatusQuery = (transportId, options = {}) => {
     refetch: fetchCMRStatus,
   };
 };
-
 // Custom hook for uploading physical CMR documents using new dedicated endpoint
 export const useUploadCMRFizicMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const uploadCMRFizic = useCallback(async ({ transportId, document, title }) => {
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       const formData = new FormData();
-
       // Add document to form data
       formData.append('document', {
         uri: document.uri,
         type: document.type || document.mimeType || 'image/jpeg',
         name: document.name || `cmr_fizic_${Date.now()}.${document.type?.includes('pdf') ? 'pdf' : 'jpg'}`,
       });
-
       // Add optional title
       if (title) {
         formData.append('title', title);
       }
-
       const response = await fetch(`${BASE_URL}cmr-fizic/${transportId}`, {
         method: 'POST',
         headers: {
@@ -395,12 +327,10 @@ export const useUploadCMRFizicMutation = () => {
         },
         body: formData,
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
-
       const data = await response.json();
       setIsLoading(false);
       return data;
@@ -410,37 +340,30 @@ export const useUploadCMRFizicMutation = () => {
       throw err;
     }
   }, []);
-
   const uploadCMRFizicMutation = useCallback((variables) => {
     const promise = uploadCMRFizic(variables);
     promise.unwrap = () => promise;
     return promise;
   }, [uploadCMRFizic]);
-
   return [uploadCMRFizicMutation, { isLoading, error }];
 };
-
 // Custom hook for getting complete CMR data (digital + physical)
 export const useGetCMRCompleteQuery = (transportId, options = {}) => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const fetchCMRComplete = useCallback(async () => {
     if (options.skip || !transportId) {
       setIsLoading(false);
       return;
     }
-
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       const response = await fetch(`${BASE_URL}cmr-complete/${transportId}`, {
         method: 'GET',
         headers: {
@@ -448,36 +371,28 @@ export const useGetCMRCompleteQuery = (transportId, options = {}) => {
           'Content-Type': 'application/json',
         },
       });
-
       if (!response.ok) {
         const errorData = await response.text();
-
         // 404 is not an error - it just means CMR doesn't exist yet
         if (response.status === 404) {
-          console.log('CMR not found (404) - this is normal for new transports');
           setData(null);
           setError(null); // Don't set error for 404
           setIsLoading(false);
           return;
         }
-
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
-
       const completeData = await response.json();
       setData(completeData);
     } catch (err) {
-      console.error('CMR fetch error:', err);
       setError(err);
     } finally {
       setIsLoading(false);
     }
   }, [transportId, options.skip]);
-
   useEffect(() => {
     fetchCMRComplete();
   }, [fetchCMRComplete]);
-
   return {
     data,
     isLoading,
@@ -485,37 +400,29 @@ export const useGetCMRCompleteQuery = (transportId, options = {}) => {
     refetch: fetchCMRComplete,
   };
 };
-
 // LEGACY: Keep for backward compatibility but deprecated in favor of useUploadCMRFizicMutation
 export const useUploadCMRDocumentsMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const uploadCMRDocuments = useCallback(async ({ activeTransportId, documents }) => {
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       // Upload each document using the new cmr-fizic endpoint
       const uploadResults = [];
-
       for (let i = 0; i < documents.length; i++) {
         const document = documents[i];
         const formData = new FormData();
-
         formData.append('document', {
           uri: document.uri,
           type: document.type || (document.mimeType || 'image/jpeg'),
           name: document.name || `cmr_document_${i + 1}.${document.type === 'document' ? 'pdf' : 'jpg'}`,
         });
-
         formData.append('title', document.title || `CMR Fizic ${i + 1}`);
-
         const response = await fetch(`${BASE_URL}cmr-fizic/${activeTransportId}`, {
           method: 'POST',
           headers: {
@@ -523,16 +430,13 @@ export const useUploadCMRDocumentsMutation = () => {
           },
           body: formData,
         });
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || `HTTP ${response.status}`);
         }
-
         const data = await response.json();
         uploadResults.push(data);
       }
-
       setIsLoading(false);
       return {
         success: true,
@@ -545,33 +449,25 @@ export const useUploadCMRDocumentsMutation = () => {
       throw err;
     }
   }, []);
-
   const uploadCMRDocumentsMutation = useCallback((variables) => {
     const promise = uploadCMRDocuments(variables);
     promise.unwrap = () => promise;
     return promise;
   }, [uploadCMRDocuments]);
-
   return [uploadCMRDocumentsMutation, { isLoading, error }];
 };
-
 // Custom hook for downloading CMR document (PDF generated by dispatcher)
 export const useDownloadCMRDocumentMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const downloadCMRDocument = useCallback(async (activeTransportId) => {
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
-      console.log('📥 Fetching CMR complete data for transport:', activeTransportId);
-
       // Get complete CMR data which includes physical CMR PDFs
       const response = await fetch(`${BASE_URL}cmr-complete/${activeTransportId}`, {
         method: 'GET',
@@ -580,15 +476,11 @@ export const useDownloadCMRDocumentMutation = () => {
           'Content-Type': 'application/json',
         },
       });
-
       if (!response.ok) {
         const errorData = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
-
       const cmrCompleteData = await response.json();
-      console.log('📄 CMR Complete Data:', cmrCompleteData);
-
       // Find PDF documents (auto-saved by dispatcher)
       const physicalCMRs = cmrCompleteData.physical_cmrs || [];
       const pdfDocuments = physicalCMRs.filter(doc =>
@@ -597,33 +489,20 @@ export const useDownloadCMRDocumentMutation = () => {
           doc.title?.includes('CMR Digital')
         )
       );
-
-      console.log('📋 Found PDF documents:', pdfDocuments.length);
-
       if (pdfDocuments.length === 0) {
         throw new Error('Nu există niciun document CMR PDF disponibil pentru descărcare.');
       }
-
       // Get the most recent PDF (they are usually ordered by creation date)
       const latestPDF = pdfDocuments[pdfDocuments.length - 1];
       const pdfUrl = latestPDF.document;
-
-      console.log('📥 Opening PDF from:', pdfUrl);
-
       // Import required React Native modules
       const { Linking } = require('react-native');
-
       // Open the PDF URL directly in the browser or PDF viewer
       const canOpen = await Linking.canOpenURL(pdfUrl);
-
       if (!canOpen) {
         throw new Error('Nu se poate deschide documentul PDF');
       }
-
       await Linking.openURL(pdfUrl);
-
-      console.log('✅ PDF opened successfully');
-
       setIsLoading(false);
       return {
         success: true,
@@ -631,19 +510,16 @@ export const useDownloadCMRDocumentMutation = () => {
         pdfCount: pdfDocuments.length
       };
     } catch (err) {
-      console.error('❌ CMR Download Error:', err);
       setIsLoading(false);
       setError(err);
       throw err;
     }
   }, []);
-
   // Return the mutation function with unwrap method
   const downloadCMRDocumentMutation = useCallback((variables) => {
     const promise = downloadCMRDocument(variables);
     promise.unwrap = () => promise;
     return promise;
   }, [downloadCMRDocument]);
-
   return [downloadCMRDocumentMutation, { isLoading, error }];
 };

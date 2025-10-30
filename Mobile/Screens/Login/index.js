@@ -3,21 +3,16 @@ import React, { useState } from "react";
 import { View, Alert, Text, TouchableOpacity, Image } from "react-native";
 import { TextInput } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
-
 import { styles } from "./styles";
 import COLORS from "../../utils/COLORS.js";
-
 // Import the hooks from authService
 import { useLoginMutation } from "../../services/authService";
-
 const LoginScreen = () => {
   const [phone_number, setPhoneNumber] = useState('+40 ');
   const [password, setPassword] = useState("");
   const navigation = useNavigation();
-  
   // RTK Query mutation hook
   const [login, { isLoading: isLoginLoading, error: loginError }] = useLoginMutation();
-
   const handleForgotPassword = () => {
     Alert.alert(
       'Parola uitata',
@@ -25,7 +20,6 @@ const LoginScreen = () => {
       [{ text: 'OK', style: 'default' }]
     );
   };
-
   const handleCreateAccount = () => {
     Alert.alert(
       'Creare cont',
@@ -33,39 +27,29 @@ const LoginScreen = () => {
       [{ text: 'OK', style: 'default' }]
     );
   };
-
   const handleLogin = async () => {
     // Validation
     if (!phone_number.trim() || !password.trim()) {
       Alert.alert('Error', 'Te rugam sa completezi toate campurile.');
       return;
     }
-
     // Additional validation for phone number format
     const cleanPhoneNumber = phone_number.trim();
     if (cleanPhoneNumber.length < 10) {
       Alert.alert('Error', 'Te rugam sa introduci un numar de telefon valid.');
       return;
     }
-
     try {
-      
       // Call the login mutation
       const result = await login({ 
         phone_number: cleanPhoneNumber, 
         password: password.trim() 
       }).unwrap();
-      
-      
-      
       // Navigate to main app
       navigation.navigate('Main');
-      
     } catch (error) {
-      
       // Handle different error types with user-friendly messages
       let errorMessage = 'A aparut o eroare in timpul autentificarii. Te rugam sa incerci din nou.';
-      
       // Parse the error message
       if (error.message) {
         if (error.message.includes('400')) {
@@ -83,11 +67,9 @@ const LoginScreen = () => {
           errorMessage = 'Probleme cu serverul. Te rugam sa incerci din nou mai tarziu.';
         }
       }
-      
       Alert.alert('Eroare autentificare', errorMessage);
     }
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.headerCard}>
@@ -95,7 +77,6 @@ const LoginScreen = () => {
         <Text style={styles.headerTitle}>Bine ai venit!</Text>
         <Text style={styles.headerSubtitle}>Logheaza-te pentru a continua</Text>
       </View>
-
       <View style={styles.formCard}>
         <View style={styles.inputWrapper}>
           <Text style={styles.inputLabel}>Numar de telefon</Text>
@@ -112,7 +93,6 @@ const LoginScreen = () => {
             />
           </View>
         </View>
-
         <View style={styles.inputWrapper}>
           <Text style={styles.inputLabel}>Parola</Text>
           <View style={styles.inputContainer}>
@@ -129,11 +109,9 @@ const LoginScreen = () => {
             />
           </View>
         </View>
-
         <TouchableOpacity onPress={handleForgotPassword} disabled={isLoginLoading}>
           <Text style={styles.forgotPassword}>Ai uitat parola?</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={[
             styles.submitButton,
@@ -146,7 +124,6 @@ const LoginScreen = () => {
             {isLoginLoading ? 'Se proceseaza...' : 'Logheaza-te'}
           </Text>
         </TouchableOpacity>
-
         <Text style={styles.signupText}>
           Nu ai un cont?{' '}
           <Text 
@@ -159,10 +136,8 @@ const LoginScreen = () => {
             Creeaza contul
           </Text>
         </Text>
-
       </View>
     </View>
   );
 };
-
 export default LoginScreen;

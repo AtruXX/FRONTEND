@@ -27,11 +27,9 @@ import {
 } from '../../services/CMRService';
 import { styles } from './styles';
 import PageHeader from "../../components/General/Header";
-
 // Memoized components for better performance
 const ProgressIndicator = React.memo(({ completedPercentage }) => {
   if (!completedPercentage) return null;
-
   return (
     <View style={styles.progressContainer}>
       <View style={styles.progressInfo}>
@@ -49,7 +47,6 @@ const ProgressIndicator = React.memo(({ completedPercentage }) => {
     </View>
   );
 });
-
 const CountryModal = React.memo(({ 
   visible, 
   countries, 
@@ -64,9 +61,7 @@ const CountryModal = React.memo(({
       <Text style={styles.countryText}>{item}</Text>
     </TouchableOpacity>
   ), [onSelect]);
-
   const keyExtractor = useCallback((item) => item, []);
-
   return (
     <Modal
       visible={visible}
@@ -82,7 +77,6 @@ const CountryModal = React.memo(({
               <Ionicons name="close" size={24} color="#373A56" />
             </TouchableOpacity>
           </View>
-          
           <FlatList
             data={countries}
             keyExtractor={keyExtractor}
@@ -98,7 +92,6 @@ const CountryModal = React.memo(({
     </Modal>
   );
 });
-
 const CMRInput = React.memo(({ 
   field, 
   value, 
@@ -110,7 +103,6 @@ const CMRInput = React.memo(({
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('ro-RO');
   }, []);
-
   if (!editingMode) {
     return (
       <View style={styles.displayField}>
@@ -120,9 +112,6 @@ const CMRInput = React.memo(({
       </View>
     );
   }
-
-  console.log(`🔧 Field ${field.key} is in edit mode, rendering TextInput`);
-
   if (field.type === 'country') {
     return (
       <TouchableOpacity
@@ -153,7 +142,6 @@ const CMRInput = React.memo(({
         style={styles.input}
         value={String(value)}
         onChangeText={(text) => {
-          console.log(`🔧 Field ${field.key} changed to:`, text);
           onChange(text);
         }}
         placeholder={field.placeholder}
@@ -163,13 +151,10 @@ const CMRInput = React.memo(({
           field.type === 'decimal' ? 'decimal-pad' :
           field.type === 'date' ? 'default' : 'default'
         }
-        onFocus={() => console.log(`🔧 Field ${field.key} focused`)}
-        onBlur={() => console.log(`🔧 Field ${field.key} blurred`)}
       />
     );
   }
 });
-
 const CMRSection = React.memo(({ 
   sectionName, 
   fields, 
@@ -180,7 +165,6 @@ const CMRSection = React.memo(({
 }) => (
   <View style={styles.sectionContainer}>
     <Text style={styles.sectionTitle}>{sectionName}</Text>
-    
     {fields.map((field) => (
       <View key={field.key} style={styles.inputContainer}>
         <Text style={styles.label}>{field.label}</Text>
@@ -195,7 +179,6 @@ const CMRSection = React.memo(({
     ))}
   </View>
 ));
-
 const EditingFooter = React.memo(({ 
   onCancel, 
   onSave, 
@@ -209,7 +192,6 @@ const EditingFooter = React.memo(({
       <Ionicons name="close" size={20} color="#FF7285" />
       <Text style={styles.cancelButtonText}>Anulează</Text>
     </TouchableOpacity>
-    
     <TouchableOpacity 
       style={styles.saveButton} 
       onPress={onSave}
@@ -226,18 +208,14 @@ const EditingFooter = React.memo(({
     </TouchableOpacity>
   </View>
 ));
-
 const CMRDigitalForm = React.memo(({ navigation }) => {
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [editingMode, setEditingMode] = useState(false);
   const [localFormData, setLocalFormData] = useState({});
-
   // Debug editing mode changes
   useEffect(() => {
-    console.log('🔧 Editing mode changed to:', editingMode);
   }, [editingMode]);
-
   // Get user profile to get active transport ID
   const {
     data: profileData,
@@ -245,7 +223,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     error: profileError,
     refetch: refetchProfile
   } = useGetUserProfileQuery();
-
   // Also get queue data for new transport system
   const {
     data: queueData,
@@ -253,56 +230,35 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     error: queueError,
     refetch: refetchQueue
   } = useGetDriverQueueQuery();
-
   // Smart transport ID detection with fallback
   const getActiveTransportId = () => {
-    console.log('🔍 CMR Digital - Getting Active Transport ID');
-    console.log('  📊 Profile loading:', profileLoading, '| Queue loading:', queueLoading);
-    console.log('  ❌ Profile error:', profileError, '| Queue error:', queueError);
-    console.log('  📦 Profile active_transport:', profileData?.active_transport);
-    console.log('  🔄 Queue current_transport_id:', queueData?.current_transport_id);
-
     // If queue loading or has error, skip queue checks and use profile
     if (queueLoading || queueError) {
       if (profileData?.active_transport) {
-        console.log('✅ Using profile active_transport (queue unavailable):', profileData.active_transport);
         return profileData.active_transport;
       }
-      console.log('⚠️ Queue unavailable and no profile active transport');
       return null;
     }
-
     // Priority 1: Queue system current transport
     if (queueData?.current_transport_id) {
-      console.log('✅ Using queue current_transport_id:', queueData.current_transport_id);
       return queueData.current_transport_id;
     }
-
     // Priority 2: Profile active transport (legacy system)
     if (profileData?.active_transport) {
-      console.log('✅ Using profile active_transport:', profileData.active_transport);
       return profileData.active_transport;
     }
-
     // Priority 3: Check queue for startable transports
     if (queueData?.queue && queueData.queue.length > 0) {
       const startableTransport = queueData.queue.find(t => t.can_start || t.is_current);
       if (startableTransport) {
-        console.log('✅ Using startable transport from queue:', startableTransport.transport_id);
         return startableTransport.transport_id;
       }
       // Fallback to first transport in queue
-      console.log('⚠️ Using first transport from queue:', queueData.queue[0]?.transport_id);
       return queueData.queue[0]?.transport_id;
     }
-
-    console.log('❌ No active transport ID found');
     return null;
   };
-
   const activeTransportId = getActiveTransportId();
-  console.log('📋 CMR Digital - Final activeTransportId:', activeTransportId);
-
   // Get complete CMR data (digital + physical) using new endpoint
   const {
     data: cmrCompleteData,
@@ -312,7 +268,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
   } = useGetCMRCompleteQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading
   });
-
   // Get CMR status
   const {
     data: cmrStatus,
@@ -321,7 +276,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
   } = useGetCMRStatusQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading
   });
-
   // Extract digital CMR from complete data
   const cmrData = cmrCompleteData?.digital_cmr;
   const cmrLoading = cmrCompleteLoading || cmrStatusLoading;
@@ -330,28 +284,13 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
   const refetchCMR = async () => {
     await Promise.all([refetchCMRComplete(), refetchCMRStatus()]);
   };
-
   // Logging CMR state
-  console.log('📄 CMR Digital - CMR State:');
-  console.log('  ⏳ cmrCompleteLoading:', cmrCompleteLoading);
-  console.log('  ⏳ cmrStatusLoading:', cmrStatusLoading);
-  console.log('  ⏳ cmrLoading:', cmrLoading);
-  console.log('  ❌ cmrCompleteError:', cmrCompleteError);
-  console.log('  ❌ cmrError:', cmrError);
-  console.log('  📦 cmrCompleteData:', cmrCompleteData);
-  console.log('  📄 cmrData:', cmrData);
-  console.log('  ✅ cmrStatus:', cmrStatus);
-  console.log('  ✅ cmrExists:', cmrExists);
-
   // If CMR doesn't exist (404 or not found), don't treat it as an error
   // Instead, show the "create new CMR" screen
   const shouldShowCreateScreen = !cmrLoading && !cmrExists && !cmrData;
-  console.log('  🎯 shouldShowCreateScreen:', shouldShowCreateScreen);
-
   // Mutations
   const [updateCMRData, { isLoading: isUpdating }] = useUpdateCMRDataMutation();
   const [createCMRData, { isLoading: isCreating }] = useCreateCMRDataMutation();
-
   // European countries in Romanian
   const europeanCountries = useMemo(() => [
     'Albania', 'Andorra', 'Austria', 'Belarus', 'Belgia', 'Bosnia și Herțegovina', 
@@ -363,32 +302,26 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     'Slovacia', 'Slovenia', 'Spania', 'Suedia', 'Turcia', 'Ucraina', 'Ungaria', 
     'Vatican'
   ], []);
-
   // CMR fields definition with Romanian labels
   const cmrFields = useMemo(() => [
     // Expeditor Section
     { key: 'expeditor_nume', label: 'Nume Expeditor', placeholder: 'Introduceți numele expeditorului', type: 'text', section: 'Expeditor' },
     { key: 'expeditor_adresa', label: 'Adresă Expeditor', placeholder: 'Introduceți adresa completă', type: 'text', section: 'Expeditor' },
     { key: 'expeditor_tara', label: 'Țara Expeditor', placeholder: 'Selectați țara expeditorului', type: 'country', section: 'Expeditor' },
-    
     // Destinatar Section
     { key: 'destinatar_nume', label: 'Nume Destinatar', placeholder: 'Introduceți numele destinatarului', type: 'text', section: 'Destinatar' },
     { key: 'destinatar_adresa', label: 'Adresă Destinatar', placeholder: 'Introduceți adresa completă', type: 'text', section: 'Destinatar' },
     { key: 'destinatar_tara', label: 'Țara Destinatar', placeholder: 'Selectați țara destinatarului', type: 'country', section: 'Destinatar' },
-    
     // Livrare Section
     { key: 'localitate_livrare', label: 'Localitatea Livrării', placeholder: 'Introduceți localitatea', type: 'text', section: 'Livrare' },
     { key: 'tara_livrare', label: 'Țara Livrării', placeholder: 'Selectați țara', type: 'country', section: 'Livrare' },
     { key: 'data_livrare', label: 'Data Livrării', placeholder: 'YYYY-MM-DD', type: 'date', section: 'Livrare' },
-    
     // Încărcare Section
     { key: 'localitate_incarcare', label: 'Localitatea Încărcării', placeholder: 'Introduceți localitatea', type: 'text', section: 'Încărcare' },
     { key: 'tara_incarcare', label: 'Țara Încărcării', placeholder: 'Selectați țara', type: 'country', section: 'Încărcare' },
     { key: 'data_incarcare', label: 'Data Încărcării', placeholder: 'YYYY-MM-DD', type: 'date', section: 'Încărcare' },
-    
     // Documente Section
     { key: 'documente_anexate', label: 'Documente Anexate', placeholder: 'Lista documentelor', type: 'text', section: 'Documente' },
-    
     // Mărfuri Section
     { key: 'marci_numere', label: 'Mărci/Numere', placeholder: 'Introduceți mărci și numere', type: 'text', section: 'Mărfuri' },
     { key: 'numar_colete', label: 'Număr Colete', placeholder: 'Introduceți numărul', type: 'number', section: 'Mărfuri' },
@@ -397,28 +330,23 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     { key: 'numar_static', label: 'Număr Static', placeholder: 'Introduceți numărul static', type: 'text', section: 'Mărfuri' },
     { key: 'greutate_bruta', label: 'Greutate Brută (kg)', placeholder: 'Introduceți greutatea', type: 'decimal', section: 'Mărfuri' },
     { key: 'cubaj', label: 'Cubaj (m³)', placeholder: 'Introduceți cubajul', type: 'decimal', section: 'Mărfuri' },
-    
     // Instrucțiuni Section
     { key: 'instructiuni_expeditor', label: 'Instrucțiuni Expeditor', placeholder: 'Introduceți instrucțiuni', type: 'textarea', section: 'Instrucțiuni' },
     { key: 'prescriptii_francare', label: 'Prescripții Francare', placeholder: 'Detalii despre francare', type: 'text', section: 'Instrucțiuni' },
     { key: 'conventii_speciale', label: 'Convenții Speciale', placeholder: 'Introduceți convenții speciale', type: 'textarea', section: 'Instrucțiuni' },
-    
     // Transport Section
     { key: 'UIT', label: 'UIT', placeholder: 'Cod UIT', type: 'text', section: 'Transport' },
     { key: 'rambursare', label: 'Rambursare', placeholder: 'Suma rambursare', type: 'text', section: 'Transport' },
     { key: 'denumire_transportator', label: 'Denumire Transportator', placeholder: 'Numele transportatorului', type: 'text', section: 'Transport' },
     { key: 'adresa_transportator', label: 'Adresa Transportator', placeholder: 'Adresa completă', type: 'text', section: 'Transport' },
     { key: 'tara_transportator', label: 'Țara Transportator', placeholder: 'Selectați țara', type: 'country', section: 'Transport' },
-    
     // Vehicul Section
     { key: 'marca_autovehicul', label: 'Marca Autovehicul', placeholder: 'Marca vehiculului', type: 'text', section: 'Vehicul' },
     { key: 'numar_circuaratie', label: 'Număr Circulație', placeholder: 'Numărul de înmatriculare', type: 'text', section: 'Vehicul' },
     { key: 'echipaj', label: 'Echipaj', placeholder: 'Numărul persoanelor', type: 'number', section: 'Vehicul' },
     { key: 'transportatori_succesivi', label: 'Transportatori Succesivi', placeholder: 'Lista transportatorilor', type: 'text', section: 'Vehicul' },
-    
     // Observații Section
     { key: 'rezerve_observatii', label: 'Rezerve/Observații', placeholder: 'Observații generale', type: 'textarea', section: 'Observații' },
-    
     // Financiar Section
     { key: 'pret_transport', label: 'Preț Transport', placeholder: 'Prețul de bază', type: 'decimal', section: 'Financiar' },
     { key: 'reduceri', label: 'Reduceri', placeholder: 'Suma reducerilor', type: 'decimal', section: 'Financiar' },
@@ -427,18 +355,15 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     { key: 'accesorii', label: 'Accesorii', placeholder: 'Costul accesoriilor', type: 'decimal', section: 'Financiar' },
     { key: 'diverse', label: 'Diverse', placeholder: 'Alte costuri', type: 'decimal', section: 'Financiar' },
     { key: 'total_de_plata', label: 'Total de Plată', placeholder: 'Suma totală', type: 'decimal', section: 'Financiar' },
-    
     // Final Section
     { key: 'incheiat_la', label: 'Încheiat La', placeholder: 'Data încheierii', type: 'date', section: 'Final' },
   ], []);
-
   // Initialize local form data when CMR data is loaded
   useEffect(() => {
     if (cmrData) {
       setLocalFormData(cmrData);
     }
   }, [cmrData]);
-
   // Group fields by section
   const getFieldsBySection = useMemo(() => {
     const sections = {};
@@ -450,7 +375,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     });
     return sections;
   }, [cmrFields]);
-
   // Memoized handlers
   const updateFieldValue = useCallback((key, value) => {
     setLocalFormData(prev => ({
@@ -458,7 +382,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       [key]: value
     }));
   }, []);
-
   const handleCountrySelect = useCallback((country) => {
     if (activeField) {
       updateFieldValue(activeField, country);
@@ -466,16 +389,13 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       setActiveField(null);
     }
   }, [activeField, updateFieldValue]);
-
   const handleFieldTouch = useCallback((field) => {
     if (!editingMode) return;
-    
     if (field.type === 'country') {
       setActiveField(field.key);
       setShowCountryModal(true);
     }
   }, [editingMode]);
-
   const handleRetry = useCallback(async () => {
     try {
       await Promise.all([
@@ -484,14 +404,11 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
         refetchCMR()
       ]);
     } catch (error) {
-      console.error('Error during retry:', error);
     }
   }, [refetchProfile, refetchQueue, refetchCMR]);
-
   // Handle creating new CMR with empty data
   const handleCreateNewCMR = useCallback(async () => {
     if (!activeTransportId) return;
-
     try {
       const emptyCMRData = {
         expeditor_nume: '',
@@ -504,25 +421,20 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
         greutate: '',
         observatii: ''
       };
-
       await createCMRData({
         activeTransportId,
         cmrData: emptyCMRData
       }).unwrap();
-
       // Refresh the data to show the newly created CMR
       await refetchCMR();
-
       // Switch to editing mode so the driver can fill in the details
       setEditingMode(true);
-
       Alert.alert(
         'CMR Creat',
         'CMR-ul a fost creat cu succes. Puteți acum să completați datele.',
         [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('Create CMR error:', error);
       Alert.alert(
         'Eroare',
         'Nu s-a putut crea CMR-ul. Încercați din nou.',
@@ -530,14 +442,12 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       );
     }
   }, [activeTransportId, createCMRData, refetchCMR]);
-
   const handleSaveChanges = useCallback(async () => {
     try {
       await updateCMRData({
         activeTransportId,
         cmrData: localFormData
       }).unwrap();
-
       Alert.alert(
         'Succes',
         'Datele CMR au fost actualizate cu succes!',
@@ -547,16 +457,13 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
         }}]
       );
     } catch (error) {
-      console.error('Save error:', error);
       Alert.alert('Eroare', 'Nu s-au putut salva modificările.');
     }
   }, [activeTransportId, localFormData, updateCMRData, refetchCMR]);
-
   const handleCancelEdit = useCallback(() => {
     setLocalFormData(cmrData);
     setEditingMode(false);
   }, [cmrData]);
-
   // Memoized render functions
   const renderSection = useCallback(([sectionName, fields]) => (
     <CMRSection
@@ -569,10 +476,8 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       onFieldTouch={handleFieldTouch}
     />
   ), [localFormData, editingMode, updateFieldValue, handleFieldTouch]);
-
   // Error state - only show error if PROFILE fails (queue is optional)
   if (profileError) {
-    console.log('🚨 CMR Digital - Showing profile error screen');
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -593,10 +498,8 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // Show "Create CMR" screen if CMR doesn't exist (not an error, just no data yet)
   if (shouldShowCreateScreen) {
-    console.log('✨ CMR Digital - Showing create CMR screen');
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -636,24 +539,15 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // Enhanced CMR error handling - only for real errors (not 404)
   if (cmrError) {
-    console.log('🚨 CMR Digital - CMR Error detected:', cmrError);
-    console.log('  Error type:', cmrError?.type);
-    console.log('  Error message:', cmrError?.message);
-
     // Check if it's a "not found" error - if so, it's already handled above
     const isNotFoundError = cmrError.type === CMR_ERROR_TYPES.NOT_FOUND ||
                            cmrError?.message?.includes('nu există') ||
                            cmrError?.message?.includes('not found') ||
                            cmrError?.message?.includes('404');
-
-    console.log('  Is "not found" error?', isNotFoundError);
-
     // If it's just a "not found", show create screen instead
     if (isNotFoundError) {
-      console.log('✨ CMR Digital - Showing create screen for 404 error');
       return (
         <SafeAreaView style={styles.container}>
           <PageHeader
@@ -693,7 +587,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
         </SafeAreaView>
       );
     }
-
     // Handle other error types
     const getErrorConfig = () => {
       switch (cmrError.type) {
@@ -727,9 +620,7 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
           };
       }
     };
-
     const errorConfig = getErrorConfig();
-
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -750,7 +641,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   // No active transport - only show this if we're not still loading
   if (!activeTransportId && !profileLoading && !queueLoading) {
     return (
@@ -770,9 +660,7 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
       </SafeAreaView>
     );
   }
-
   const sections = getFieldsBySection;
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -786,7 +674,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
           showRetry={true}
           showBack={true}
         />
-
         <ScrollView
           style={styles.formContainer}
           showsVerticalScrollIndicator={false}
@@ -797,7 +684,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
             <View style={styles.editButtonContainer}>
               <TouchableOpacity
                 onPress={() => {
-                  console.log('🔧 Edit button pressed, enabling editing mode');
                   setEditingMode(true);
                 }}
                 style={styles.prominentEditButton}
@@ -808,7 +694,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
               </TouchableOpacity>
             </View>
           )}
-
           {/* CMR Status Summary */}
           {cmrStatus && (
             <View style={[styles.progressContainer, { marginBottom: 8 }]}>
@@ -843,9 +728,7 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
               </Text>
             </View>
           )}
-
           <ProgressIndicator completedPercentage={cmrData?.completed_percentage} />
-
           {/* Physical CMR Documents */}
           {cmrCompleteData?.physical_cmrs && cmrCompleteData.physical_cmrs.length > 0 && (
             <View style={[styles.progressContainer, { marginBottom: 12 }]}>
@@ -894,10 +777,8 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
               ))}
             </View>
           )}
-
           {Object.entries(sections).map(renderSection)}
         </ScrollView>
-
         {editingMode && (
           <EditingFooter
             onCancel={handleCancelEdit}
@@ -906,7 +787,6 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
           />
         )}
       </KeyboardAvoidingView>
-
       <CountryModal
         visible={showCountryModal}
         countries={europeanCountries}
@@ -916,7 +796,5 @@ const CMRDigitalForm = React.memo(({ navigation }) => {
     </SafeAreaView>
   );
 });
-
 CMRDigitalForm.displayName = 'CMRDigitalForm';
-
 export default CMRDigitalForm;

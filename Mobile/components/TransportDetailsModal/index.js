@@ -9,12 +9,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
-
 const { height: screenHeight } = Dimensions.get('window');
-
 const TransportDetailsModal = ({ visible, transport, onClose }) => {
   if (!transport) return null;
-
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
@@ -24,20 +21,17 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
       return dateString;
     }
   };
-
   const getStatusColor = (status) => {
     if (status === 'ok') return '#10B981';
     if (status === 'probleme' || status === 'not started') return '#F59E0B';
     return '#EF4444';
   };
-
   const getStatusText = (status) => {
     if (status === 'ok') return 'OK';
     if (status === 'probleme') return 'Probleme';
     if (status === 'not started') return 'Neînceput';
     return status || 'Neînceput';
   };
-
   const StatusIndicator = ({ status, label }) => (
     <View style={styles.statusRow}>
       <Text style={styles.statusLabel}>{label}:</Text>
@@ -49,7 +43,6 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
       </View>
     </View>
   );
-
   return (
     <Modal
       visible={visible}
@@ -71,7 +64,6 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
             <Text style={styles.modalSubtitle}>{transport.truck_combination}</Text>
           </View>
         </View>
-
         {/* Content */}
         <ScrollView
           style={styles.modalContent}
@@ -84,23 +76,19 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
               <Ionicons name="information-circle" size={20} color="#6366F1" />
               <Text style={styles.sectionTitle}>Informații Generale</Text>
             </View>
-
             <View style={styles.infoGrid}>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Companie:</Text>
                 <Text style={styles.infoValue}>{transport.company || 'N/A'}</Text>
               </View>
-
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Destinație:</Text>
                 <Text style={styles.infoValue}>{transport.destination || 'N/A'}</Text>
               </View>
-
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Data creării:</Text>
                 <Text style={styles.infoValue}>{formatDate(transport.created_at)}</Text>
               </View>
-
               {transport.updated_at && (
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Ultima actualizare:</Text>
@@ -109,14 +97,12 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
               )}
             </View>
           </View>
-
           {/* Status Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="checkmark-circle" size={20} color="#6366F1" />
               <Text style={styles.sectionTitle}>Status Transport</Text>
             </View>
-
             <View style={styles.statusGrid}>
               <StatusIndicator status={transport.status_truck} label="Status Camion" />
               <StatusIndicator status={transport.status_goods} label="Status Marfă" />
@@ -126,7 +112,6 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
               <StatusIndicator status={transport.status_transport} label="Status Transport" />
             </View>
           </View>
-
           {/* CMR Section if available */}
           {(transport.cmr_sender || transport.cmr_receiver || transport.cmr_goods) && (
             <View style={styles.section}>
@@ -134,7 +119,6 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
                 <Ionicons name="document-text" size={20} color="#6366F1" />
                 <Text style={styles.sectionTitle}>Informații CMR</Text>
               </View>
-
               <View style={styles.infoGrid}>
                 {transport.cmr_sender && (
                   <View style={styles.infoRow}>
@@ -142,14 +126,12 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
                     <Text style={styles.infoValue}>{transport.cmr_sender}</Text>
                   </View>
                 )}
-
                 {transport.cmr_receiver && (
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Destinatar:</Text>
                     <Text style={styles.infoValue}>{transport.cmr_receiver}</Text>
                   </View>
                 )}
-
                 {transport.cmr_goods && (
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Marfă:</Text>
@@ -159,7 +141,6 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
               </View>
             </View>
           )}
-
           {/* Additional Details */}
           {(transport.notes || transport.special_instructions) && (
             <View style={styles.section}>
@@ -167,7 +148,6 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
                 <Ionicons name="chatbubble-ellipses" size={20} color="#6366F1" />
                 <Text style={styles.sectionTitle}>Observații</Text>
               </View>
-
               <View style={styles.notesContainer}>
                 {transport.notes && (
                   <Text style={styles.notesText}>{transport.notes}</Text>
@@ -178,7 +158,6 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
               </View>
             </View>
           )}
-
           {/* Bottom padding for safe scrolling */}
           <View style={styles.bottomPadding} />
         </ScrollView>
@@ -186,5 +165,4 @@ const TransportDetailsModal = ({ visible, transport, onClose }) => {
     </Modal>
   );
 };
-
 export default TransportDetailsModal;

@@ -1,10 +1,8 @@
 import * as Location from 'expo-location';
-
 /**
  * Service for handling route operations and polyline processing
  */
 export class RouteService {
-  
   /**
    * Decode polyline string to coordinate array
    * @param {string} polylineString - Encoded polyline string
@@ -14,26 +12,20 @@ export class RouteService {
     try {
       // Handle null/undefined input
       if (!polylineString) {
-        console.error('Polyline string is null or undefined');
         return [];
       }
-
       let coordinates;
-      
       // Parse the polyline if it's a JSON string
       if (typeof polylineString === 'string') {
         try {
           let parsed = JSON.parse(polylineString);
-          
           // Handle double-encoded JSON strings
           if (typeof parsed === 'string') {
             parsed = JSON.parse(parsed);
           }
-          
           // Handle different possible structures
           coordinates = parsed.coordinates || parsed.geometry?.coordinates || parsed;
         } catch (jsonError) {
-          console.error('Failed to parse polyline JSON:', jsonError);
           return [];
         }
       } else if (polylineString.coordinates) {
@@ -46,46 +38,33 @@ export class RouteService {
         // Direct array of coordinates
         coordinates = polylineString;
       } else {
-        console.error('Invalid polyline format:', polylineString);
         return [];
       }
-      
       // Validate coordinates is an array
       if (!Array.isArray(coordinates)) {
-        console.error('Coordinates is not an array:', coordinates);
         return [];
       }
-
       // Check if array is empty
       if (coordinates.length === 0) {
-        console.error('Coordinates array is empty');
         return [];
       }
-      
       // Return coordinates in [lat, lng] format
       return coordinates.map(coord => {
         if (!Array.isArray(coord) || coord.length < 2) {
-          console.error('Invalid coordinate format:', coord);
           return [0, 0]; // Return default coordinate
         }
-        
         // Convert to numbers and swap lng,lat to lat,lng
         const lng = parseFloat(coord[0]);
         const lat = parseFloat(coord[1]);
-        
         if (isNaN(lat) || isNaN(lng)) {
-          console.error('Invalid coordinate values:', coord);
           return [0, 0];
         }
-        
         return [lat, lng]; // Return as [lat, lng]
       });
     } catch (error) {
-      console.error('Error decoding polyline:', error);
       return [];
     }
   }
-
   /**
    * Extract key waypoints from the route coordinates
    * @param {Array} coordinates - Array of [lat, lng] coordinates
@@ -94,17 +73,13 @@ export class RouteService {
    */
   static extractKeyWaypoints(coordinates, numberOfPoints = 7) {
     if (!coordinates || coordinates.length === 0) return [];
-    
     if (coordinates.length <= numberOfPoints) {
       return coordinates;
     }
-    
     const keyPoints = [];
     const step = Math.floor(coordinates.length / (numberOfPoints - 1));
-    
     // Always include start point
     keyPoints.push(coordinates[0]);
-    
     // Extract intermediate points
     for (let i = 1; i < numberOfPoints - 1; i++) {
       const index = i * step;
@@ -112,13 +87,10 @@ export class RouteService {
         keyPoints.push(coordinates[index]);
       }
     }
-    
     // Always include end point
     keyPoints.push(coordinates[coordinates.length - 1]);
-    
     return keyPoints;
   }
-
   /**
    * Reverse geocode coordinates to get location names
    * @param {Array} coordinates - Array of [lat, lng] coordinates
@@ -132,7 +104,6 @@ export class RouteService {
           latitude,
           longitude
         });
-        
         if (results && results.length > 0) {
           const result = results[0];
           return {
@@ -150,7 +121,6 @@ export class RouteService {
             isEnd: index === coordinates.length - 1
           };
         }
-        
         return {
           id: index,
           latitude,
@@ -166,7 +136,6 @@ export class RouteService {
           isEnd: index === coordinates.length - 1
         };
       } catch (error) {
-        console.error(`Error geocoding coordinates ${coord}:`, error);
         return {
           id: index,
           latitude: coord[0],
@@ -183,10 +152,8 @@ export class RouteService {
         };
       }
     });
-    
     return Promise.all(locationPromises);
   }
-
   /**
    * Format address from geocoding result
    * @param {Object} geocodeResult - Result from reverse geocoding
@@ -194,16 +161,13 @@ export class RouteService {
    */
   static formatAddress(result) {
     const parts = [];
-    
     if (result.streetNumber) parts.push(result.streetNumber);
     if (result.street) parts.push(result.street);
     if (result.city) parts.push(result.city);
     if (result.region && result.region !== result.city) parts.push(result.region);
     if (result.country) parts.push(result.country);
-    
     return parts.length > 0 ? parts.join(', ') : 'Adresă necunoscută';
   }
-
   /**
    * Calculate distance between two coordinates
    * @param {number} lat1 - First latitude
@@ -223,7 +187,6 @@ export class RouteService {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
-
   /**
    * Process route data and extract key information
    * @param {Object} routeData - Route data from transport object
@@ -234,30 +197,23 @@ export class RouteService {
       if (!routeData || !routeData.polyline) {
         throw new Error('Invalid route data');
       }
-
       // Decode polyline to coordinates
       const coordinates = this.decodePolyline(routeData.polyline);
-      
       if (coordinates.length === 0) {
         throw new Error('No coordinates found in polyline');
       }
-
       // Extract key waypoints
       const keyWaypoints = this.extractKeyWaypoints(coordinates, 7);
-      
       // Reverse geocode to get location names
       const locations = await this.reverseGeocodeWaypoints(keyWaypoints);
-      
       // Calculate total distance if available
       const totalDistance = routeData.distance 
         ? (routeData.distance / 1000).toFixed(1) // Convert meters to km
         : this.calculateTotalDistance(coordinates).toFixed(1);
-
       // Calculate estimated travel time
       const travelTime = routeData.travelTime 
         ? this.formatTravelTime(routeData.travelTime)
         : this.estimateTravelTime(parseFloat(totalDistance));
-
       return {
         locations,
         totalDistance,
@@ -269,11 +225,9 @@ export class RouteService {
         keyWaypoints
       };
     } catch (error) {
-      console.error('Error processing route data:', error);
       throw error;
     }
   }
-
   /**
    * Calculate total distance from coordinates
    * @param {Array} coordinates - Array of [lat, lng] coordinates
@@ -289,7 +243,6 @@ export class RouteService {
     }
     return totalDistance;
   }
-
   /**
    * Format travel time from seconds
    * @param {number} seconds - Travel time in seconds
@@ -298,13 +251,11 @@ export class RouteService {
   static formatTravelTime(seconds) {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
   }
-
   /**
    * Estimate travel time based on distance
    * @param {number} distanceKm - Distance in kilometers

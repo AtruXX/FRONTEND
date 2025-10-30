@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MapService } from '../../services/mapService';
-
 /**
  * Example component showing how the route page displays location data
  * This demonstrates the new UI without requiring actual transport data
@@ -95,33 +94,27 @@ const RouteExample = () => {
       isEnd: true
     }
   ];
-
   const routeInfo = {
     totalDistance: '380.5',
     travelTime: '6h 20m'
   };
-
   const handleOpenLocation = (location) => {
     MapService.openLocationInMaps(location, location.city);
   };
-
   const handleOpenFullRoute = () => {
     MapService.showMapOptions(sampleLocations);
   };
-
   const renderLocationCard = (location, index, total) => {
     const getLocationIcon = () => {
       if (location.isStart) return 'play-circle';
       if (location.isEnd) return 'checkmark-circle';
       return 'location';
     };
-    
     const getLocationColor = () => {
       if (location.isStart) return '#4CAF50';
       if (location.isEnd) return '#FF5722';
       return '#5A5BDE';
     };
-    
     return (
       <TouchableOpacity
         key={location.id}
@@ -138,7 +131,6 @@ const RouteExample = () => {
             />
             {index < total - 1 && <View style={styles.routeLine} />}
           </View>
-          
           <View style={styles.locationInfo}>
             <View style={styles.locationHeader}>
               <Text style={styles.locationNumber}>
@@ -151,17 +143,14 @@ const RouteExample = () => {
                 <Ionicons name="map" size={16} color="#5A5BDE" />
               </TouchableOpacity>
             </View>
-            
             <Text style={styles.locationCity}>
               {location.city || 'Locație necunoscută'}
             </Text>
-            
             {location.formattedAddress && location.formattedAddress !== 'Adresă necunoscută' && (
               <Text style={styles.locationAddress}>
                 {location.formattedAddress}
               </Text>
             )}
-            
             <Text style={styles.locationCoordinates}>
               {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
             </Text>
@@ -170,12 +159,10 @@ const RouteExample = () => {
       </TouchableOpacity>
     );
   };
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>🚛 Route Preview Example</Text>
       <Text style={styles.subtitle}>Berlin → Zürich Transport Route</Text>
-      
       {/* Route Info */}
       <View style={styles.routeInfoContainer}>
         <View style={styles.routeInfoRow}>
@@ -184,7 +171,6 @@ const RouteExample = () => {
             <Text style={styles.routeInfoLabel}>Distanță</Text>
             <Text style={styles.routeInfoValue}>{routeInfo.totalDistance} km</Text>
           </View>
-          
           <View style={styles.routeInfoItem}>
             <Ionicons name="time" size={20} color="#5A5BDE" />
             <Text style={styles.routeInfoLabel}>Timp estimat</Text>
@@ -192,7 +178,6 @@ const RouteExample = () => {
           </View>
         </View>
       </View>
-
       {/* Locations */}
       <View style={styles.locationsContainer}>
         <View style={styles.locationsHeader}>
@@ -205,7 +190,6 @@ const RouteExample = () => {
             <Text style={styles.openFullRouteText}>Navigează</Text>
           </TouchableOpacity>
         </View>
-        
         <View style={styles.locationsList}>
           {sampleLocations.map((location, index) =>
             renderLocationCard(location, index, sampleLocations.length)
@@ -215,7 +199,6 @@ const RouteExample = () => {
     </ScrollView>
   );
 };
-
 const styles = {
   container: {
     flex: 1,
@@ -377,5 +360,4 @@ const styles = {
     fontFamily: 'monospace',
   },
 };
-
 export default RouteExample;

@@ -21,7 +21,6 @@ import {
 import { useGetUserProfileQuery } from '../../services/profileService';
 import PageHeader from "../../components/General/Header";
 import TransportDetailsModal from "../../components/TransportDetailsModal";
-
 // Memoized components for better performance
 const TransportStatusIndicator = React.memo(({ status }) => {
   const getStatusColor = useCallback((status) => {
@@ -29,18 +28,15 @@ const TransportStatusIndicator = React.memo(({ status }) => {
     if (status === 'probleme' || status === 'not started') return '#F59E0B';
     return '#EF4444';
   }, []);
-
   const getStatusIcon = useCallback((status) => {
     if (status === 'ok') return 'checkmark-circle';
     if (status === 'probleme') return 'warning';
     if (status === 'not started') return 'time-outline';
     return 'alert-circle';
   }, []);
-
   const statusColor = getStatusColor(status);
   const statusIcon = getStatusIcon(status);
   const statusText = status === 'not started' ? 'Neînceput' : status || 'Neînceput';
-
   return (
     <View style={[styles.statusContainer, {backgroundColor: `${statusColor}15`}]}>
       <Ionicons name={statusIcon} size={16} color={statusColor} style={styles.statusIcon} />
@@ -50,7 +46,6 @@ const TransportStatusIndicator = React.memo(({ status }) => {
     </View>
   );
 });
-
 const TransportHeader = React.memo(({ transport, onViewDetails, canStartTransport }) => (
   <View style={styles.transportHeader}>
     <View>
@@ -78,7 +73,6 @@ const TransportHeader = React.memo(({ transport, onViewDetails, canStartTranspor
     </TouchableOpacity>
   </View>
 ));
-
 const TransportDetails = React.memo(({ transport }) => {
   const statusFields = useMemo(() => [
     { key: 'status_truck', label: 'Status camion' },
@@ -88,7 +82,6 @@ const TransportDetails = React.memo(({ transport }) => {
     { key: 'status_loaded_truck', label: 'Status încărcare' },
     { key: 'status_transport', label: 'Status transport' },
   ], []);
-
   return (
     <View style={styles.transportDetails}>
       <View style={styles.detailSection}>
@@ -96,7 +89,6 @@ const TransportDetails = React.memo(({ transport }) => {
           <Ionicons name="car" size={18} color="#6366F1" style={styles.sectionIcon} />
           <Text style={styles.sectionTitleText}>Status Transport</Text>
         </View>
-        
         <View style={styles.detailGrid}>
           {statusFields.map((field) => (
             <View key={field.key} style={styles.detailItem}>
@@ -109,7 +101,6 @@ const TransportDetails = React.memo(({ transport }) => {
     </View>
   );
 });
-
 const TransportActionButton = React.memo(({
   transport,
   isActive,
@@ -130,7 +121,6 @@ const TransportActionButton = React.memo(({
       </View>
     );
   }
-
   if (isActive) {
     return (
       <View style={[styles.startButton, styles.activeButton]}>
@@ -139,7 +129,6 @@ const TransportActionButton = React.memo(({
       </View>
     );
   }
-
   // Queue system logic
   if (useQueueSystem) {
     if (queuePosition !== null && queuePosition > 1) {
@@ -152,7 +141,6 @@ const TransportActionButton = React.memo(({
         </View>
       );
     }
-
     if (isNextInQueue && canStartTransport) {
       return (
         <TouchableOpacity
@@ -174,7 +162,6 @@ const TransportActionButton = React.memo(({
       );
     }
   }
-
   // Fallback to original logic
   return (
     <TouchableOpacity
@@ -198,7 +185,6 @@ const TransportActionButton = React.memo(({
     </TouchableOpacity>
   );
 });
-
 const TransportItem = React.memo(({
   item,
   activeTransportId,
@@ -213,12 +199,10 @@ const TransportItem = React.memo(({
 }) => {
   const isActive = activeTransportId === item.id;
   const isStarting = startingTransport === item.id;
-
   // Queue system logic
   let queuePosition = null;
   let isNextInQueue = false;
   let canStartTransport = !hasActiveTransport || isActive;
-
   if (useQueueSystem && queueData) {
     const queueItem = queueData.queue?.find(q => q.id === item.id);
     if (queueItem) {
@@ -227,9 +211,7 @@ const TransportItem = React.memo(({
       canStartTransport = queueItem.can_start;
     }
   }
-
   const isCompleted = activeTab === 'completed' || item.is_finished;
-
   return (
     <View style={[styles.transportCard, !canStartTransport && !isActive && styles.disabledCard]}>
       <TransportHeader
@@ -237,7 +219,6 @@ const TransportItem = React.memo(({
         onViewDetails={() => onViewDetails(item)}
         canStartTransport={canStartTransport}
       />
-
       {/* Queue position indicator */}
       {useQueueSystem && queuePosition && (
         <View style={styles.queuePositionContainer}>
@@ -248,9 +229,7 @@ const TransportItem = React.memo(({
           </Text>
         </View>
       )}
-
       <TransportDetails transport={item} />
-
       <View style={styles.actionSection}>
         <TransportActionButton
           transport={item}
@@ -268,7 +247,6 @@ const TransportItem = React.memo(({
     </View>
   );
 });
-
 const EmptyState = React.memo(({ onRefresh, refreshing, activeTab }) => (
   <View style={styles.emptyContainer}>
     <View style={styles.emptyIconContainer}>
@@ -297,7 +275,6 @@ const EmptyState = React.memo(({ onRefresh, refreshing, activeTab }) => (
     </TouchableOpacity>
   </View>
 ));
-
 const ErrorState = React.memo(({ error, onRefresh }) => (
   <View style={styles.errorContainer}>
     <View style={styles.errorIconContainer}>
@@ -322,14 +299,12 @@ const ErrorState = React.memo(({ error, onRefresh }) => (
     </TouchableOpacity>
   </View>
 ));
-
 const TransportsScreen = React.memo(({ navigation, route }) => {
   const [startingTransport, setStartingTransport] = useState(null);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'completed'
   const [selectedTransport, setSelectedTransport] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [useQueueSystem, setUseQueueSystem] = useState(true); // Toggle for queue vs legacy
-
   // Use the transport service hooks
   const {
     data: transportsData,
@@ -338,7 +313,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     error: transportsError,
     refetch: refetchTransports
   } = useGetDriverTransportsQuery();
-
   const {
     data: profileData,
     isLoading: profileLoading,
@@ -346,7 +320,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     error: profileError,
     refetch: refetchProfile
   } = useGetUserProfileQuery();
-
   // Queue system hooks
   const {
     data: queueData,
@@ -355,14 +328,11 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     error: queueError,
     refetch: refetchQueue
   } = useGetDriverQueueQuery({ skip: !useQueueSystem });
-
   const [setActiveTransportMutation, { isLoading: isSettingActive }] = useSetActiveTransportMutation();
   const [startNextTransportMutation, { isLoading: isStartingNext }] = useStartNextTransportMutation();
-
   // Memoized data extraction
   const { transports, activeTransportId, loading, refreshing, error, stats } = useMemo(() => {
     let currentTransports = [];
-
     if (useQueueSystem && queueData && activeTab === 'active') {
       // Use queue data for active transports when queue system is enabled
       currentTransports = queueData.queue || [];
@@ -372,7 +342,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
         ? transportsData?.activeTransports || []
         : transportsData?.completedTransports || [];
     }
-
     return {
       transports: currentTransports,
       activeTransportId: useQueueSystem
@@ -405,7 +374,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     profileError,
     queueError
   ]);
-
   // Memoized handlers
   const onRefresh = useCallback(async () => {
     try {
@@ -413,34 +381,26 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
         refetchProfile(),
         refetchTransports()
       ];
-
       if (useQueueSystem) {
         refreshPromises.push(refetchQueue());
       }
-
       await Promise.all(refreshPromises);
     } catch (error) {
-      console.error('Error refreshing data:', error);
     }
   }, [refetchProfile, refetchTransports, refetchQueue, useQueueSystem]);
-
   const handleRetry = useCallback(async () => {
     try {
       const retryPromises = [
         refetchProfile(),
         refetchTransports()
       ];
-
       if (useQueueSystem) {
         retryPromises.push(refetchQueue());
       }
-
       await Promise.all(retryPromises);
     } catch (error) {
-      console.error('Error during retry:', error);
     }
   }, [refetchProfile, refetchTransports, refetchQueue, useQueueSystem]);
-
   const handleStartTransport = useCallback(async (transport) => {
     if (activeTransportId && activeTransportId !== transport.id) {
       Alert.alert(
@@ -450,14 +410,11 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       );
       return;
     }
-
     setStartingTransport(transport.id);
-
     try {
       if (useQueueSystem) {
         // Use the new queue system
         const result = await startNextTransportMutation().unwrap();
-
         Alert.alert(
           'Succes!',
           'TRANSPORT ÎNCEPUT CU SUCCES! URMĂTORUL TRANSPORT DIN LISTĂ A FOST ACTIVAT! DISPECERUL TĂU VA FI ANUNȚAT!',
@@ -466,21 +423,16 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       } else {
         // Fallback to legacy system
         await setActiveTransportMutation(transport.id).unwrap();
-
         Alert.alert(
           'Succes!',
           'TRANSPORT ÎNCEPUT CU SUCCES! DISPECERUL TĂU VA FI ANUNȚAT!',
           [{ text: 'OK' }]
         );
       }
-
       await onRefresh();
     } catch (error) {
-      console.error('Error starting transport:', error);
-
       // Parse error messages for better user feedback
       let errorMessage = 'Nu s-a putut începe transportul. Încearcă din nou.';
-
       if (error.message?.includes('No transport available')) {
         errorMessage = 'Nu există transporturi disponibile în listă.';
       } else if (error.message?.includes('queue')) {
@@ -488,7 +440,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       } else if (error.message?.includes('401')) {
         errorMessage = 'Sesiunea a expirat. Te rugăm să te autentifici din nou.';
       }
-
       Alert.alert(
         'Eroare',
         errorMessage,
@@ -498,17 +449,14 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
       setStartingTransport(null);
     }
   }, [activeTransportId, useQueueSystem, startNextTransportMutation, setActiveTransportMutation, onRefresh]);
-
   const handleViewDetails = useCallback((transport) => {
     setSelectedTransport(transport);
     setModalVisible(true);
   }, []);
-
   const handleCloseModal = useCallback(() => {
     setModalVisible(false);
     setSelectedTransport(null);
   }, []);
-
   // Memoized render functions
   const renderTransportItem = useCallback(({ item }) => (
     <TransportItem
@@ -534,15 +482,12 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     queueData,
     useQueueSystem
   ]);
-
   const keyExtractor = useCallback((item) => item.id.toString(), []);
-
   const getItemLayout = useCallback((data, index) => ({
     length: 300, // Approximate item height
     offset: 300 * index,
     index,
   }), []);
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -553,7 +498,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
           showRetry={true}
           showBack={true}
         />
-
         {/* Queue System Info */}
         {useQueueSystem && queueData && activeTab === 'active' && (
           <View style={styles.queueInfoContainer}>
@@ -577,7 +521,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
             )}
           </View>
         )}
-
         {/* Tab Navigation */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
@@ -597,7 +540,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
             </Text>
           </TouchableOpacity>
         </View>
-        
         {error ? (
           <ErrorState error={error} onRefresh={onRefresh} />
         ) : transports.length > 0 ? (
@@ -625,7 +567,6 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
         ) : (
           <EmptyState onRefresh={onRefresh} refreshing={refreshing} activeTab={activeTab} />
         )}
-
         {/* Transport Details Modal */}
         <TransportDetailsModal
           visible={modalVisible}
@@ -636,7 +577,5 @@ const TransportsScreen = React.memo(({ navigation, route }) => {
     </SafeAreaView>
   );
 });
-
 TransportsScreen.displayName = 'TransportsScreen';
-
 export default TransportsScreen;

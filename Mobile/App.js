@@ -37,7 +37,6 @@ import Route from './Screens/RoutePrincipal/index.js';
 import { ensureFirebaseInitialized, ensureFirebaseAuth } from './services/firebaseApp';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-
 // Shared screen options to avoid recreation
 const slideTransitionOptions = {
   headerShown: false,
@@ -57,7 +56,6 @@ const slideTransitionOptions = {
     },
   }),
 };
-
 const fadeTransitionOptions = {
   headerShown: false,
   transitionSpec: {
@@ -74,32 +72,27 @@ const fadeTransitionOptions = {
     },
   }),
 };
-
 const mainScreenOptions = {
   gestureEnabled: false,
   headerLeft: null,
   headerShown: false,
   ...fadeTransitionOptions,
 };
-
 // Custom Tab Bar component with fluid animation and safe area support
 function FluidTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
-  
   const getIconName = (routeName, isFocused) => {
     if (routeName === 'Home') return isFocused ? 'home' : 'home-outline';
     if (routeName === 'Transports') return isFocused ? 'car' : 'car-outline';
     if (routeName === 'Profile') return isFocused ? 'person' : 'person-outline';
     return 'help-outline';
   };
-
   const handleTabPress = (route, isFocused) => {
     const event = navigation.emit({
       type: 'tabPress',
       target: route.key,
       canPreventDefault: true,
     });
-
     if (!event.defaultPrevented) {
       if (isFocused) {
         // If already on this tab, reset to the root screen of the stack
@@ -110,7 +103,6 @@ function FluidTabBar({ state, descriptors, navigation }) {
       }
     }
   };
-
   const getMainScreen = (tabName) => {
     switch (tabName) {
       case 'Home':
@@ -123,13 +115,11 @@ function FluidTabBar({ state, descriptors, navigation }) {
         return undefined;
     }
   };
-  
   return (
     <View style={[styles.tabContainer, { paddingBottom: insets.bottom }]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
-
         // Animated styles for the tab bubble
         const animatedTabStyle = useAnimatedStyle(() => {
           return {
@@ -144,9 +134,7 @@ function FluidTabBar({ state, descriptors, navigation }) {
             backgroundColor: isFocused ? '#6366F1' : 'transparent',
           };
         });
-
         const iconName = getIconName(route.name, isFocused);
-
         return (
           <Pressable
             key={route.key}
@@ -168,7 +156,6 @@ function FluidTabBar({ state, descriptors, navigation }) {
     </View>
   );
 }
-
 // Create individual stack navigators for each tab
 function HomeStackNavigator() {
   return (
@@ -248,7 +235,6 @@ function HomeStackNavigator() {
     </Stack.Navigator>
   );
 }
-
 function TransportsStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -316,7 +302,6 @@ function TransportsStackNavigator() {
     </Stack.Navigator>
   );
 }
-
 function ProfileStackNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -334,7 +319,6 @@ function ProfileStackNavigator() {
     </Stack.Navigator>
   );
 }
-
 // Main tab navigator that appears after login - now contains stack navigators
 function MainTabs() {
   return (
@@ -350,7 +334,6 @@ function MainTabs() {
     </Tab.Navigator>
   );
 }
-
 // Main app navigator wrapped with NavigationContainer
 function AppNavigatorContent() {
   return (
@@ -385,31 +368,25 @@ function AppNavigatorContent() {
     </>
   );
 }
-
 //aici avem redux provider incorporatt
 function AppNavigator() {
   useEffect(() => {
     ensureFirebaseInitialized();
     ensureFirebaseAuth();
   }, []);
-
   useEffect(() => {
     // Handle app state changes for background notifications
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'active') {
         // App has come to the foreground
-        console.log('App is now active - clearing badge');
         backgroundNotificationService.clearBadge();
       }
     };
-
     const subscription = AppState.addEventListener('change', handleAppStateChange);
-
     return () => {
       subscription?.remove();
     };
   }, []);
-
   return (
     <Provider store={store}>
       <SafeAreaProvider>
@@ -422,7 +399,6 @@ function AppNavigator() {
     </Provider>
   );
 }
-
 const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
@@ -453,5 +429,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
 export default AppNavigator;

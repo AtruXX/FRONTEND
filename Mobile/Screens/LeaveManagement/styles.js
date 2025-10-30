@@ -1,6 +1,5 @@
 // LeaveManagement/styles.js
 import { StyleSheet } from 'react-native';
-
 export const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -13,7 +12,6 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 20,
   },
-
   // Stats Container
   statsContainer: {
     backgroundColor: 'white',
@@ -27,44 +25,37 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-
   statsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
   },
-
   statsTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1F2937',
     marginLeft: 8,
   },
-
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
-
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
-
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#6366F1',
     marginBottom: 4,
   },
-
   statLabel: {
     fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
   },
-
   refreshStatsButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -75,33 +66,28 @@ export const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'center',
   },
-
   refreshStatsText: {
     fontSize: 14,
     color: '#6366F1',
     fontWeight: '500',
     marginLeft: 6,
   },
-
   // Actions Container
   actionsContainer: {
     marginHorizontal: 16,
     marginTop: 16,
   },
-
   actionsTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1F2937',
     marginBottom: 12,
   },
-
   actionsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     flexWrap: 'wrap',
   },
-
   actionCard: {
     backgroundColor: 'white',
     borderRadius: 12,
@@ -114,7 +100,6 @@ export const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-
   actionIconContainer: {
     width: 56,
     height: 56,
@@ -124,7 +109,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-
   actionTitle: {
     fontSize: 14,
     fontWeight: '600',
@@ -132,14 +116,12 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
   },
-
   actionSubtitle: {
     fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 16,
   },
-
   // Recent Requests Container
   recentContainer: {
     backgroundColor: 'white',
@@ -153,52 +135,44 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-
   recentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-
   recentTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1F2937',
   },
-
   viewAllText: {
     fontSize: 14,
     color: '#6366F1',
     fontWeight: '500',
   },
-
   // Empty Recent State
   emptyRecentContainer: {
     alignItems: 'center',
     paddingVertical: 24,
   },
-
   emptyRecentText: {
     fontSize: 16,
     color: '#6B7280',
     marginTop: 12,
     marginBottom: 16,
   },
-
   createFirstButton: {
     backgroundColor: '#6366F1',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
-
   createFirstButtonText: {
     color: 'white',
     fontSize: 14,
     fontWeight: '500',
   },
-
   // Request Items
   requestItem: {
     borderBottomWidth: 1,
@@ -206,44 +180,37 @@ export const styles = StyleSheet.create({
     paddingBottom: 16,
     marginBottom: 16,
   },
-
   requestHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
   },
-
   requestDates: {
     fontSize: 14,
     fontWeight: '600',
     color: '#1F2937',
   },
-
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
-
   statusText: {
     fontSize: 12,
     fontWeight: '500',
   },
-
   requestReason: {
     fontSize: 14,
     color: '#4B5563',
     marginBottom: 8,
     lineHeight: 20,
   },
-
   requestDays: {
     fontSize: 12,
     color: '#6B7280',
     fontWeight: '500',
   },
-
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -253,14 +220,12 @@ export const styles = StyleSheet.create({
     borderTopColor: '#F3F4F6',
     marginTop: 8,
   },
-
   viewAllButtonText: {
     fontSize: 14,
     color: '#6366F1',
     fontWeight: '500',
     marginRight: 6,
   },
-
   // Error States
   errorContainer: {
     flex: 1,
@@ -268,7 +233,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-
   errorTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -276,7 +240,6 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: 'center',
   },
-
   errorText: {
     fontSize: 16,
     color: '#6B7280',
@@ -284,14 +247,12 @@ export const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 24,
   },
-
   retryButton: {
     backgroundColor: '#EF4444',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-
   retryButtonText: {
     color: 'white',
     fontSize: 16,

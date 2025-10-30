@@ -2,26 +2,21 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
-
 // Custom hook for getting user profile (driver info)
 export const useGetUserProfileQuery = (options = {}) => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
-
   const fetchUserProfile = useCallback(async () => {
     if (options.skip) return;
-
     setIsFetching(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       const response = await fetch(`${BASE_URL}profile/`, {
         method: 'GET',
         headers: {
@@ -29,54 +24,42 @@ export const useGetUserProfileQuery = (options = {}) => {
           'Content-Type': 'application/json',
         },
       });
-
-
       if (!response.ok) {
         const errorData = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
-
       const profileData = await response.json();
-      console.log('🔍 Profile API Response:', JSON.stringify(profileData, null, 2));
-
       // Store profile data in AsyncStorage (as you were doing before)
       const storagePromises = [];
-
       if (profileData.id) {
         storagePromises.push(
           AsyncStorage.setItem('driverId', profileData.id.toString())
         );
       }
-
       if (profileData.name) {
         storagePromises.push(
           AsyncStorage.setItem('userName', profileData.name)
         );
       }
-
       if (profileData.company) {
         storagePromises.push(
           AsyncStorage.setItem('userCompany', profileData.company)
         );
       }
-
       if (profileData.is_driver !== undefined) {
         storagePromises.push(
           AsyncStorage.setItem('isDriver', profileData.is_driver.toString())
         );
       }
-
       if (profileData.is_dispatcher !== undefined) {
         storagePromises.push(
           AsyncStorage.setItem('isDispatcher', profileData.is_dispatcher.toString())
         );
       }
-
       // Use sequential storage to avoid race conditions with authToken
       for (const promise of storagePromises) {
         await promise;
       }
-
       // Transform profile data for easier consumption - FIXED MAPPING
       const transformedProfile = {
         id: profileData.id,
@@ -92,7 +75,6 @@ export const useGetUserProfileQuery = (options = {}) => {
         last_login: profileData.last_login,
         hire_date: profileData.hire_date,
         dob: profileData.dob,
-        
         // Driver specific data - FIXED TO USE CORRECT FIELD NAMES (with queue system support)
         driver: profileData.driver ? {
           average_rating: profileData.driver.average_rating,
@@ -101,14 +83,11 @@ export const useGetUserProfileQuery = (options = {}) => {
           current_transport_id: profileData.driver.current_transport_id, // Queue system field
           id_transports: profileData.driver.id_transports
         } : null,
-        
         // Dispatcher specific data
         dispatcher: profileData.dispatcher,
-        
         // Computed fields for easier UI consumption
         role: profileData.is_driver ? "Driver" : (profileData.is_dispatcher ? "Dispatcher" : "User"),
         initials: profileData.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '',
-        
         // FIXED: Use both legacy and queue system fields for active transport
         active_transport: profileData.driver?.current_transport_id ||
                          profileData.driver?.active_transport_id ||
@@ -116,10 +95,6 @@ export const useGetUserProfileQuery = (options = {}) => {
                          null,
         on_road: profileData.driver?.on_road || false,
       };
-
-      console.log('🚀 Transformed Profile Data:', JSON.stringify(transformedProfile, null, 2));
-      console.log('📋 Active Transport ID:', transformedProfile.active_transport);
-
       setData(transformedProfile);
     } catch (err) {
       setError(err);
@@ -128,12 +103,10 @@ export const useGetUserProfileQuery = (options = {}) => {
       setIsFetching(false);
     }
   }, [options.skip]);
-
   // Initial load
   useEffect(() => {
     fetchUserProfile();
   }, [fetchUserProfile]);
-
   return {
     data,
     isLoading,
@@ -142,22 +115,18 @@ export const useGetUserProfileQuery = (options = {}) => {
     refetch: fetchUserProfile,
   };
 };
-
 // Custom hook for updating user profile
 export const useUpdateUserProfileMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const updateUserProfile = useCallback(async (profileData) => {
     setIsLoading(true);
     setError(null);
-
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         throw new Error('No auth token found');
       }
-
       const response = await fetch(`${BASE_URL}profile`, {
         method: 'PATCH',
         headers: {
@@ -166,15 +135,11 @@ export const useUpdateUserProfileMutation = () => {
         },
         body: JSON.stringify(profileData),
       });
-
-
       if (!response.ok) {
         const errorData = await response.text();
         throw new Error(`HTTP ${response.status}: ${errorData}`);
       }
-
       const data = await response.json();
-      
       setIsLoading(false);
       return data;
     } catch (err) {
@@ -183,13 +148,11 @@ export const useUpdateUserProfileMutation = () => {
       throw err;
     }
   }, []);
-
   // Return the mutation function with unwrap method
   const updateUserProfileMutation = useCallback((variables) => {
     const promise = updateUserProfile(variables);
     promise.unwrap = () => promise;
     return promise;
   }, [updateUserProfile]);
-
   return [updateUserProfileMutation, { isLoading, error }];
 };

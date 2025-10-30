@@ -16,12 +16,10 @@ import PageHeader from '../../components/General/Header';
 import {
   useGetPersonalDocumentsQuery,
 } from '../../services/documentsService';
-
 const DocumentCard = ({ document, daysLeft, isExpired }) => {
   const cardStyle = isExpired ? [styles.documentCard, styles.expiredCard] : styles.documentCard;
   const titleStyle = isExpired ? [styles.documentTitle, styles.expiredTitle] : styles.documentTitle;
   const daysStyle = isExpired ? [styles.daysLeft, styles.expiredDays] : styles.daysLeft;
-
   // Enhanced document type detection
   const getDocumentIcon = (category) => {
     switch (category?.toLowerCase()) {
@@ -43,7 +41,6 @@ const DocumentCard = ({ document, daysLeft, isExpired }) => {
         return 'document-text';
     }
   };
-
   // Enhanced status text
   const getStatusText = () => {
     if (daysLeft < 0) {
@@ -58,7 +55,6 @@ const DocumentCard = ({ document, daysLeft, isExpired }) => {
       return `${daysLeft} zile rămase`;
     }
   };
-
   return (
     <TouchableOpacity style={cardStyle} activeOpacity={0.7}>
       <View style={styles.documentHeader}>
@@ -76,7 +72,6 @@ const DocumentCard = ({ document, daysLeft, isExpired }) => {
           </Text>
         </View>
       </View>
-
       <View style={styles.documentFooter}>
         <View style={styles.expirationInfo}>
           <Ionicons
@@ -97,53 +92,32 @@ const DocumentCard = ({ document, daysLeft, isExpired }) => {
     </TouchableOpacity>
   );
 };
-
 const ExpiredDocuments = () => {
   const navigation = useNavigation();
   const [documentsWithExpiration, setDocumentsWithExpiration] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
-
   const {
     data: documents,
     isLoading: documentsLoading,
     error: documentsError,
     refetch: refetchDocuments,
   } = useGetPersonalDocumentsQuery();
-
   // Calculate days left from expiration_date locally
   const calculateDaysLeft = (expirationDate, documentTitle, documentId) => {
-    console.log(`🔍 Debug: Document "${documentTitle}" (ID: ${documentId})`);
-    console.log(`   Raw expiration_date: ${JSON.stringify(expirationDate)}`);
-    console.log(`   Type: ${typeof expirationDate}`);
-    console.log(`   Truthy check: ${!!expirationDate}`);
-    
     if (!expirationDate || expirationDate === 'null' || expirationDate === null) {
-      console.log(`❌ No expiration date for document: ${documentTitle} (ID: ${documentId})`);
       return null;
     }
-    
     const today = new Date();
     const expiry = new Date(expirationDate);
     const timeDifference = expiry.getTime() - today.getTime();
     const daysLeft = Math.ceil(timeDifference / (1000 * 3600 * 24));
-    
-    console.log(`📅 Document: "${documentTitle}" (ID: ${documentId})`);
-    console.log(`   Expires: ${expirationDate}`);
-    console.log(`   Days left: ${daysLeft}`);
-    console.log(`   Status: ${daysLeft <= 10 ? '🔴 EXPIRING SOON' : daysLeft <= 30 ? '🟡 UPCOMING' : '🟢 VALID'}`);
-    
     return daysLeft;
   };
-
   const processDocuments = useCallback(() => {
     if (!documents || documents.length === 0) {
-      console.log('📄 No documents found to process');
       setDocumentsWithExpiration([]);
       return;
     }
-
-    console.log(`📋 Processing ${documents.length} documents for expiration data...`);
-    
     // Process documents and calculate days left locally
     const documentsWithDays = documents
       .map(document => ({
@@ -152,38 +126,26 @@ const ExpiredDocuments = () => {
       }))
       .filter(doc => doc.daysLeft !== null && doc.expiration_date) // Only include documents with expiration dates
       .sort((a, b) => a.daysLeft - b.daysLeft); // Sort by days left (ascending)
-
-    console.log(`✅ Processed ${documentsWithDays.length} documents with expiration dates`);
-    console.log('📊 Summary:');
-    console.log(`   🔴 Expiring soon (≤10 days): ${documentsWithDays.filter(d => d.daysLeft <= 10).length}`);
-    console.log(`   🟡 Upcoming (11-30 days): ${documentsWithDays.filter(d => d.daysLeft > 10 && d.daysLeft <= 30).length}`);
-    console.log(`   🟢 Valid (>30 days): ${documentsWithDays.filter(d => d.daysLeft > 30).length}`);
-
     setDocumentsWithExpiration(documentsWithDays);
   }, [documents]);
-
   useEffect(() => {
     if (documents && !documentsLoading) {
       processDocuments();
     }
   }, [documents, documentsLoading, processDocuments]);
-
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       await refetchDocuments();
       // Documents will be processed automatically in useEffect
     } catch (error) {
-      console.error('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }
   }, [refetchDocuments]);
-
   const handleRetry = useCallback(() => {
     handleRefresh();
   }, [handleRefresh]);
-
   if (documentsLoading && documentsWithExpiration.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
@@ -201,7 +163,6 @@ const ExpiredDocuments = () => {
       </SafeAreaView>
     );
   }
-
   if (documentsError) {
     return (
       <SafeAreaView style={styles.container}>
@@ -225,12 +186,10 @@ const ExpiredDocuments = () => {
       </SafeAreaView>
     );
   }
-
   // Enhanced document categorization
   const actuallyExpiredDocuments = documentsWithExpiration.filter(doc => doc.daysLeft < 0);
   const expiringSoonDocuments = documentsWithExpiration.filter(doc => doc.daysLeft >= 0 && doc.daysLeft <= 10);
   const upcomingDocuments = documentsWithExpiration.filter(doc => doc.daysLeft > 10 && doc.daysLeft <= 30);
-
   return (
     <SafeAreaView style={styles.container}>
       <PageHeader
@@ -240,7 +199,6 @@ const ExpiredDocuments = () => {
         showRetry={true}
         showBack={true}
       />
-
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
@@ -266,7 +224,6 @@ const ExpiredDocuments = () => {
             ))}
           </View>
         )}
-
         {expiringSoonDocuments.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -285,7 +242,6 @@ const ExpiredDocuments = () => {
             ))}
           </View>
         )}
-
         {upcomingDocuments.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -302,7 +258,6 @@ const ExpiredDocuments = () => {
             ))}
           </View>
         )}
-
         {documentsWithExpiration.length === 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
@@ -312,7 +267,6 @@ const ExpiredDocuments = () => {
             </Text>
           </View>
         )}
-
         {actuallyExpiredDocuments.length === 0 && expiringSoonDocuments.length === 0 && upcomingDocuments.length === 0 && documentsWithExpiration.length > 0 && (
           <View style={styles.emptyContainer}>
             <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
@@ -326,5 +280,4 @@ const ExpiredDocuments = () => {
     </SafeAreaView>
   );
 };
-
 export default ExpiredDocuments;
