@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "AtruXMobileVers",
+    "name": "AtruX",
     "slug": "AtruXMobileVers",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/LOGO_ATRUX.png",
+    "icon": "./assets/LOGO_NB.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": false,
     "platforms": [
@@ -12,7 +12,7 @@
       "android"
     ],
     "splash": {
-      "image": "./assets/LOGO_ATRUX.png",
+      "image": "./assets/LOGO_NB.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -41,7 +41,7 @@
       "versionCode": 1,
       "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/LOGO_ATRUX.png",
+        "foregroundImage": "./assets/LOGO_NB.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -83,7 +83,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/LOGO_ATRUX.png",
+          "icon": "./assets/LOGO_NB.png",
           "color": "#ffffff",
           "defaultChannel": "default",
           "androidMode": "default",
