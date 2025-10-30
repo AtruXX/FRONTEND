@@ -626,7 +626,12 @@ export const useGetDriverQueueQuery = (options = {}) => {
             ]);
           }
         }
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const queueData = await response.json();
       // Transform queue data for better UI handling
