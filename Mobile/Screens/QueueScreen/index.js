@@ -155,28 +155,55 @@ const EmptyQueueState = React.memo(({ onRefresh, refreshing }) => (
   </View>
 ));
 // Error State
-const ErrorState = React.memo(({ error, onRefresh }) => (
-  <View style={styles.errorContainer}>
-    <View style={styles.errorIconContainer}>
-      <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
+const ErrorState = React.memo(({ error, onRefresh }) => {
+  // Extract just the user-friendly message, removing HTTP status codes and technical details
+  const getUserFriendlyMessage = (error) => {
+    if (!error) return 'Nu s-a putut încărca lista de transporturi';
+
+    // If error.message exists, use it (it should already be user-friendly from errorHandler)
+    const message = error.message || '';
+
+    // Check if message contains the user-friendly Romanian text we want
+    if (message.includes('401') || message.includes('Sesiunea a expirat')) {
+      return 'Sesiunea a expirat. Te rugăm să te autentifici din nou.';
+    }
+    if (message.includes('404')) {
+      return 'Sistemul de listă nu este disponibil momentan.';
+    }
+    if (message.includes('500') || message.includes('Problemă pe server')) {
+      return 'Problemă pe server. Încercați din nou mai târziu.';
+    }
+
+    // If the message starts with common user-friendly phrases, use it directly
+    if (message.startsWith('Problemă') || message.startsWith('Nu s-a') ||
+        message.startsWith('Sesiunea') || message.startsWith('Serviciul') ||
+        message.startsWith('Datele') || message.startsWith('Verificați')) {
+      return message;
+    }
+
+    // Default fallback
+    return 'Nu s-a putut încărca lista de transporturi';
+  };
+
+  return (
+    <View style={styles.errorContainer}>
+      <View style={styles.errorIconContainer}>
+        <Ionicons name="alert-circle-outline" size={40} color="#EF4444" />
+      </View>
+      <Text style={styles.errorTitle}>Eroare la încărcarea cozii</Text>
+      <Text style={styles.errorText}>
+        {getUserFriendlyMessage(error)}
+      </Text>
+      <TouchableOpacity
+        style={styles.retryButton}
+        onPress={onRefresh}
+      >
+        <Text style={styles.retryButtonText}>Încearcă din nou</Text>
+        <Ionicons name="refresh" size={18} color="white" style={{ marginLeft: 6 }} />
+      </TouchableOpacity>
     </View>
-    <Text style={styles.errorTitle}>Eroare la încărcarea cozii</Text>
-    <Text style={styles.errorText}>
-      {error.message?.includes('401')
-        ? 'Sesiunea a expirat. Te rugăm să te autentifici din nou.'
-        : error.message?.includes('404')
-        ? 'Sistemul de listă nu este disponibil momentan.'
-        : error.message || 'Nu s-a putut încărca lista de transporturi'}
-    </Text>
-    <TouchableOpacity
-      style={styles.retryButton}
-      onPress={onRefresh}
-    >
-      <Text style={styles.retryButtonText}>Încearcă din nou</Text>
-      <Ionicons name="refresh" size={18} color="white" style={{ marginLeft: 6 }} />
-    </TouchableOpacity>
-  </View>
-));
+  );
+});
 // Main Queue Screen Component
 const QueueScreen = React.memo(({ navigation, route }) => {
   const [startingTransport, setStartingTransport] = useState(null);

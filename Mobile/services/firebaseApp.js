@@ -15,18 +15,12 @@ const requiredFirebaseKeys = [
 const getConfig = () => {
   const config = Constants?.expoConfig?.extra?.firebase;
   if (!config) {
-      '[Firebase] Missing expo.extra.firebase configuration. Update app.json with your Firebase project values.'
-    );
     return null;
   }
   const missingKeys = requiredFirebaseKeys.filter(
     (key) => !config[key] || config[key].startsWith('REPLACE_WITH')
   );
   if (missingKeys.length && !hasPlaceholderWarning) {
-      `[Firebase] Configuration is incomplete. Missing values for: ${missingKeys.join(
-        ', '
-      )}. Firebase will not initialize until these are provided.`
-    );
     hasPlaceholderWarning = true;
   }
   return missingKeys.length ? null : config;

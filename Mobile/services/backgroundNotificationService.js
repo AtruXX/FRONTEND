@@ -265,10 +265,7 @@ class BackgroundNotificationService {
       return;
     }
     const { notification_category, message, notification_type, id, title } = notificationData;
-      type: notification_type,
-      title: notification_category || title,
-      hasMessage: !!message
-    });
+
     // Map notification types to appropriate channels and priority
     const notificationConfig = this.getNotificationConfig(notification_type);
     try {

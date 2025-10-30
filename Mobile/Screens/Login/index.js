@@ -30,13 +30,13 @@ const LoginScreen = () => {
   const handleLogin = async () => {
     // Validation
     if (!phone_number.trim() || !password.trim()) {
-      Alert.alert('Error', 'Te rugam sa completezi toate campurile.');
+      Alert.alert('Eroare', 'Te rugam sa completezi toate campurile.');
       return;
     }
     // Additional validation for phone number format
     const cleanPhoneNumber = phone_number.trim();
     if (cleanPhoneNumber.length < 10) {
-      Alert.alert('Error', 'Te rugam sa introduci un numar de telefon valid.');
+      Alert.alert('Eroare', 'Te rugam sa introduci un numar de telefon valid.');
       return;
     }
     try {

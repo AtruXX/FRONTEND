@@ -99,7 +99,7 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
         }
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to request notification permissions');
+      Alert.alert('Eroare', 'Nu s-au putut solicita permisiunile pentru notificări');
     } finally {
       setIsLoading(false);
     }
@@ -174,9 +174,9 @@ const NotificationPermissionHandler = ({ onPermissionGranted, onPermissionDenied
         'This is a test notification to verify background notifications are working!',
         { type: 'test' }
       );
-      Alert.alert('Test Sent', 'A test notification has been sent!');
+      Alert.alert('Test trimis', 'O notificare de test a fost trimisă!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to send test notification');
+      Alert.alert('Eroare', 'Nu s-a putut trimite notificarea de test');
     }
   };
   const renderAndroidOptimizationStatus = () => {

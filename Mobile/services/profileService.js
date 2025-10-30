@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
+import { getUserFriendlyErrorMessage } from '../utils/errorHandler.js';
 // Custom hook for getting user profile (driver info)
 export const useGetUserProfileQuery = (options = {}) => {
   const [data, setData] = useState(null);
@@ -26,7 +27,12 @@ export const useGetUserProfileQuery = (options = {}) => {
       });
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const profileData = await response.json();
       // Store profile data in AsyncStorage (as you were doing before)
@@ -137,7 +143,12 @@ export const useUpdateUserProfileMutation = () => {
       });
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const data = await response.json();
       setIsLoading(false);

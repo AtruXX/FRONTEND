@@ -1,3 +1,4 @@
+import { getErrorByStatus, ROMANIAN_ERRORS } from './romanianErrors.js';
 // utils/errorHandler.js - Centralized error handling utility
 /**
  * Converts technical errors into user-friendly Romanian messages
@@ -93,13 +94,7 @@ export const getUserFriendlyErrorMessage = (error, defaultMessage = 'A apărut o
  * @param {string} userMessage - The user-friendly message to show
  */
 export const logAndShowError = (error, context, userMessage) => {
-  // Log detailed error for developers
-    message: error?.message,
-    status: error?.status,
-    stack: error?.stack,
-    originalMessage: error?.originalMessage,
-    timestamp: new Date().toISOString()
-  });
+  // Log detailed error for developers (removed for production)
   return userMessage;
 };
 /**

@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
+import { getUserFriendlyErrorMessage } from '../utils/errorHandler.js';
 // Enhanced CMR error types for better error handling
 export const CMR_ERROR_TYPES = {
   NOT_FOUND: 'CMR_NOT_FOUND',
@@ -29,7 +30,7 @@ const categorizeCMRError = (error, response) => {
   } else if (response?.status >= 500) {
     return {
       type: CMR_ERROR_TYPES.SERVER_ERROR,
-      message: 'Eroare de server. Încercați din nou.',
+      message: getUserFriendlyErrorMessage(response.status),
       canCreate: false,
       originalError: error
     };

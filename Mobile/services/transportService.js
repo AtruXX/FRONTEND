@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
+import { getUserFriendlyErrorMessage } from '../utils/errorHandler.js';
 // Helper function to wait for auth token with retries
 const waitForAuthToken = async (maxRetries = 5, delay = 200) => {
   for (let i = 0; i < maxRetries; i++) {
@@ -62,10 +63,14 @@ export const useGetTransportsQuery = (options = {}) => {
             await AsyncStorage.multiRemove([
               'authToken', 'driverId', 'userName', 'userCompany', 'isDriver', 'isDispatcher'
             ]);
-          } else {
           }
         }
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const transportData = await response.json();
       // Handle new API structure with active_transports array
@@ -155,7 +160,12 @@ export const useSetActiveTransportMutation = () => {
         if (response.status === 401) {
           // Don't clear token here, let other parts handle it
         }
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const data = await response.json();
       setIsLoading(false);
@@ -192,7 +202,12 @@ export const useFinalizeTransportMutation = () => {
       });
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const data = await response.json();
       setIsLoading(false);
@@ -243,7 +258,12 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
             ]);
           }
         }
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const responseData = await response.json();
       // Handle both single transport and array responses
@@ -540,7 +560,12 @@ export const useGetTotalTransportsQuery = (options = {}) => {
       });
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const transportData = await response.json();
       setData({
@@ -705,7 +730,12 @@ export const useGetNextTransportQuery = (options = {}) => {
       });
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorData}`);
+        // Create user-friendly error message
+        const userFriendlyMessage = getUserFriendlyErrorMessage(response.status);
+        const error = new Error(userFriendlyMessage);
+        error.status = response.status;
+        error.originalMessage = errorData;
+        throw error;
       }
       const nextTransportData = await response.json();
       setData(nextTransportData);

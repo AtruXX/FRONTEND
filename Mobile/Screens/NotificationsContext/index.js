@@ -100,11 +100,7 @@ export const NotificationsProvider = ({ children }) => {
     const currentUserId = await AsyncStorage.getItem('driverId') || await AsyncStorage.getItem('userId');
     const userRole = isDriverStr === 'true' ? 'driver' :
                      isDispatcherStr === 'true' ? 'dispatcher' : 'unknown';
-      role: userRole,
-      userId: currentUserId,
-      isDriver: isDriverStr,
-      isDispatcher: isDispatcherStr
-    });
+
     // Map notification category to type
     const getNotificationType = (category) => {
       if (category?.toLowerCase().includes('documente')) return 'document_expiration';
@@ -113,12 +109,7 @@ export const NotificationsProvider = ({ children }) => {
       return 'system_alert';
     };
     const notificationType = data.notification_type || getNotificationType(data.notification_category);
-      type: notificationType,
-      category: data.notification_category,
-      message: data.message,
-      notificationUserId: data.user_id,
-      currentUserId: currentUserId
-    });
+
     // DEFENSIVE FILTERING: While the backend should handle notification routing,
     // we'll add client-side filtering to prevent dispatcher notifications from showing in driver app
     if (userRole === 'driver') {

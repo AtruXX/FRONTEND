@@ -159,7 +159,8 @@ const TransportMainPage = ({ navigation }) => {
                 }]
               );
             } catch (error) {
-              Alert.alert('Eroare', 'Nu s-a putut finaliza transportul.');
+              const errorMessage = error?.message || 'Nu s-a putut finaliza transportul. Încercați din nou.';
+              Alert.alert('Eroare', errorMessage);
             }
           }
         }
@@ -266,14 +267,9 @@ const TransportMainPage = ({ navigation }) => {
       setShowUitModal(false);
       Alert.alert('Succes', 'Codul UIT a fost actualizat cu succes.');
     } catch (error) {
-        activeTransportId,
-        cmrData: {
-          UIT: uitInput.trim()
-        }
-      });
       // Show specific error message if available
       const errorMessage = error?.message || error?.data?.detail || 'Nu s-a putut actualiza codul UIT. Încercați din nou.';
-      Alert.alert('Eroare UIT Update', errorMessage);
+      Alert.alert('Eroare', errorMessage);
     }
   };
   // Handle modal cancel
@@ -303,6 +299,9 @@ const TransportMainPage = ({ navigation }) => {
   };
   // Handle error state - only show error if profile fails (queue is optional)
   if (profileError) {
+    // Get user-friendly Romanian error message
+    const errorMessage = profileError?.message || 'Nu s-au putut încărca datele profilului. Verifică conexiunea și încearcă din nou.';
+
     return (
       <SafeAreaView style={styles.container}>
         <PageHeader
@@ -316,7 +315,7 @@ const TransportMainPage = ({ navigation }) => {
           <Ionicons name="alert-circle-outline" size={60} color="#FF7285" />
           <Text style={styles.emptyTitle}>Eroare la încărcare</Text>
           <Text style={styles.emptyText}>
-            Nu s-au putut încărca datele profilului. Verifică conexiunea și încearcă din nou.
+            {errorMessage}
           </Text>
           <TouchableOpacity
             style={styles.backToHomeButton}

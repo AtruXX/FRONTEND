@@ -2,6 +2,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL } from '../utils/BASE_URL.js';
+import { getUserFriendlyErrorMessage } from '../utils/errorHandler.js';
 // Enhanced base query with better performance
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
@@ -33,24 +34,32 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       // Clear auth data
       await AsyncStorage.multiRemove([
         'authToken',
-        'driverId', 
+        'driverId',
         'userName',
         'userCompany',
         'isDriver',
         'isDispatcher'
       ]);
-      // You could dispatch a logout action here if needed
-      // api.dispatch(authSlice.actions.logout());
+      // Add Romanian error message
+      result.error.message = 'Sesiunea a expirat. Vă rugăm să vă autentificați din nou.';
     }
-    // Handle network errors
+    // Handle network errors with Romanian messages
     if (result.error && result.error.status === 'FETCH_ERROR') {
+      result.error.message = 'Problemă de conexiune. Verificați internetul și încercați din nou.';
+    }
+    // Add user-friendly Romanian messages to all errors
+    if (result.error) {
+      const userMessage = getUserFriendlyErrorMessage(result.error);
+      result.error.message = userMessage;
     }
     return result;
   } catch (error) {
+    const userMessage = getUserFriendlyErrorMessage(error, 'A apărut o eroare neașteptată. Încercați din nou.');
     return {
       error: {
         status: 'CUSTOM_ERROR',
         error: error.message,
+        message: userMessage,
       },
     };
   }
