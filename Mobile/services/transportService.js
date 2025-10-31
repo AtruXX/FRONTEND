@@ -106,7 +106,13 @@ export const useGetTransportsQuery = (options = {}) => {
         driver: transport.driver,
         truck: transport.truck,
         trailer: transport.trailer,
-        route: transport.route
+        // Route fields from backend (backend doesn't have 'route' field anymore)
+        route_id: transport.route_id,
+        route_distance: transport.route_distance,
+        route_travel_time: transport.route_travel_time,
+        route_toll_costs: transport.route_toll_costs,
+        route_polyline: transport.route_polyline,
+        route_calculated_at: transport.route_calculated_at
       }));
       // Store all transports (for profile count) and filtered transports
       setData({ 
@@ -309,8 +315,7 @@ export const useGetTransportByIdQuery = (transportId, options = {}) => {
         driver: transport.driver,
         truck: transport.truck,
         trailer: transport.trailer,
-        route: transport.route,
-        // Route data from PTV API
+        // Route data from PTV API (backend doesn't have 'route' field anymore)
         route_id: transport.route_id,
         route_id_expires_at: transport.route_id_expires_at,
         route_polyline: transport.route_polyline,
@@ -490,7 +495,13 @@ export const useGetDriverTransportsQuery = (options = {}) => {
           dispatcher: transport.dispatcher,
           truck: transport.truck,
           trailer: transport.trailer,
-          route: transport.route,
+          // Route fields (backend doesn't have 'route' field anymore)
+          route_id: transport.route_id,
+          route_distance: transport.route_distance,
+          route_travel_time: transport.route_travel_time,
+          route_toll_costs: transport.route_toll_costs,
+          route_polyline: transport.route_polyline,
+          route_calculated_at: transport.route_calculated_at,
           company: transport.company,
           created_at: transport.created_at,
           updated_at: transport.updated_at,
