@@ -52,7 +52,7 @@ const QueueItem = React.memo(({ item, index, isNext, isActive, onStartTransport,
   const statusFields = useMemo(() => [
     { key: 'status_truck', label: 'Status camion' },
     { key: 'status_goods', label: 'Status marfă' },
-    { key: 'status_trailer_wagon', label: 'Status remorcă' },
+    { key: 'status_trailer', label: 'Status remorcă' },
     { key: 'status_coupling', label: 'Status cuplare' },
     { key: 'status_loaded_truck', label: 'Status încărcare' },
     { key: 'status_transport', label: 'Status transport' },
