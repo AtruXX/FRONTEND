@@ -2,7 +2,7 @@
   "expo": {
     "name": "AtruX",
     "slug": "AtruXMobileVers",
-    "version": "1.0.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/LOGO_NB.png",
     "userInterfaceStyle": "light",
@@ -19,7 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.atrux.AtruXMobileVers",
-      "buildNumber": "1",
+      "buildNumber": "4",
       "googleServicesFile": "./ios/GoogleService-Info.plist",
       "infoPlist": {
         "NSCameraUsageDescription": "This app uses camera to scan documents and take photos.",
@@ -37,8 +37,8 @@
       }
     },
     "android": {
-      "package": "com.atrux.atruxmobilevers",
-      "versionCode": 1,
+      "package": "com.atrux.mobile",
+      "versionCode": 4,
       "googleServicesFile": "./android/app/google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/LOGO_NB.png",
