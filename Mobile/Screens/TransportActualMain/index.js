@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert, Modal, TextInput, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useGetUserProfileQuery } from '../../services/profileService';
 import { useFinalizeTransportMutation, useGetTransportByIdQuery, useGetDriverQueueQuery } from '../../services/transportService';
-import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation, useGetCMRStatusQuery } from '../../services/CMRService';
+import { useDownloadCMRDocumentMutation, useGetCMRDataQuery, useUpdateCMRDataMutation, useGetCMRStatusQuery, useGetCMRCompleteQuery } from '../../services/CMRService';
 import { MapService } from '../../services/mapService';
 import { styles } from './styles'; // Import your styles from the styles.js file
 import PageHeader from "../../components/General/Header";
@@ -11,6 +11,9 @@ const TransportMainPage = ({ navigation }) => {
   // UIT edit modal state
   const [showUitModal, setShowUitModal] = useState(false);
   const [uitInput, setUitInput] = useState('');
+  // CMR photos modal state
+  const [showCMRPhotosModal, setShowCMRPhotosModal] = useState(false);
+  const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
   // ALWAYS call hooks at the top level - never conditionally
   // Get user profile to access active transport data
   const {
@@ -96,6 +99,14 @@ const TransportMainPage = ({ navigation }) => {
     error: cmrStatusError,
     refetch: refetchCMRStatus
   } = useGetCMRStatusQuery(activeTransportId, {
+    skip: !activeTransportId || profileLoading || queueLoading || profileError
+  });
+  // Fetch complete CMR data including physical photos
+  const {
+    data: cmrCompleteData,
+    isLoading: cmrCompleteLoading,
+    refetch: refetchCMRComplete
+  } = useGetCMRCompleteQuery(activeTransportId, {
     skip: !activeTransportId || profileLoading || queueLoading || profileError
   });
   const handleDownloadCMR = async () => {
@@ -199,8 +210,11 @@ const TransportMainPage = ({ navigation }) => {
     if (refetchCMRStatus) {
       await refetchCMRStatus();
     }
-  }, [refetchProfile, refetchQueue, refetchTransport, refetchCMR, refetchCMRStatus]);
-  // Handle viewing CMR photos
+    if (refetchCMRComplete) {
+      await refetchCMRComplete();
+    }
+  }, [refetchProfile, refetchQueue, refetchTransport, refetchCMR, refetchCMRStatus, refetchCMRComplete]);
+  // Handle viewing CMR photos in modal
   const handleViewCMRPhotos = () => {
     if (!activeTransportId) {
       Alert.alert('Eroare', 'Nu există un transport activ.');
@@ -220,9 +234,20 @@ const TransportMainPage = ({ navigation }) => {
       );
       return;
     }
-    // Navigate to photo viewing screen
-    navigation.navigate('PhotoCMRForm');
+    // Show photos in modal instead of navigating
+    setShowCMRPhotosModal(true);
   };
+  // Handle viewing a single photo in full screen
+  const handleViewSinglePhoto = (photo) => {
+    // Close the CMR photos modal first to prevent freezing
+    setShowCMRPhotosModal(false);
+    // Use a small delay to ensure the first modal is closed before opening the second
+    setTimeout(() => {
+      setSelectedPhotoForView(photo);
+    }, 300);
+  };
+  // Get existing CMR photos
+  const existingCMRPhotos = cmrCompleteData?.physical_cmrs || [];
   // Handle UIT edit button press
   const handleEditUIT = () => {
     // Pre-fill input with current UIT if it exists
@@ -579,6 +604,168 @@ const TransportMainPage = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+      </Modal>
+      {/* CMR Photos Modal */}
+      <Modal
+        visible={showCMRPhotosModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCMRPhotosModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { maxHeight: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Fotografii CMR ({existingCMRPhotos.length})</Text>
+              <TouchableOpacity onPress={() => setShowCMRPhotosModal(false)}>
+                <Ionicons name="close" size={24} color="#373A56" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                {existingCMRPhotos.map((photo, index) => {
+                  const screenWidth = Dimensions.get('window').width;
+                  const imageSize = (screenWidth - 100) / 2;
+                  return (
+                    <TouchableOpacity
+                      key={photo.id || index}
+                      style={{
+                        width: imageSize,
+                        height: imageSize,
+                        marginBottom: 16,
+                        borderRadius: 8,
+                        overflow: 'hidden',
+                        backgroundColor: '#F3F4F6'
+                      }}
+                      onPress={() => handleViewSinglePhoto(photo)}
+                    >
+                      <Image
+                        source={{ uri: photo.document }}
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
+                      />
+                      {photo.title && (
+                        <View style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          backgroundColor: 'rgba(0,0,0,0.6)',
+                          padding: 4
+                        }}>
+                          <Text style={{ color: 'white', fontSize: 12, textAlign: 'center' }} numberOfLines={1}>
+                            {photo.title}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowCMRPhotosModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Închide</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={() => {
+                  setShowCMRPhotosModal(false);
+                  navigation.navigate('PhotoCMRForm');
+                }}
+              >
+                <Ionicons name="add" size={20} color="#FFFFFF" />
+                <Text style={styles.saveButtonText}>Adaugă Fotografii</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Full Screen Photo Viewer Modal */}
+      <Modal
+        visible={selectedPhotoForView !== null}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => {
+          setSelectedPhotoForView(null);
+          // Re-open the CMR photos modal after closing full-screen view
+          setTimeout(() => {
+            setShowCMRPhotosModal(true);
+          }, 300);
+        }}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)' }}>
+          {/* Header with back and close buttons */}
+          <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 100,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: 20,
+            paddingTop: 50,
+            zIndex: 10,
+            backgroundColor: 'rgba(0,0,0,0.3)'
+          }}>
+            <TouchableOpacity
+              style={{ padding: 8 }}
+              onPress={() => {
+                setSelectedPhotoForView(null);
+                setTimeout(() => {
+                  setShowCMRPhotosModal(true);
+                }, 300);
+              }}
+            >
+              <Ionicons name="arrow-back" size={32} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ padding: 8 }}
+              onPress={() => setSelectedPhotoForView(null)}
+            >
+              <Ionicons name="close" size={32} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          {selectedPhotoForView && (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100, paddingBottom: 120 }}>
+              <Image
+                source={{ uri: selectedPhotoForView.document }}
+                style={{ width: '100%', height: '100%' }}
+                resizeMode="contain"
+              />
+            </View>
+          )}
+          {selectedPhotoForView?.title && (
+            <View style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: 'rgba(0,0,0,0.7)',
+              padding: 20,
+              paddingBottom: 40
+            }}>
+              <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', textAlign: 'center' }}>
+                {selectedPhotoForView.title}
+              </Text>
+              {selectedPhotoForView.uploaded_at && (
+                <Text style={{ color: '#D1D5DB', fontSize: 14, textAlign: 'center', marginTop: 8 }}>
+                  Încărcat: {new Date(selectedPhotoForView.uploaded_at).toLocaleDateString('ro-RO', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
       </Modal>
     </SafeAreaView>

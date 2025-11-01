@@ -13,6 +13,19 @@ const LoginScreen = () => {
   const navigation = useNavigation();
   // RTK Query mutation hook
   const [login, { isLoading: isLoginLoading, error: loginError }] = useLoginMutation();
+
+  // Handle phone number change - prevent erasing +40 prefix
+  const handlePhoneNumberChange = (text) => {
+    // Always ensure the prefix +40 is present
+    if (!text.startsWith('+40')) {
+      setPhoneNumber('+40 ');
+    } else if (text.length < 4) {
+      // If user tries to delete beyond "+40 ", keep it
+      setPhoneNumber('+40 ');
+    } else {
+      setPhoneNumber(text);
+    }
+  };
   const handleForgotPassword = () => {
     Alert.alert(
       'Parola uitata',
@@ -83,7 +96,7 @@ const LoginScreen = () => {
           <View style={styles.inputContainer}>
             <TextInput
               value={phone_number}
-              onChangeText={setPhoneNumber}
+              onChangeText={handlePhoneNumberChange}
               keyboardType="phone-pad"
               autoCapitalize="none"
               style={styles.input}
